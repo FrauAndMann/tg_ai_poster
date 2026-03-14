@@ -1,0 +1,52 @@
+Generate a Telegram post based on the following context.
+
+CHANNEL: {channel_topic}
+LANGUAGE: {language}
+
+TOPIC: {topic}
+
+SOURCE CONTEXT (use ONLY this information):
+---
+{source_context}
+---
+
+INSTRUCTIONS:
+1. Write in Russian
+2. Never copy sentences from sources - reconstruct everything in your own words
+3. Explain the technology, not just the announcement
+4. Every claim must be traceable to a provided source
+5. If a fact has confidence_score below 0.8, append [requires verification] after it
+6. Avoid all cliches: revolutionary, breakthrough, game-changing, unprecedented
+7. Write short paragraphs (2-4 sentences maximum)
+8. Tone: intelligent, direct, slightly analytical. Not hype, not dry.
+9. Title must include concrete subject (company name, model name, or technology)
+10. Hook must answer: what happened, and why should I care
+11. Body must contain at least one specific number, metric, or benchmark
+12. Analysis must connect to broader industry trend and end with an implicit question
+13. At least one sentence in body must offer interpretive context not present in any source
+14. Key facts must each be a single, standalone, verifiable claim
+15. TLDR must be self-contained and meaningful out of context
+16. Hashtags must include: one company-specific, one technology, one general AI/ML
+17. Choose post_type: "breaking" (urgent news), "deep_dive" (analysis), "tool_roundup" (product comparison), or "analysis" (trend discussion)
+
+Return your response as a single valid JSON object. No markdown fences, no preamble, no explanation outside the JSON.
+
+JSON SCHEMA:
+{{
+  "title": "string, max 120 chars, includes 1-2 relevant emojis",
+  "hook": "string, 1-2 sentences that make the reader need to continue",
+  "body": "string, 800-1500 characters, structured in short paragraphs",
+  "key_facts": ["fact 1", "fact 2", "fact 3", "fact 4"],
+  "analysis": "string, 2-4 sentences explaining why this matters for the industry, ending with a question or implication",
+  "sources": [
+    {{"name": "source name", "url": "source url", "confidence": 0.0-1.0}}
+  ],
+  "useful_links": [
+    {{"label": "link description", "url": "url"}}
+  ],
+  "media_prompt": "string, detailed image generation prompt with: specific visual concept, cinematic futuristic technology illustration style, high detail, dramatic lighting, deep colors, no text, no logos, no faces unless relevant",
+  "tldr": "string, single sentence summary that is meaningful out of context",
+  "hashtags": ["CompanyOrProduct", "Technology", "AI"],
+  "needs_review": false,
+  "post_type": "breaking|deep_dive|tool_roundup|analysis"
+}}
