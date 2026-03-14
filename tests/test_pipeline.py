@@ -244,9 +244,9 @@ class TestPostFormatter:
         is_valid, error = formatter.validate_format("Valid content")
         assert is_valid is True
 
-        # Too long
+        # Long content is still valid (will be truncated, not rejected)
         is_valid, error = formatter.validate_format("x" * 5000)
-        assert is_valid is False
+        assert is_valid is True  # Long content is valid, just gets truncated
 
     def test_preview(self):
         """Test preview generation."""

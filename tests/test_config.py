@@ -34,7 +34,9 @@ class TestTelegramConfig:
 
     def test_env_prefix(self):
         """Test environment variable prefix."""
-        config = TelegramConfig(telegram_bot_token="test_token")
+        # TelegramConfig uses env_prefix="TELEGRAM_", so telegram_bot_token
+        # is an extra field not in the model
+        config = TelegramConfig(bot_token="test_token")
         assert config.bot_token == "test_token"
 
 
@@ -44,21 +46,29 @@ class TestLLMConfig:
     def test_default_values(self):
         """Test default configuration values."""
         config = LLMConfig()
-        assert config.provider == "openai"
-        assert config.model == "gpt-4o"
-        assert config.temperature == 0.85
+        # Defaults are for claude-cli/GLM provider
+        assert config.provider == "claude-cli"
+        assert config.model == "glm-5"
+        assert config.temperature == 0.9
 
     def test_get_base_url(self):
         """Test base URL getter."""
         config = LLMConfig()
         url = config.get_base_url()
-        assert url == "https://api.openai.com/v1"
+        # Default provider is claude-cli, which uses glm_base_url
+        assert url == "https://api.z.ai/api/paas/v4"
 
     def test_custom_base_url(self):
         """Test custom base URL."""
-        config = LLMConfig(openai_base_url="https://custom.api.com")
+        config = LLMConfig(base_url="https://custom.api.com")
         url = config.get_base_url()
         assert url == "https://custom.api.com"
+
+    def test_openai_provider_url(self):
+        """Test OpenAI provider URL."""
+        config = LLMConfig(provider="openai")
+        url = config.get_base_url()
+        assert url == "https://api.openai.com/v1"
 
 
 class TestScheduleConfig:
@@ -75,8 +85,9 @@ class TestScheduleConfig:
 
     def test_fixed_times_validation(self):
         """Test fixed times format validation."""
-        config = ScheduleConfig(fixed_times=["09:00", "14:00", "invalid"])
-        # The invalid entry should cause error during full config load
+        # Invalid time format should raise validation error
+        with pytest.raises(Exception):  # Pydantic ValidationError
+            ScheduleConfig(fixed_times=["09:00", "14:00", "invalid"])
 
 
 class TestSettings:

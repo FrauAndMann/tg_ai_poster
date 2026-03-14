@@ -214,6 +214,34 @@ class TopicStore:
             result = await session.execute(query)
             return list(result.scalars().all())
 
+    async def has_used_source_url(self, source_url: str | None) -> bool:
+        """
+        Check if a topic with the given source URL has already been used.
+
+        This is used to prevent publishing duplicate news from the same source URL.
+
+        Args:
+            source_url: Source URL to check.
+
+        Returns:
+            bool: True if the URL was already used for a published topic.
+        """
+        if not source_url:
+            return False
+
+        async with self.db.session() as session:
+            result = await session.execute(
+                select(Topic.id)
+                .where(
+                    and_(
+                        Topic.source_url == source_url,
+                        Topic.use_count > 0,
+                    )
+                )
+                .limit(1)
+            )
+            return result.scalar_one_or_none() is not None
+
     async def get_recently_used(
         self,
         days: int = 7,

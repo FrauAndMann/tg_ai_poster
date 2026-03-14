@@ -811,6 +811,39 @@ class PipelineOrchestrator:
                 )
                 source_articles = [vs.article for vs in verification_result.sources[:3]]
 
+            # URL-based deduplication: skip topics that were already posted from the same source URL
+            primary_source_url: Optional[str] = None
+            if source_articles:
+                first_article = source_articles[0]
+                # Support both dicts (from topic_meta) and objects (from verifier)
+                primary_source_url = getattr(first_article, "url", None)
+                if primary_source_url is None and isinstance(first_article, dict):
+                    primary_source_url = first_article.get("url")
+
+            if primary_source_url:
+                try:
+                    if await self.topic_store.has_used_source_url(primary_source_url):
+                        logger.info(
+                            "Skipping topic because source URL was already used: %s",
+                            primary_source_url,
+                        )
+                        duration = time.time() - start_time
+                        return PipelineResult(
+                            success=False,
+                            post_id=None,
+                            content=None,
+                            topic=topic,
+                            quality_score=0.0,
+                            editor_score=0.0,
+                            verification_score=0.0,
+                            media_prompt=None,
+                            sources=[{"url": primary_source_url}],
+                            error="Duplicate source URL",
+                            duration=duration,
+                        )
+                except Exception as e:
+                    logger.warning(f"Failed to check source URL uniqueness: {e}")
+
             # Stage 5-7: Generate -> Validate -> Editorial review -> Quality check
             # STRICT VALIDATION: Content must pass all checks to be published
             max_attempts = max(1, int(self.settings.safety.max_regeneration_attempts))
