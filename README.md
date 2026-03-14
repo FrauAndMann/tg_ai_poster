@@ -1,17 +1,22 @@
 # TG AI Poster
 
+[![Tests](https://github.com/FrauAndMann/tg_ai_poster/actions/workflows/test.yml/badge.svg)](https://github.com/FrauAndMann/tg_ai_poster/actions/workflows/test.yml)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-orange.svg)](https://github.com/astral-sh/ruff)
+
 Автономная AI-система для управления Telegram-каналом 24/7 без участия человека.
 
 ## Возможности
 
-- **Автоматическая генерация постов** с использованием GPT-4o, Claude или DeepSeek
+- **Автоматическая генерация постов** с использованием GPT-4o, Claude, DeepSeek или GLM-5
 - **Планировщик постов** с поддержкой интервалов, фиксированного времени и случайного расписания
 - **Сбор контента** из RSS-лент, HackerNews и ProductHunt
 - **AI-выбор тем** с анализом релевантности
 - **Агент-критик** для улучшения качества постов перед публикацией
+- **Строгая валидация контента** - защита от LLM-артефактов и некорректных постов
 - **Семантическая дедупликация** через ChromaDB - никогда не повторяется по смыслу
 - **Обучение на метриках** - система учится на лучших постах
-- **Проверка качества** постов с автоматическим исправлением
 - **Два режима публикации**: Bot API (безопасно) и Telethon (аккаунт пользователя)
 - **Мастер настройки** для быстрого старта
 
@@ -21,8 +26,8 @@
 
 ```bash
 # Клонирование
-git clone https://github.com/your-repo/tg-ai-poster.git
-cd tg-ai-poster
+git clone https://github.com/FrauAndMann/tg_ai_poster.git
+cd tg_ai_poster
 
 # Создание виртуального окружения
 python -m venv venv
@@ -90,17 +95,17 @@ python main.py
 4. Выдайте право "Публикация сообщений"
 
 **Плюсы:**
-- ✅ Официальный API, нет риска бана
-- ✅ Простая настройка
-- ✅ Надежность
+- Официальный API, нет риска бана
+- Простая настройка
+- Надежность
 
 **Минусы:**
-- ❌ Видна метка бота
-- ❌ Бот должен быть админом
+- Видна метка бота
+- Бот должен быть админом
 
 ### Mode B: Telethon (Аккаунт пользователя)
 
-⚠️ **ВНИМАНИЕ:** Используйте ТОЛЬКО на отдельном аккаунте!
+> **ВНИМАНИЕ:** Используйте ТОЛЬКО на отдельном аккаунте!
 
 **Как работает:**
 - Подключается как обычный пользователь
@@ -113,13 +118,13 @@ python main.py
 3. Сессия сохраняется для повторных запусков
 
 **Плюсы:**
-- ✅ Посты выглядят как личные
-- ✅ Полный доступ к функциям
+- Посты выглядят как личные
+- Полный доступ к функциям
 
 **Минусы:**
-- ❌ Риск бана аккаунта
-- ❌ Нарушение ToS Telegram
-- ❌ Сложнее настройка
+- Риск бана аккаунта
+- Нарушение ToS Telegram
+- Сложнее настройка
 
 ## Конфигурация
 
@@ -226,6 +231,19 @@ python main.py --init-db    # Инициализация БД
 python main.py --debug      # Режим отладки
 ```
 
+## Тестирование
+
+```bash
+# Запуск всех тестов
+pytest
+
+# Запуск с покрытием кода
+pytest --cov=. --cov-report=html
+
+# Запуск конкретного теста
+pytest tests/test_content_validator.py -v
+```
+
 ## Архитектура
 
 ```
@@ -248,13 +266,15 @@ python main.py --debug      # Режим отладки
 │         ↓                                                   │
 │  [5] LLMGenerator      — Agent-Editor writes draft         │
 │         ↓                                                   │
-│  [6] AgentCritic       — Agent-Critic improves draft       │
+│  [6] ContentValidator  — LLM meta-text detection           │
 │         ↓                                                   │
-│  [7] QualityChecker    — length, emoji, markdown, dedup    │
+│  [7] AgentCritic       — Agent-Critic improves draft       │
 │         ↓                                                   │
-│  [8] Formatter         — Telegram MarkdownV2 formatting    │
+│  [8] QualityChecker    — length, emoji, markdown, dedup    │
 │         ↓                                                   │
-│  [9] ApprovalGate      — auto or manual (Telegram DM)      │
+│  [9] Formatter         — Telegram MarkdownV2 formatting    │
+│         ↓                                                   │
+│ [10] ApprovalGate      — auto or manual (Telegram DM)      │
 └──────────────────────────┬──────────────────────────────────┘
                            │
                            ▼
@@ -292,6 +312,7 @@ tg_ai_poster/
 │   ├── orchestrator.py  # Координатор
 │   ├── source_collector.py  # RSS, HN, ProductHunt
 │   ├── content_filter.py
+│   ├── content_validator.py # Валидация LLM контента
 │   ├── topic_selector.py
 │   ├── prompt_builder.py
 │   ├── llm_generator.py
@@ -324,6 +345,11 @@ tg_ai_poster/
 │       ├── agent_critic.txt
 │       └── style_analyzer.txt
 │
+├── tests/               # Тесты
+│   ├── conftest.py      # Фикстуры pytest
+│   ├── test_memory.py
+│   └── test_content_validator.py
+│
 └── utils/               # Утилиты
     ├── retry.py
     ├── rate_limiter.py
@@ -337,6 +363,14 @@ tg_ai_poster/
 3. Ограничьте daily_posts для избежания спама
 4. Настройте manual_approval для контроля контента
 
+## Contributing
+
+1. Fork репозитория
+2. Создайте ветку для фичи (`git checkout -b feature/amazing-feature`)
+3. Закоммитьте изменения (`git commit -m 'Add amazing feature'`)
+4. Запушьте в ветку (`git push origin feature/amazing-feature`)
+5. Откройте Pull Request
+
 ## Лицензия
 
-MIT License
+MIT License - см. [LICENSE](LICENSE) файл.
