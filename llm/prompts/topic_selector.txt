@@ -1,0 +1,11 @@
+Select the best topic for a Telegram post about AI and technology.
+
+CHANNEL TOPIC: {channel_topic}
+
+TOPICS:
+{available_topics}
+
+AVOID: {forbidden_topics}
+
+Select the BEST topic. Reply with ONLY this JSON:
+{{"selected_topic": "topic", "reason": "why", "angle": "perspective"}}

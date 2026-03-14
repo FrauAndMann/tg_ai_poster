@@ -1,0 +1,62 @@
+# TG AI Poster Dependencies
+# =========================
+# Core dependencies with pinned versions for reproducibility
+
+# Configuration
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+python-dotenv>=1.0.0
+pyyaml>=6.0.1
+
+# Logging
+loguru>=0.7.2
+
+# Database
+sqlalchemy>=2.0.23
+aiosqlite>=0.19.0
+asyncpg>=0.29.0  # PostgreSQL async driver
+
+# Vector store for semantic deduplication
+chromadb>=0.5.0
+
+# Telegram
+python-telegram-bot>=20.7
+telethon>=1.33.1
+
+# LLM
+openai>=1.6.0
+anthropic>=0.8.0
+httpx>=0.25.2
+aiohttp>=3.9.1
+
+# RSS/Content
+feedparser>=6.0.10
+beautifulsoup4>=4.12.2
+
+# Scheduling
+apscheduler>=3.10.4
+pytz>=2023.3
+python-dateutil>=2.8.2
+
+# Retry logic
+tenacity>=8.2.3
+
+# Event emitter for event-driven architecture
+pyee>=11.0.0
+
+# Data processing
+numpy>=1.26.2  # For similarity calculations
+
+# Async support
+anyio>=4.1.0
+
+# Optional: Redis for queueing
+# redis>=5.0.1
+# rq>=1.15.1
+
+# Development dependencies
+# mypy>=1.7.1
+# pytest>=7.4.3
+# pytest-asyncio>=0.21.1
+# black>=23.12.0
+# ruff>=0.1.8

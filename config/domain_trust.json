@@ -1,0 +1,104 @@
+{
+  "version": "2.0",
+  "description": "Domain trust tiers for source verification",
+  "tiers": {
+    "tier1": {
+      "description": "Primary sources - official announcements, peer-reviewed research",
+      "score": 100,
+      "domains": [
+        "arxiv.org",
+        "nature.com",
+        "science.org",
+        "openai.com",
+        "anthropic.com",
+        "deepmind.google",
+        "ai.googleblog.com",
+        "blog.google",
+        "research.facebook.com",
+        "meta.com",
+        "ai.meta.com",
+        "microsoft.com",
+        "blogs.microsoft.com",
+        "azure.microsoft.com",
+        "aws.amazon.com",
+        "nvidia.com",
+        "stability.ai",
+        "midjourney.com",
+        "deepseek.com",
+        "mistral.ai",
+        "cohere.com",
+        "inflection.ai",
+        "character.ai",
+        "scale.com",
+        "huggingface.co"
+      ]
+    },
+    "tier2": {
+      "description": "Reputable tech journalism and industry analysis",
+      "score": 80,
+      "domains": [
+        "techcrunch.com",
+        "theverge.com",
+        "technologyreview.com",
+        "wired.com",
+        "arstechnica.com",
+        "venturebeat.com",
+        "zdnet.com",
+        "cnbc.com",
+        "bloomberg.com",
+        "reuters.com",
+        "ft.com",
+        "wsj.com",
+        "economist.com",
+        "forbes.com",
+        "axios.com",
+        "theinformation.com",
+        "stratechery.com",
+        "ben-evans.com",
+        "fastcompany.com",
+        "spectrum.ieee.org",
+        "spectrum.ieee.org"
+      ]
+    },
+    "tier3": {
+      "description": "General tech news, aggregators, community sources",
+      "score": 50,
+      "domains": [
+        "reddit.com",
+        "news.ycombinator.com",
+        "producthunt.com",
+        "github.com",
+        "medium.com",
+        "towardsdatascience.com",
+        "analyticsvidhya.com",
+        "machinelearningmastery.com",
+        "kdnuggets.com",
+        "distill.pub",
+        "deeplearning.ai",
+        "coursera.org",
+        "udacity.com",
+        "youtube.com",
+        "twitter.com",
+        "x.com",
+        "linkedin.com",
+        "vc.ru",
+        "incrussia.ru",
+        "habr.com",
+        "tproger.ru"
+      ]
+    }
+  },
+  "trust_threshold": {
+    "min_tier_for_auto_publish": 2,
+    "min_tier_for_generation": 3,
+    "min_sources_required": 2,
+    "single_source_confidence_penalty": 0.2
+  },
+  "scoring_rules": {
+    "multi_source_bonus": 10,
+    "tier1_bonus": 15,
+    "recency_bonus_days": 7,
+    "recency_bonus_max": 10,
+    "official_confirmation_bonus": 20
+  }
+}
