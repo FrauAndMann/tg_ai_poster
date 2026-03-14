@@ -1,0 +1,18 @@
+Analyze these top-performing Telegram posts and extract the writing style fingerprint.
+
+POSTS (ordered by engagement, best first):
+{top_posts_with_scores}
+
+Identify:
+1. Sentence structure patterns
+2. Vocabulary level and tone
+3. How emojis are used
+4. Information density
+5. Hook patterns that work
+6. What makes these posts resonate
+
+Output actionable style instructions (max 300 words) that a writer
+could follow to replicate this success. Write as direct instructions.
+Start with: "For this channel, always..."
+
+STYLE INSTRUCTIONS:

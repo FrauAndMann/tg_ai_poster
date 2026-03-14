@@ -1,0 +1,147 @@
+# TG AI Poster Docker Compose
+# ============================
+# Production-ready deployment configuration
+
+version: "3.8"
+
+services:
+  # ============================================
+  # Main Application
+  # ============================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: tg-ai-poster
+    restart: unless-stopped
+
+    environment:
+      - PYTHONUNBUFFERED=1
+      # Pass through all env vars from .env file
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHANNEL_ID=${TELEGRAM_CHANNEL_ID}
+      - TELETHON_API_ID=${TELETHON_API_ID}
+      - TELETHON_API_HASH=${TELETHON_API_HASH}
+      - TELETHON_PHONE=${TELETHON_PHONE}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ADMIN_TELEGRAM_ID=${ADMIN_TELEGRAM_ID}
+
+    volumes:
+      # Persist data
+      - ./data:/app/data
+      # Persist logs
+      - ./logs:/app/logs
+      # Persist Telethon session
+      - ./sessions:/app/sessions
+      # Config file (can be edited without rebuild)
+      - ./config.yaml:/app/config.yaml:ro
+
+    networks:
+      - tg-poster-network
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+
+  # ============================================
+  # PostgreSQL Database (Production)
+  # ============================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: tg-poster-db
+    restart: unless-stopped
+
+    environment:
+      - POSTGRES_USER=tg_poster
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-tg_poster_secret}
+      - POSTGRES_DB=tg_poster
+
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+    networks:
+      - tg-poster-network
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tg_poster"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+
+  # ============================================
+  # Redis (Optional - for queueing)
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: tg-poster-redis
+    restart: unless-stopped
+
+    command: redis-server --appendonly yes
+
+    volumes:
+      - redis-data:/data
+
+    networks:
+      - tg-poster-network
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
+
+# ============================================
+# Networks
+# ============================================
+networks:
+  tg-poster-network:
+    driver: bridge
+
+# ============================================
+# Volumes
+# ============================================
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local

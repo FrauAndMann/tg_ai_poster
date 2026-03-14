@@ -1,0 +1,115 @@
+# TG AI Poster Configuration
+# ===========================
+
+telegram:
+  bot_token: "${TELEGRAM_BOT_TOKEN}"
+  channel_id: "${TELEGRAM_CHANNEL_ID}"
+  posting_mode: "bot"
+
+telethon:
+  api_id: "${TELETHON_API_ID}"
+  api_hash: "${TELETHON_API_HASH}"
+  phone: "${TELETHON_PHONE}"
+  session_path: "sessions/user.session"
+
+llm:
+  # GLM-5 через Claude Code CLI (использует Coding Plan)
+  # GLM-5 доступен через z.ai API или Claude Code CLI
+  provider: "claude-cli"
+  model: "glm-5"
+  max_tokens: 2000
+  # Temperature зависит on post type:
+  # - 0.15 for factual/breaking news (default)
+  # - 0.4 for analysis/deep_dive posts
+  temperature: 0.15
+  temperature_analysis: 0.4
+
+channel:
+  topic: "AI technologies and future of automation"
+  style: >
+    Expert but accessible. Think pieces. No hype.
+    Focus on practical insights and thought-provoking analysis.
+  language: "ru"
+  # Updated for v2.0 pipeline
+  post_length_min: 200
+  post_length_max: 4096
+  emojis_per_post: 3
+  hashtags_count: 3
+
+schedule:
+  type: "fixed"
+  timezone: "Europe/Moscow"          # ← ДОБАВЛЕНО
+  fixed_times:
+    - "07:00"
+    - "09:30"
+    - "12:00"
+    - "14:00"
+    - "16:30"
+    - "19:00"
+    - "20:00"
+    - "21:00"
+    - "21:30"
+    - "22:30"
+    - "23:30"
+    - "23:50"
+  max_daily_posts: 12                # ← совпадает с кол-вом слотов
+  min_interval_minutes: 30           # ← реалистичный минимум
+
+sources:
+  rss_feeds:
+    - "https://feeds.feedburner.com/oreilly/radar"
+    - "https://www.producthunt.com/feed"
+    - "https://hnrss.org/frontpage"
+    - "https://techcrunch.com/feed/"
+    - "https://openai.com/blog/rss.xml"
+    - "https://www.deeplearning.ai/feed/"
+    - "https://vc.ru/rss"
+    - "https://incrussia.ru/feed/"
+    - "https://www.forbes.ru/rss"
+    - "https://marketingland.com/feed"
+    - "https://zapier.com/blog/feeds/latest/"
+    - "https://buffer.com/resources/rss/"
+    - "https://www.reddit.com/r/artificial/.rss"
+    - "https://www.reddit.com/r/ChatGPT/.rss"
+    - "https://www.reddit.com/r/MachineLearning/.rss"
+  use_hackernews: true
+  use_producthunt: true
+  enable_rss: true
+  rss_fetch_interval_hours: 6
+
+safety:
+  manual_approval: false
+  forbidden_words: []
+  similarity_threshold: 0.85
+  max_regeneration_attempts: 3
+  min_interval_minutes: 1
+  max_daily_posts: 12
+
+learning:                            # ← ДОБАВЛЕН БЛОК
+  feedback_enabled: true
+  style_update_interval_days: 7
+  min_reactions_to_learn: 5
+  top_posts_in_context: 5
+
+database:
+  url: "sqlite+aiosqlite:///./data/tg_poster.db"   # ← async драйвер
+  echo: false
+
+redis:
+  enabled: false
+  url: "redis://localhost:6379/0"
+
+admin:
+  telegram_id: "${ADMIN_TELEGRAM_ID}"
+  notify_on_error: true
+  notify_on_post: false
+
+app:
+  name: "TG AI Poster"
+  debug: false
+  dry_run: false
+
+media:
+    enabled: true
+    unsplash_access_key: "в0fhw6450XMB3YE6OJEVty9M9_UF7dEvUn6owerOoYAc"
+    pexels_api_key: "9M2xrVfOnKmdP3O9gWPQm3S42C6IdXVWMzaTbxaSHzkcuCgR2oYBf5Aj"

@@ -1,0 +1,134 @@
+{
+  "version": "2.0",
+  "description": "Banned cliches, hype words, and filler phrases",
+  "banned_words": {
+    "hype_words": {
+      "action": "replace",
+      "words": [
+        "революционный",
+        "прорывной",
+        "изменит мир",
+        "беспрецедентный",
+        "уникальный",
+        "инновационный",
+        "геймчейнджер",
+        "game-changer",
+        "disruptive",
+        "революция",
+        "прорыв",
+        "невероятный",
+        "потрясающий",
+        "грандиозный",
+        "феноменальный",
+        "эпохальный",
+        "исторический",
+        "футуристический"
+      ],
+      "replacements": {
+        "революционный": "существенный",
+        "прорывной": "важный",
+        "изменит мир": "трансформирует",
+        "беспрецедентный": "значительный",
+        "инновационный": "новый",
+        "уникальный": "отличный"
+      }
+    },
+    "filler_phrases": {
+      "action": "remove",
+      "phrases": [
+        "стоит отметить",
+        "следует подчеркнуть",
+        "нельзя не заметить",
+        "важно понимать",
+        "необходимо отметить",
+        "хочется подчеркнуть",
+        "обращает на себя внимание",
+        "представляет собой",
+        "является собой",
+        "речь идет о",
+        "как уже упоминалось",
+        "как было сказано",
+        "в заключение хотелось бы",
+        "подводя итог",
+        "в современных условиях",
+        "на сегодняшний день",
+        "в наше время",
+        "it is important to note",
+        "it's worth mentioning",
+        "needless to say",
+        "it goes without saying",
+        "in today's world",
+        "at the end of the day"
+      ]
+    },
+    "ai_telltales": {
+      "action": "flag",
+      "phrases": [
+        "delve into",
+        "dive deep",
+        "let's explore",
+        "in this article",
+        "in this post",
+        "first and foremost",
+        "last but not least",
+        "in conclusion",
+        "to summarize",
+        "to sum up",
+        "comprehensive guide",
+        "ultimate guide",
+        "everything you need to know",
+        "глубоко погрузимся",
+        "давайте разберем",
+        "в этой статье",
+        "в данном посте",
+        "прежде всего",
+        "в заключение",
+        "подводя итоги"
+      ]
+    },
+    "weak_openings": {
+      "action": "flag",
+      "patterns": [
+        "сегодня",
+        "вчера",
+        "на этой неделе",
+        "как сообщает",
+        "по данным",
+        "согласно источникам",
+        "источники сообщают",
+        "эксперты утверждают",
+        "аналитики полагают",
+        "многие считают",
+        "принято считать"
+      ]
+    },
+    "passive_constructions": {
+      "action": "flag",
+      "patterns": [
+        "был создан",
+        "была разработана",
+        "были представлены",
+        "было объявлено",
+        "был запущен",
+        "является одним из",
+        "остается одним из",
+        "представляет собой"
+      ]
+    }
+  },
+  "sentence_rules": {
+    "max_sentence_words": 25,
+    "ideal_avg_sentence_words": 15,
+    "min_active_voice_ratio": 0.7,
+    "max_repetition_window": 100,
+    "max_same_word_count": 3
+  },
+  "length_rules": {
+    "min_body_chars": 800,
+    "max_body_chars": 1500,
+    "min_title_chars": 40,
+    "max_title_chars": 120,
+    "min_key_facts": 4,
+    "max_key_facts": 4
+  }
+}
