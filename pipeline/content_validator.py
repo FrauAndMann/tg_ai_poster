@@ -524,3 +524,4 @@ class ContentValidator:
             return False, f"Quality score too low: {result.score}"
 
         return True, "Content is publication ready"
+# Validation update
