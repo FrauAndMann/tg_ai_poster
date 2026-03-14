@@ -7,25 +7,173 @@ Defines the schema for posts, topics, and sources.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
+from enum import Enum
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import (
     Boolean,
     DateTime,
     Float,
+    ForeignKey,
     Index,
     Integer,
     String,
     Text,
+    UniqueConstraint,
     func,
 )
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
+if TYPE_CHECKING:
+    pass
 
 
 class Base(DeclarativeBase):
     """Base class for all SQLAlchemy models."""
 
     pass
+
+
+class PostStatus(str, Enum):
+    """Post status lifecycle."""
+    DRAFT = "draft"                    # Initial AI-generated
+    PENDING_REVIEW = "pending_review"  # Awaiting quality check
+    NEEDS_REVISION = "needs_revision"  # Failed quality check
+    APPROVED = "approved"              # Passed all checks
+    REJECTED = "rejected"              # Discarded
+    SCHEDULED = "scheduled"            # Queued for publishing
+    PUBLISHED = "published"            # Live on Telegram
+    FAILED = "failed"                  # Publishing failed
+
+
+class PostVersion(Base):
+    """Version history for posts."""
+
+    __tablename__ = "post_versions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    post_id: Mapped[int] = mapped_column(Integer, ForeignKey("posts.id"))
+    version_number: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    # Snapshot of post content at this version
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    post_title: Mapped[str | None] = mapped_column(String(200))
+    post_hook: Mapped[str | None] = mapped_column(Text)
+    post_body: Mapped[str | None] = mapped_column(Text)
+    post_tldr: Mapped[str | None] = mapped_column(String(300))
+    post_hashtags: Mapped[str | None] = mapped_column(Text)
+
+    # Metadata
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+    created_by: Mapped[str] = mapped_column(String(50), default="ai")
+    change_reason: Mapped[str | None] = mapped_column(String(500))
+
+    # Relationship
+    post: Mapped["Post"] = relationship("Post", back_populates="versions")
+
+    __table_args__ = (
+        Index("ix_post_versions_post_id", "post_id"),
+        Index("ix_post_versions_created", "created_at"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<PostVersion(id={self.id}, post_id={self.post_id}, v{self.version_number})>"
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "post_id": self.post_id,
+            "version_number": self.version_number,
+            "content": self.content,
+            "post_title": self.post_title,
+            "post_hook": self.post_hook,
+            "post_body": self.post_body,
+            "post_tldr": self.post_tldr,
+            "post_hashtags": self.post_hashtags,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "created_by": self.created_by,
+            "change_reason": self.change_reason,
+        }
+
+
+class ABExperiment(Base):
+    """A/B test experiment configuration."""
+
+    __tablename__ = "ab_experiments"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text)
+
+    # Configuration
+    traffic_split: Mapped[float] = mapped_column(Float, default=0.5)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    # Timing
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+    # Results
+    winner_variant: Mapped[str | None] = mapped_column(String(10))
+    confidence_level: Mapped[float] = mapped_column(Float, default=0.0)
+
+    # Relationships
+    variants: Mapped[list["ABVariant"]] = relationship(back_populates="experiment")
+
+    def __repr__(self) -> str:
+        return f"<ABExperiment(id={self.id}, name='{self.name}', active={self.is_active})>"
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "name": self.name,
+            "description": self.description,
+            "traffic_split": self.traffic_split,
+            "is_active": self.is_active,
+            "started_at": self.started_at.isoformat() if self.started_at else None,
+            "ended_at": self.ended_at.isoformat() if self.ended_at else None,
+            "winner_variant": self.winner_variant,
+            "confidence_level": self.confidence_level,
+        }
+
+
+class ABVariant(Base):
+    """Individual variant in an experiment."""
+
+    __tablename__ = "ab_variants"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    experiment_id: Mapped[int] = mapped_column(Integer, ForeignKey("ab_experiments.id"))
+    variant_id: Mapped[str] = mapped_column(String(10), nullable=False)
+
+    # Content reference
+    post_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("posts.id"))
+
+    # Metrics
+    impressions: Mapped[int] = mapped_column(Integer, default=0)
+    total_engagement: Mapped[float] = mapped_column(Float, default=0.0)
+
+    # Relationships
+    experiment: Mapped["ABExperiment"] = relationship(back_populates="variants")
+    post: Mapped[Optional["Post"]] = relationship()
+
+    __table_args__ = (
+        Index("ix_ab_variants_experiment", "experiment_id"),
+        UniqueConstraint("experiment_id", "variant_id", name="uq_experiment_variant"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<ABVariant(id={self.id}, experiment={self.experiment_id}, variant={self.variant_id})>"
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "experiment_id": self.experiment_id,
+            "variant_id": self.variant_id,
+            "post_id": self.post_id,
+            "impressions": self.impressions,
+            "total_engagement": self.total_engagement,
+        }
 
 
 class Post(Base):
@@ -111,6 +259,19 @@ class Post(Base):
     # Pipeline version tracking
     pipeline_version: Mapped[str] = mapped_column(String(50), default="1.0")
 
+    # Version control fields
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    current_version_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("post_versions.id"), nullable=True)
+
+    # A/B testing fields
+    ab_experiment_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("ab_experiments.id"), nullable=True)
+    ab_variant_id: Mapped[str | None] = mapped_column(String(10), nullable=True)
+
+    # Relationships
+    versions: Mapped[list["PostVersion"]] = relationship(
+        back_populates="post", order_by="PostVersion.version_number"
+    )
+
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
@@ -180,6 +341,12 @@ class Post(Base):
             "pipeline_version": self.pipeline_version,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            # Version control fields
+            "version": self.version,
+            "current_version_id": self.current_version_id,
+            # A/B testing fields
+            "ab_experiment_id": self.ab_experiment_id,
+            "ab_variant_id": self.ab_variant_id,
         }
 
 

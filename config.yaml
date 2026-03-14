@@ -136,6 +136,31 @@ polls:
   enabled: true
   probability: 0.3  # 30% of posts as polls
 
+# ===================================
+# Phase 1 Features
+# ===================================
+
+# Approval Workflow
+approval:
+  auto_approve_enabled: true
+  min_quality_score: 0.75
+  min_verification_score: 0.70
+  min_editor_score: 0.70
+  max_regeneration_attempts: 3
+
+# A/B Testing
+ab_testing:
+  enabled: true
+  default_traffic_split: 0.5
+  min_sample_size: 100
+  confidence_threshold: 0.95
+  auto_select_winner: true
+
+# Draft System
+draft:
+  max_versions: 50
+  auto_cleanup_days: 30
+
 app:
   name: "TG AI Poster"
   debug: false
