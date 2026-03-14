@@ -1,0 +1,229 @@
+# Post Templates Configuration
+#
+# Templates define reusable content patterns for different post types.
+# Each template specifies the structure, prompts, and examples.
+
+templates:
+  # Breaking news template
+  breaking:
+    name: "Breaking News"
+    description: "For time-sensitive news and announcements"
+    structure:
+      - emoji: "🚨"
+      - max_title_length: 120
+      - hook_focus: "what happened, why it matters now"
+      - body_style: "concise, urgent, factual"
+      - key_facts_count: 4
+      - analysis_required: true
+      - tldr_required: true
+      - hashtags_prefix: ["#breaking", "#news"]
+    prompts:
+      system_addon: |
+        This is BREAKING NEWS. Be factual and urgent.
+        Lead with the most important fact.
+        Focus on immediate impact and timeline.
+    example: |
+      🚀 OpenAI выпускает GPT-5
+
+      Компания OpenAI только что анонсировала GPT-5 — новую модель с контекстным окном в 2 миллиона токенов.
+
+      Ключевые особенности:
+      - Контекст: 2M токенов (в 4 раза больше GPT-4)
+      - Скорость: на 40% быстрее предыдущей версии
+      - Доступность: API уже доступен для разработчиков
+
+      🔍 Что важно знать:
+      • Контекстное окно: 2,000,000 токенов
+      • Производительность: +40% vs GPT-4
+      • Цена: $10 за 1M входных токенов
+      • API доступен уже
+
+      🧠 Почему это важно:
+      Это серьёзный шаг к AGI. Увеличенное контекстное окно позволяет анализировать целые книги и документы в одном сеансе.
+
+      💡 TL;DR: OpenAI представила GPT-5 с контекстом 2M токенов — огромный скачок в возможностях ИБ.
+
+      #AI #GPT5 #OpenAI #LLM
+
+  # Deep dive template
+  deep_dive:
+    name: "Deep Dive"
+    description: "In-depth analysis and technical deep-dives"
+    structure:
+      - emoji: "🔍"
+      - max_title_length: 150
+      - hook_focus: "deep insight, surprising revelation"
+      - body_style: "detailed, analytical, expert"
+      - key_facts_count: 4
+      - analysis_required: true
+      - analysis_length: 4
+      - tldr_required: true
+      - hashtags_prefix: ["#analysis", "#deeplearn"]
+    prompts:
+      system_addon: |
+        This is a DEEP DIVE analysis. Be thorough and insightful.
+        Provide comprehensive context and background.
+        Include technical details and implementation specifics.
+    example: |
+      🔍 Transformer Architecture: Why It Changed Everything
+
+      В 2017 году Google представил документ "Attention Is All You Need", Это стало поворотным моментом в NLP, но что именно сделяет трансформеры такими мощными инструментами?
+
+      В этой глубокой аналитике мы рассмотрим:
+      - Математические foundation of self-attention
+      - Why parallel processing enables scaling
+      - Trade-offs: computation vs quality
+      - Modern variations (sparse attention, etc.)
+
+      [Detailed analysis content...]
+
+      💡 TL;DR: Transformers revolutionized NLP through self-attention, but require significant compute — modern architectures optimize this trade-off.
+
+      #AI #Transformers #DeepLearning #NLP
+
+  # Tool roundup template
+  tool_roundup:
+    name: "Tool Roundup"
+    description: "Curated list of tools and libraries, resources"
+    structure:
+      - emoji: "🛠"
+      - max_title_length: 100
+      - hook_focus: "practical value, time-saving"
+      - body_style: "practical, organized, comparative"
+      - key_facts_count: 4
+      - analysis_required: false
+      - useful_links_required: true
+      - tldr_required: true
+      - hashtags_prefix: ["#tools", "#productivity"]
+    prompts:
+      system_addon: |
+        This is a TOOL ROUNDUP. Focus on practical value.
+        Each tool should solve a specific problem.
+        Include comparison with alternatives.
+        Mention pricing and availability.
+    example: |
+      🛠 5 AI Coding Assistants Compared
+
+      Looking for an AI coding assistant? Here's what you found after testing the top options:
+
+      **GitHub Copilot**
+      - Price: $10/month (individual)
+      - Best for: VS Code users,      - Features: Inline suggestions, chat mode
+
+      **Cursor Pro**
+      - Price: $20/month
+      - Best for: VS Code alternative
+      - Features: Full project context, composer
+
+      **Continue/Claude**
+      - Price: Free tier available
+      - Best for: IDE flexibility
+      - Features: Multiple IDE support, Claude 3.5 Sonnet
+
+      ⚡ Полезные links:
+      • GitHub Copilot — https://github.com/features/copilot
+      • Cursor Pro — https://cursor.sh
+      • Continue — https://continue.dev
+
+      💡 TL;DR: GitHub Copilot for VS Code users, Cursor Pro for full project context, or Continue for IDE flexibility.
+
+      #AI #Coding #Tools #Productivity
+
+  # Tutorial template
+  tutorial:
+    name: "Tutorial"
+    description: "Step-by-step guides and how-to content"
+    structure:
+      - emoji: "📚"
+      - max_title_length: 120
+      - hook_focus: "practical skill
+ clear outcome"
+      - body_style: "instructional, clear, step-by-step"
+      - steps_required: true
+      - code_examples: true
+      - tldr_required: true
+      - hashtags_prefix: ["#tutorial", "#howto"]
+    prompts:
+      system_addon: |
+        This is a TUTORIAL. Make it actionable and step-by-step.
+        Start with prerequisites.
+        Number the steps clearly.
+        Include working code examples.
+        Address common pitfalls.
+    example: |
+      📚 How to Build a RAG Pipeline in Python
+
+      Retrieval-Augmented Generation (RAG) combines LLMs with external knowledge. Here's how to build one:
+
+      **Prerequisites**
+      - Python 3.10+
+      - OpenAI API key
+      - Vector database (ChromaDB)
+
+      **Step 1: Set up the Vector Store**
+      ```python
+      from chromadb import Client
+      client = Client()
+      collection = client.create_collection("docs")
+      ```
+
+      **Step 2: Index Your Documents**
+      ```python
+      docs = ["doc1.pdf", "doc2.pdf"]
+      for doc in docs:
+          collection.add(documents=[load_pdf(doc)])
+      ```
+
+      [More steps...]
+
+      💡 TL;DR: RAG pipelines combine vector search with LLM generation for grounded, factual responses.
+
+      #AI #RAG #Python #Tutorial
+
+  # Opinion template
+  opinion:
+    name: "Opinion"
+    description: "Personal takes and hot takes, industry commentary"
+    structure:
+      - emoji: "💭"
+      - max_title_length: 100
+      - hook_focus: "strong opinion
+ controversial take"
+      - body_style: "subjective, engaging, personal"
+      - personal_voice: true
+      - analysis_required: true
+      - tldr_required: false
+      - hashtags_prefix: ["#opinion", "#thoughts"]
+    prompts:
+      system_addon: |
+        This is an OPINION piece. Take a clear stance.
+        Express a personal viewpoint.
+        Support with arguments.
+        Address counterarguments.
+    example: |
+      💭 Why I'm Skeptical About AI Agents
+
+      Everyone's talking about AI agents. But after 6 months of testing, I'm not convinced.
+
+      Here's my honest take:
+
+      **The promise**: Autonomous agents that handle complex tasks.
+      **The reality**: Agents still need constant supervision and break easily.
+
+      The problem isn't the technology — it's the expectations. We're asking LLMs to do things they weren't designed for.
+
+      Instead of autonomous agents, I've found more success with:
+      - Agent-assisted workflows (human in the loop)
+      - Narrow, well-defined agent tasks
+      - Tool-augmented chat interfaces
+
+      🧠 Why this matters
+      Realistic expectations lead to better products. Agents are tools, not employees.
+
+      #AI #Agents #Thoughts
+
+# Default template settings
+defaults:
+  default_template: "breaking"
+  templates_enabled: true
+  validation_enabled: true

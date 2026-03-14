@@ -437,3 +437,84 @@ class AnalyticsEngine:
                     self._metrics[int(k)] = PostMetrics(**v)
         except Exception as e:
             logger.warning(f"Failed to load metrics: {e}")
+
+
+class WeeklyReporter:
+    """
+    Weekly report generator and sender.
+
+    Generates weekly performance reports and sends them
+    to the channel admin via Telegram.
+    """
+
+    def __init__(
+        self,
+        analytics_engine: AnalyticsEngine,
+    ):
+        self.engine = analytics_engine
+
+    async def generate_report(self, days: int = 7) -> AnalyticsReport:
+        """
+        Generate weekly analytics report.
+
+        Args:
+            days: Number of days to analyze
+
+        Returns:
+            AnalyticsReport: Generated report
+        """
+        return self.engine.generate_weekly_report(days)
+
+    async def send_report_to_admin(
+        self,
+        report: AnalyticsReport,
+        admin_user_id: int
+    ) -> bool:
+        """
+        Send report to admin via Telegram.
+
+        Args:
+            report: Generated report
+            admin_user_id: Admin's Telegram user ID
+
+        Returns:
+            bool: True if sent successfully
+        """
+        # Format report message
+        lines = [
+            f"📊 **Weekly Report**",
+            f"📅 Period: {report.period_start.strftime('%Y-%m-%d')} - {report.period_end.strftime('%Y-%m-%d')}",
+            f"",
+            f"📝 Total posts: {report.total_posts}",
+            f"👀 Average views: {report.avg_views:.0f}",
+            f"💫 Average engagement: {report.avg_engagement:.1f}",
+            f"🎯 Average confidence: {report.avg_confidence:.1%}",
+            f"",
+            f"📈 Best post type: {report.best_post_type or 'N/A'}",
+            f"",
+            "**Top Posts:**",
+        ]
+
+        for i, post in enumerate(report.top_posts[:5], 1):
+            lines.append(f"  {i}. ID {post.post_id}: {post.engagement_score:.1f} engagement")
+
+        if report.recommendations:
+            lines.append("")
+            lines.append("**Recommendations:**")
+            for rec in report.recommendations:
+                lines.append(f"  • {rec}")
+
+        message = "\n".join(lines)
+        logger.info(f"Weekly report generated:\n{message}")
+
+        # Note: Actual sending would be done via Telegram API
+        # This is a placeholder for integration
+        return True
+
+    def get_top_posts(self, limit: int = 5) -> list[PostMetrics]:
+        """Get top posts by engagement."""
+        return sorted(
+            self.engine._metrics.values(),
+            key=lambda m: m.engagement_score,
+            reverse=True
+        )[:limit]

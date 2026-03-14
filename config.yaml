@@ -104,6 +104,38 @@ admin:
   notify_on_error: true
   notify_on_post: false
 
+# ===================================
+# Quick Wins Features
+# ===================================
+
+# Health Monitoring
+health:
+  check_on_startup: true
+  check_before_post: true
+  endpoint_enabled: false
+  endpoint_port: 8080
+
+# Audit Logging
+audit:
+  enabled: true
+  retention_days: 90
+
+# Weekly Reports
+reporting:
+  enabled: true
+  schedule: "0 9 * * 1"  # Monday 9 AM
+  recipient_admin_id: "${ADMIN_TELEGRAM_ID}"
+
+# Post Templates
+templates:
+  enabled: true
+  path: "config/post_templates.yaml"
+
+# Poll Generation
+polls:
+  enabled: true
+  probability: 0.3  # 30% of posts as polls
+
 app:
   name: "TG AI Poster"
   debug: false
