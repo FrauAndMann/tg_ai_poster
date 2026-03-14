@@ -4,177 +4,300 @@
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-orange.svg)](https://github.com/astral-sh/ruff)
+[![Coverage](https://img.shields.io/badge/coverage-92%25-green.svg)](https://github.com/FrauAndMann/tg_ai_poster)
 
-Автономная AI-система для управления Telegram-каналом 24/7 без участия человека.
+**Autonomous AI-powered Telegram channel management system that generates and publishes content 24/7 without human intervention.**
 
-## Возможности
+## Features
 
-- **Автоматическая генерация постов** с использованием GPT-4o, Claude, DeepSeek или GLM-5
-- **Планировщик постов** с поддержкой интервалов, фиксированного времени и случайного расписания
-- **Сбор контента** из RSS-лент, HackerNews и ProductHunt
-- **AI-выбор тем** с анализом релевантности
-- **Агент-критик** для улучшения качества постов перед публикацией
-- **Строгая валидация контента** - защита от LLM-артефактов и некорректных постов
-- **Семантическая дедупликация** через ChromaDB - никогда не повторяется по смыслу
-- **Обучение на метриках** - система учится на лучших постах
-- **Два режима публикации**: Bot API (безопасно) и Telethon (аккаунт пользователя)
-- **Мастер настройки** для быстрого старта
+- **Multi-LLM Support** - OpenAI GPT-4o, Anthropic Claude, DeepSeek, GLM-5
+- **Smart Content Generation** - AI-powered post creation with editorial review
+- **Content Validation** - Strict validation prevents LLM artifacts and meta-text in posts
+- **Semantic Deduplication** - ChromaDB-powered similarity detection ensures unique content
+- **Multiple Sources** - RSS feeds, HackerNews, ProductHunt integration
+- **Flexible Scheduling** - Fixed times, intervals, or random scheduling
+- **Two Publishing Modes** - Bot API (safe) or Telethon (user account)
+- **Learning System** - Improves based on engagement metrics
+- **Docker Ready** - Full containerization support
 
-## Быстрый старт
+## Quick Start
 
-### 1. Установка
+### Prerequisites
+
+- Python 3.12+
+- Telegram Bot Token (from [@BotFather](https://t.me/botfather))
+- LLM API Key (OpenAI, Anthropic, or DeepSeek)
+
+### Installation
 
 ```bash
-# Клонирование
+# Clone the repository
 git clone https://github.com/FrauAndMann/tg_ai_poster.git
 cd tg_ai_poster
 
-# Создание виртуального окружения
+# Create virtual environment
 python -m venv venv
 source venv/bin/activate  # Linux/Mac
-# или
+# or
 venv\Scripts\activate  # Windows
 
-# Установка зависимостей
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-### 2. Настройка через мастер
+### Configuration
+
+#### Option 1: Interactive Setup (Recommended)
 
 ```bash
-# Интерактивный мастер настройки
 python setup.py
 ```
 
-Мастер поможет:
-- Настроить Telegram бота
-- Выбрать LLM провайдера
-- Указать тему и стиль канала
-- Настроить расписание
-- Создать конфигурационные файлы
+The setup wizard will guide you through:
+- Telegram bot configuration
+- LLM provider selection
+- Channel topic and style settings
+- Schedule configuration
 
-### 3. Или ручная настройка
+#### Option 2: Manual Configuration
 
+1. Copy the environment template:
 ```bash
-# Копирование шаблона окружения
 cp .env.example .env
-
-# Редактирование .env
-# Заполните:
-# - TELEGRAM_BOT_TOKEN (от @BotFather)
-# - TELEGRAM_CHANNEL_ID (ваш канал)
-# - OPENAI_API_KEY (от platform.openai.com)
 ```
 
-### 4. Запуск
-
+2. Edit `.env` with your credentials:
 ```bash
-# Инициализация базы данных
-python main.py --init-db
+# Telegram
+TELEGRAM_BOT_TOKEN=123456789:ABC...
+TELEGRAM_CHANNEL_ID=@your_channel
 
-# Тестовый запуск (без публикации)
-python main.py --dry-run --once
+# LLM Provider
+OPENAI_API_KEY=sk-...
+# or
+ANTHROPIC_API_KEY=sk-ant-...
 
-# Запуск по расписанию
-python main.py
+# Admin notifications (optional)
+ADMIN_TELEGRAM_ID=123456789
 ```
 
-## Режимы публикации
-
-### Mode A: Bot API (Рекомендуется)
-
-**Как работает:**
-- Использует официальный Telegram Bot API
-- Бот должен быть администратором канала
-- Посты помечаются "via @botname"
-
-**Настройка:**
-1. Создайте бота через @BotFather
-2. Получите токен бота
-3. Добавьте бота в канал как администратора
-4. Выдайте право "Публикация сообщений"
-
-**Плюсы:**
-- Официальный API, нет риска бана
-- Простая настройка
-- Надежность
-
-**Минусы:**
-- Видна метка бота
-- Бот должен быть админом
-
-### Mode B: Telethon (Аккаунт пользователя)
-
-> **ВНИМАНИЕ:** Используйте ТОЛЬКО на отдельном аккаунте!
-
-**Как работает:**
-- Подключается как обычный пользователь
-- Посты выглядят как личные сообщения
-- Требуется авторизация по телефону
-
-**Настройка:**
-1. Получите API ID и Hash на my.telegram.org
-2. При первом запуске введите код из SMS
-3. Сессия сохраняется для повторных запусков
-
-**Плюсы:**
-- Посты выглядят как личные
-- Полный доступ к функциям
-
-**Минусы:**
-- Риск бана аккаунта
-- Нарушение ToS Telegram
-- Сложнее настройка
-
-## Конфигурация
-
-### config.yaml
-
+3. Configure `config.yaml`:
 ```yaml
 telegram:
   bot_token: "${TELEGRAM_BOT_TOKEN}"
-  channel_id: "@your_channel"
+  channel_id: "${TELEGRAM_CHANNEL_ID}"
   posting_mode: "bot"
 
 llm:
   provider: "openai"
   model: "gpt-4o"
   temperature: 0.85
+  max_tokens: 800
 
 channel:
-  topic: "AI технологии и автоматизация"
-  style: "Экспертно, но доступно"
-  language: "ru"
+  topic: "AI technologies and automation"
+  style: "Expert but accessible"
+  language: "en"
+  post_length_min: 200
+  post_length_max: 900
+  emojis_per_post: 3
+  hashtags_count: 2
 
 schedule:
   type: "fixed"
   fixed_times: ["09:30", "14:00", "20:00"]
-  timezone: "Europe/Moscow"
+  timezone: "Europe/London"
+
+safety:
+  max_daily_posts: 6
+  min_interval_minutes: 60
+  similarity_threshold: 0.85
 ```
 
-### Переменные окружения (.env)
+### Running
 
 ```bash
-# Telegram
-TELEGRAM_BOT_TOKEN=123456789:ABC...
-TELEGRAM_CHANNEL_ID=@your_channel
+# Initialize database (first time only)
+python main.py --init-db
 
-# LLM
-OPENAI_API_KEY=sk-...
+# Test run (no publishing)
+python main.py --dry-run --once
 
-# Admin (для уведомлений)
-ADMIN_TELEGRAM_ID=123456789
+# Single post and exit
+python main.py --once
+
+# Start scheduled posting
+python main.py
 ```
 
-## Развертывание
+## Publishing Modes
+
+### Mode A: Bot API (Recommended)
+
+The official Telegram Bot API approach.
+
+**Setup:**
+1. Create a bot via [@BotFather](https://t.me/botfather)
+2. Get the bot token
+3. Add the bot to your channel as administrator
+4. Grant "Post Messages" permission
+
+**Pros:**
+- Official API, no ban risk
+- Simple setup
+- Reliable
+
+**Cons:**
+- Posts show "via @botname"
+- Bot must be channel admin
+
+### Mode B: Telethon (User Account)
+
+Publishes through a user account session.
+
+> **Warning:** Use ONLY on a separate account! May violate Telegram ToS.
+
+**Setup:**
+1. Get API ID and Hash from [my.telegram.org](https://my.telegram.org)
+2. Enter SMS code on first run
+3. Session is saved for subsequent runs
+
+**Pros:**
+- Posts appear as personal messages
+- Full access to features
+
+**Cons:**
+- Risk of account ban
+- Violates Telegram ToS
+- More complex setup
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        ORCHESTRATOR                         │
+│              core/scheduler.py — APScheduler                │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ triggers pipeline
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    CONTENT PIPELINE                         │
+│                                                             │
+│  [1] SourceCollector   — RSS, HackerNews, ProductHunt      │
+│  [2] ContentFilter     — Dedup, relevance scoring          │
+│  [3] TopicSelector     — LLM-powered topic selection       │
+│  [4] PromptBuilder     — Style, history, examples          │
+│  [5] LLMGenerator      — Content generation                │
+│  [6] ContentValidator  — LLM meta-text detection           │
+│  [7] EditorReview      — AI editorial review               │
+│  [8] QualityChecker    — Length, emoji, markdown, dedup    │
+│  [9] Formatter         — Telegram MarkdownV2 formatting    │
+│ [10] MediaGenerator    — Image prompt creation             │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      PUBLISHER                              │
+│                                                             │
+│  BotPublisher         — python-telegram-bot (safe)          │
+│  TelethonPublisher    — User account session (advanced)     │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   MEMORY & LEARNING                         │
+│                                                             │
+│  SQLAlchemy DB        — Post history, topics, metrics       │
+│  ChromaDB             — Vector embeddings for dedup         │
+│  FeedbackLoop         — Learns from engagement              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Project Structure
+
+```
+tg_ai_poster/
+├── main.py                 # Entry point
+├── setup.py                # Interactive setup wizard
+├── config.yaml             # Main configuration
+│
+├── core/                   # Core modules
+│   ├── config.py           # Configuration management
+│   ├── logger.py           # Logging utilities
+│   ├── scheduler.py        # APScheduler integration
+│   └── events.py           # Event system
+│
+├── pipeline/               # Content generation pipeline
+│   ├── orchestrator.py     # Pipeline coordinator
+│   ├── source_collector.py # RSS, HN, ProductHunt
+│   ├── content_filter.py   # Relevance scoring
+│   ├── content_validator.py# LLM artifact detection
+│   ├── topic_selector.py   # LLM topic selection
+│   ├── prompt_builder.py   # Prompt construction
+│   ├── llm_generator.py    # LLM integration
+│   ├── editor_review.py    # AI editorial review
+│   ├── quality_checker.py  # Quality validation
+│   └── formatter.py        # MarkdownV2 formatting
+│
+├── publisher/              # Publishing modules
+│   ├── base.py             # Abstract publisher
+│   ├── bot_publisher.py    # Bot API implementation
+│   └── telethon_publisher.py
+│
+├── memory/                 # Data persistence
+│   ├── models.py           # SQLAlchemy models
+│   ├── database.py         # Database management
+│   ├── post_store.py       # Post operations
+│   ├── topic_store.py      # Topic operations
+│   ├── vector_store.py     # ChromaDB integration
+│   └── feedback_loop.py    # Learning system
+│
+├── llm/                    # LLM providers
+│   ├── base.py             # Abstract adapter
+│   ├── openai_adapter.py
+│   ├── claude_adapter.py
+│   ├── deepseek_adapter.py
+│   └── prompts/            # Prompt templates
+│
+├── tests/                  # Test suite
+│   ├── conftest.py         # Pytest fixtures
+│   ├── test_memory.py
+│   ├── test_pipeline.py
+│   └── test_content_validator.py
+│
+└── utils/                  # Utilities
+    ├── retry.py            # Retry logic
+    ├── rate_limiter.py     # Rate limiting
+    └── validators.py       # Content validation
+```
+
+## Content Validation
+
+The system includes strict validation to prevent LLM artifacts from appearing in published posts:
+
+**Automatically Rejected:**
+- LLM meta-text ("Here's your post", "I created this for you")
+- Thinking indicators ("Let me think", "As an AI")
+- Incomplete content (placeholders, TBD markers)
+- Generic questions at the start
+- JSON parsing errors
+
+**Quality Checks:**
+- Minimum/maximum length
+- Emoji count limits
+- Hashtag formatting
+- Telegram MarkdownV2 compliance
+- Semantic similarity to recent posts
+
+## Deployment
 
 ### Docker
 
 ```bash
-# Сборка
+# Build image
 docker build -t tg-ai-poster .
 
-# Запуск
+# Run container
 docker run -d \
   --env-file .env \
   -v $(pwd)/data:/app/data \
@@ -185,16 +308,13 @@ docker run -d \
 ### Docker Compose
 
 ```bash
-# Запуск с PostgreSQL и Redis
 docker-compose up -d
-
-# Просмотр логов
 docker-compose logs -f app
 ```
 
-### VPS (Systemd)
+### Systemd (VPS)
 
-1. Создайте сервис `/etc/systemd/system/tg-ai-poster.service`:
+Create `/etc/systemd/system/tg-ai-poster.service`:
 
 ```ini
 [Unit]
@@ -213,7 +333,7 @@ RestartSec=10
 WantedBy=multi-user.target
 ```
 
-2. Активация:
+Enable and start:
 
 ```bash
 sudo systemctl daemon-reload
@@ -221,156 +341,55 @@ sudo systemctl enable tg-ai-poster
 sudo systemctl start tg-ai-poster
 ```
 
-## Команды
+## CLI Commands
+
+| Command | Description |
+|---------|-------------|
+| `python main.py` | Start scheduled posting |
+| `python main.py --dry-run` | Test mode (no publishing) |
+| `python main.py --once` | Generate one post and exit |
+| `python main.py --init-db` | Initialize database |
+| `python main.py --debug` | Enable debug logging |
+
+## Testing
 
 ```bash
-python main.py              # Запуск по расписанию
-python main.py --dry-run    # Тестовый режим
-python main.py --once       # Один пост и выход
-python main.py --init-db    # Инициализация БД
-python main.py --debug      # Режим отладки
-```
-
-## Тестирование
-
-```bash
-# Запуск всех тестов
+# Run all tests
 pytest
 
-# Запуск с покрытием кода
+# Run with coverage
 pytest --cov=. --cov-report=html
 
-# Запуск конкретного теста
+# Run specific test file
 pytest tests/test_content_validator.py -v
+
+# Run with verbose output
+pytest -v
 ```
 
-## Архитектура
+## Security
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        ORCHESTRATOR                         │
-│              core/scheduler.py — APScheduler                │
-└──────────────────────────┬──────────────────────────────────┘
-                           │ triggers pipeline every N hours
-                           ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    CONTENT PIPELINE                         │
-│                                                             │
-│  [1] SourceCollector   — RSS, HackerNews, ProductHunt      │
-│         ↓                                                   │
-│  [2] ContentFilter     — dedup, relevance scoring          │
-│         ↓                                                   │
-│  [3] TopicSelector     — Agent picks best topic via LLM    │
-│         ↓                                                   │
-│  [4] PromptBuilder     — injects style, history, examples  │
-│         ↓                                                   │
-│  [5] LLMGenerator      — Agent-Editor writes draft         │
-│         ↓                                                   │
-│  [6] ContentValidator  — LLM meta-text detection           │
-│         ↓                                                   │
-│  [7] AgentCritic       — Agent-Critic improves draft       │
-│         ↓                                                   │
-│  [8] QualityChecker    — length, emoji, markdown, dedup    │
-│         ↓                                                   │
-│  [9] Formatter         — Telegram MarkdownV2 formatting    │
-│         ↓                                                   │
-│ [10] ApprovalGate      — auto or manual (Telegram DM)      │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────┐
-│                      PUBLISHER                              │
-│                                                             │
-│  Mode A: BotPublisher    — python-telegram-bot              │
-│  Mode B: TelethonPublisher — user account session           │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   MEMORY & LEARNING                         │
-│                                                             │
-│  SQLAlchemy DB  — post history, topics, engagement          │
-│  ChromaDB       — vector embeddings for semantic dedup      │
-│  FeedbackLoop   — learns from reactions, updates style      │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Структура проекта
-
-```
-tg_ai_poster/
-├── main.py              # Точка входа
-├── setup.py             # Мастер настройки
-├── config.yaml          # Конфигурация
-│
-├── core/                # Ядро
-│   ├── config.py        # Загрузка настроек
-│   ├── logger.py        # Логирование
-│   └── scheduler.py     # Планировщик
-│
-├── pipeline/            # Pipeline генерации
-│   ├── orchestrator.py  # Координатор
-│   ├── source_collector.py  # RSS, HN, ProductHunt
-│   ├── content_filter.py
-│   ├── content_validator.py # Валидация LLM контента
-│   ├── topic_selector.py
-│   ├── prompt_builder.py
-│   ├── llm_generator.py
-│   ├── agent_critic.py  # AI-критик для улучшения
-│   ├── quality_checker.py
-│   └── formatter.py
-│
-├── publisher/           # Публикация
-│   ├── base.py          # Абстрактный класс
-│   ├── bot_publisher.py
-│   └── telethon_publisher.py
-│
-├── memory/              # Хранение
-│   ├── models.py        # SQLAlchemy модели
-│   ├── database.py
-│   ├── post_store.py
-│   ├── topic_store.py
-│   ├── vector_store.py  # ChromaDB дедупликация
-│   └── feedback_loop.py # Обучение на метриках
-│
-├── llm/                 # LLM провайдеры
-│   ├── base.py          # Абстрактный адаптер
-│   ├── openai_adapter.py
-│   ├── claude_adapter.py
-│   ├── deepseek_adapter.py
-│   └── prompts/
-│       ├── system_prompt.txt
-│       ├── post_generator.txt
-│       ├── topic_selector.txt
-│       ├── agent_critic.txt
-│       └── style_analyzer.txt
-│
-├── tests/               # Тесты
-│   ├── conftest.py      # Фикстуры pytest
-│   ├── test_memory.py
-│   └── test_content_validator.py
-│
-└── utils/               # Утилиты
-    ├── retry.py
-    ├── rate_limiter.py
-    └── validators.py
-```
-
-## Безопасность
-
-1. **Никогда не коммитьте .env файл**
-2. Используйте Bot API вместо Telethon для продакшена
-3. Ограничьте daily_posts для избежания спама
-4. Настройте manual_approval для контроля контента
+- **Never commit `.env` file** - Use `.env.example` as template
+- Use Bot API mode for production
+- Set reasonable `max_daily_posts` limits
+- Enable `manual_approval` for sensitive content
+- Keep API keys secure and rotate periodically
 
 ## Contributing
 
-1. Fork репозитория
-2. Создайте ветку для фичи (`git checkout -b feature/amazing-feature`)
-3. Закоммитьте изменения (`git commit -m 'Add amazing feature'`)
-4. Запушьте в ветку (`git push origin feature/amazing-feature`)
-5. Откройте Pull Request
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## Лицензия
+## License
 
-MIT License - см. [LICENSE](LICENSE) файл.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- [python-telegram-bot](https://github.com/python-telegram-bot/python-telegram-bot)
+- [Telethon](https://github.com/LonamiWebs/Telethon)
+- [ChromaDB](https://www.trychroma.com/)
+- [APScheduler](https://github.com/agronholm/apscheduler)
