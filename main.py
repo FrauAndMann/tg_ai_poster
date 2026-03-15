@@ -9,6 +9,8 @@ Usage:
     python main.py --dry-run    # Run without publishing
     python main.py --once       # Run pipeline once and exit
     python main.py --init-db    # Initialize database and exit
+    python main.py --backup     # Create backup and exit
+    python main.py --restore backup_file.tar.gz  # Restore from backup
 """
 
 from __future__ import annotations
@@ -27,6 +29,8 @@ from memory.database import Database, init_database, close_database, get_databas
 from pipeline.orchestrator import PipelineOrchestrator, PipelineResult
 from publisher import get_publisher
 from publisher.base import BasePublisher
+from backup.backup_manager import BackupManager
+from backup.restore_manager import RestoreManager
 
 # Global state
 _shutdown_event: Optional[asyncio.Event] = None
@@ -84,10 +88,108 @@ Examples:
     )
 
     parser.add_argument(
+        "--backup",
+        "-b",
+        action="store_true",
+        help="Create backup and exit",
+    )
+
+    parser.add_argument(
+        "--restore",
+        "-r",
+        type=str,
+        help="Restore from backup file",
+    )
+
+    return parser.parse_args()
+
+
+async def create_backup(settings: Settings) -> str:
+    """Create backup using BackupManager."""
+    from backup.backup_manager import BackupManager
+
+    backup_manager = BackupManager(settings)
+    backup_file = await backup_manager.create_backup()
+    return backup_file
+
+
+async def restore_backup(settings: Settings, backup_path: str) -> bool:
+    """Restore from backup using RestoreManager."""
+    from backup.restore_manager import RestoreManager
+
+    restore_manager = RestoreManager(settings)
+    result = await restore_manager.restore(backup_path)
+    return result.get("success", False)
+
+
+def parse_args() -> argparse.Namespace:
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description="TG AI Poster - Autonomous Telegram posting system",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+    python main.py                    Start scheduled posting
+    python main.py --dry-run          Test without publishing
+    python main.py --once             Run once and exit
+    python main.py --backup           Create backup
+    python main.py --restore file.tar.gz  Restore from backup
+        """,
+    )
+
+    parser.add_argument(
+        "--config",
+        "-c",
+        type=str,
+        default="config.yaml",
+        help="Path to configuration file (default: config.yaml)",
+    )
+
+    parser.add_argument(
+        "--dry-run",
+        "-n",
+        action="store_true",
+        help="Run without actually publishing posts",
+    )
+
+    parser.add_argument(
+        "--once",
+        action="store_true",
+        help="Run pipeline once and exit (no scheduling)",
+    )
+
+    parser.add_argument(
+        "--init-db",
+        action="store_true",
+        help="Initialize database tables and exit",
+    )
+
+    parser.add_argument(
+        "--debug",
+        "-d",
+        action="store_true",
+        help="Enable debug logging",
+    )
+
+    parser.add_argument(
+        "--backup",
+        "-b",
+        action="store_true",
+        help="Create backup and exit",
+    )
+
+    parser.add_argument(
+        "--restore",
+        "-r",
+        type=str,
+        help="Restore from backup file",
+    )
+
+    parser.add_argument(
         "--version",
         "-v",
         action="version",
-        version="TG AI Poster v1.0.0",
+        version="TG AI Poster v2.0.0",
     )
 
     return parser.parse_args()
@@ -297,6 +399,34 @@ async def async_main(args: argparse.Namespace) -> int:
                 echo=settings.debug,
             )
             logger.info("Database initialized successfully")
+            return 0
+
+        # Create backup
+        if args.backup:
+            logger.info("Creating backup...")
+            try:
+                backup_file = await create_backup(settings)
+                backup_manager = BackupManager(settings)
+                size_mb = backup_manager.get_backup_size(backup_file)
+                logger.info(f"Backup created: {backup_file} ({size_mb:.2f} MB)")
+            except Exception as e:
+                logger.error(f"Backup failed: {e}")
+                return 1
+            return 0
+
+        # Restore from backup
+        if args.restore:
+            logger.info(f"Restoring from backup: {args.restore}")
+            try:
+                success = await restore_backup(settings, args.restore)
+                if success:
+                    logger.info("Restore completed successfully")
+                else:
+                    logger.error("Restore failed")
+                    return 1
+            except Exception as e:
+                logger.error(f"Restore failed: {e}")
+                return 1
             return 0
 
         # Full initialization

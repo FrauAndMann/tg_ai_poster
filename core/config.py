@@ -266,6 +266,43 @@ class AdminConfig(BaseSettings):
     )
 
 
+class AdminBotConfig(BaseSettings):
+    """Admin Bot configuration."""
+
+    model_config = SettingsConfigDict(env_prefix="ADMIN_BOT_", extra="ignore")
+
+    enabled: bool = Field(default=False, description="Enable admin bot")
+    bot_token: str = Field(default="", description="Admin bot token")
+    authorized_users: list[int] = Field(
+        default_factory=list,
+        description="List of authorized Telegram user IDs"
+    )
+
+
+class CircuitBreakerConfig(BaseSettings):
+    """Circuit Breaker configuration."""
+
+    model_config = SettingsConfigDict(env_prefix="CIRCUIT_BREAKER_", extra="ignore")
+
+
+    llm_failure_threshold: int = Field(default=5, description="LLM failures before circuit opens")
+    llm_recovery_timeout: float = Field(default=60.0, description="LLM recovery timeout in seconds")
+    telegram_failure_threshold: int = Field(default=10, description="Telegram failures before circuit opens")
+    telegram_recovery_timeout: float = Field(default=30.0, description="Telegram recovery timeout in seconds")
+    sources_failure_threshold: int = Field(default=3, description="Source failures before circuit opens")
+    sources_recovery_timeout: float = Field(default=120.0, description="Sources recovery timeout in seconds")
+
+
+class BackupConfig(BaseSettings):
+    """Backup configuration."""
+
+    model_config = SettingsConfigDict(env_prefix="BACKUP_", extra="ignore")
+
+    enabled: bool = Field(default=True, description="Enable automatic backups")
+    backup_dir: str = Field(default="./backups", description="Backup directory path")
+    include_chroma: bool = Field(default=True, description="Include ChromaDB in backups")
+
+
 class MediaConfig(BaseSettings):
     """Media provider configuration."""
 
@@ -311,6 +348,9 @@ class Settings(BaseSettings):
     redis: RedisConfig = Field(default_factory=RedisConfig)
     admin: AdminConfig = Field(default_factory=AdminConfig)
     media: MediaConfig = Field(default_factory=MediaConfig)
+    admin_bot: AdminBotConfig = Field(default_factory=AdminBotConfig)
+    circuit_breaker: CircuitBreakerConfig = Field(default_factory=CircuitBreakerConfig)
+    backup: BackupConfig = Field(default_factory=BackupConfig)
 
     @classmethod
     def load_from_yaml(cls, config_path: str | Path = "config.yaml") -> dict[str, Any]:
@@ -401,10 +441,18 @@ class Settings(BaseSettings):
             "admin_telegram_id": ("admin", "telegram_id"),
             "admin_notify_on_error": ("admin", "notify_on_error"),
             "admin_notify_on_post": ("admin", "notify_on_post"),
+            "admin_bot_enabled": ("admin_bot", "enabled"),
+            "admin_bot_token": ("admin_bot", "bot_token"),
+            "admin_bot_authorized_users": ("admin_bot", "authorized_users"),
+            "circuit_breaker_llm_failure_threshold": ("circuit_breaker", "llm_failure_threshold"),
+            "circuit_breaker_llm_recovery_timeout": ("circuit_breaker", "llm_recovery_timeout"),
+            "backup_enabled": ("backup", "enabled"),
+            "backup_schedule": ("backup", "schedule"),
+            "backup_backup_dir": ("backup", "backup_dir"),
         }
 
         # Process nested config from YAML (primary source)
-        for section in ["telegram", "telethon", "llm", "channel", "schedule", "sources", "safety", "database", "redis", "admin"]:
+        for section in ["telegram", "telethon", "llm", "channel", "schedule", "sources", "safety", "database", "redis", "admin", "admin_bot", "circuit_breaker", "backup"]:
             if section in yaml_config:
                 if section not in kwargs:
                     kwargs[section] = {}

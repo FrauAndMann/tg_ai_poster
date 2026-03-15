@@ -90,7 +90,7 @@ The content generation pipeline is orchestrated by `PipelineOrchestrator` (`pipe
 - **`llm/`** - LLM adapters with common interface (`base.py`). Implementations: OpenAI, Claude, Claude CLI (for GLM-5), DeepSeek, GLM
 - **`memory/`** - SQLAlchemy models (`models.py`), database (`database.py`), post/topic stores, vector store (ChromaDB), feedback loop
 - **`publisher/`** - Abstract publisher (`base.py`), Bot API (`bot_publisher.py`), Telethon publisher
-- **`pipeline/`** - All content generation stages including analytics (`analytics.py`)
+- **`pipeline/`** - All content generation stages, A/B testing (`ab_test_manager.py`), draft management (`draft_manager.py`)
 
 ### Configuration
 
@@ -127,10 +127,37 @@ Configured in `config.yaml` under `schedule.type`:
 - `interval` - Post every N hours
 - `random` - Random times within a time window
 
+## Phase 1 Features
+
+### A/B Testing (`pipeline/ab_test_manager.py`)
+- Create experiments with two post variants
+- Track impressions and engagement per variant
+- Statistical analysis with confidence thresholds
+- Config: `ab_testing.enabled`, `ab_testing.min_sample_size`, `ab_testing.confidence_threshold`
+
+### Draft System (`pipeline/draft_manager.py`)
+- Version history for posts (`PostVersion` model)
+- Create, list, restore versions
+- Config: `draft.max_versions`, `draft.auto_cleanup_days`
+
+### Approval Workflow
+- Post status lifecycle: draft → pending_review → approved → scheduled → published
+- Auto-approve based on quality/verification/editor scores
+- Config: `approval.auto_approve_enabled`, `approval.min_quality_score`
+
+### Quick Wins (Implemented)
+- Health monitoring (`health.check_on_startup`, `health.check_before_post`)
+- Audit logging (`audit.enabled`, `audit.retention_days`)
+- Weekly reports (`reporting.enabled`, `reporting.schedule`)
+- Post templates (`templates.enabled`, `templates.path`)
+- Poll generation (`polls.enabled`, `polls.probability`)
+
 ## Database Models
 
 Key SQLAlchemy models in `memory/models.py`:
-- **Post** - Published content with engagement metrics, quality scores, source tracking, media prompts
+- **Post** - Published content with engagement metrics, quality scores, source tracking, media prompts, A/B testing fields
+- **PostVersion** - Version history snapshots
+- **ABExperiment** / **ABVariant** - A/B testing configuration
 - **Topic** - Topic tracking for deduplication
 - **Source** - RSS/API source management
 - **StyleProfile** - Learned writing style characteristics
@@ -142,6 +169,7 @@ Key SQLAlchemy models in `memory/models.py`:
 - `config.yaml` - Main configuration file
 - `.env.example` - Template for environment variables
 - `data/tg_poster.db` - SQLite database (default)
+- `docs/ROADMAP.md` - Full feature roadmap (50 planned features)
 
 ## Post Structure (v2.0)
 
@@ -180,3 +208,4 @@ Generated posts follow this structure:
 - Rate limiting and retry logic is handled via `tenacity` library
 - Posts require minimum 2 verified sources for generation
 - Quality checker runs 50 validation rules before publishing
+- Source URL deduplication prevents reposting from same URL

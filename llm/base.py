@@ -2,13 +2,22 @@
 Base LLM adapter interface.
 
 Defines the abstract interface that all LLM adapters must implement.
+Includes circuit breaker integration for resilience.
 """
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Optional
+
+from utils.circuit_breaker import CircuitBreaker, CircuitOpenError, CircuitBreakerRegistry
+from utils.exceptions import (
+    LLMException,
+    LLMRateLimitError,
+    LLMServiceUnavailableError,
+    LLMAuthenticationError,
+)
 
 
 @dataclass
@@ -70,7 +79,13 @@ class BaseLLMAdapter(ABC):
 
     All LLM providers must implement this interface to ensure
     consistent behavior across different providers.
+
+    Includes circuit breaker for resilience against service failures.
     """
+
+    # Default circuit breaker configuration
+    DEFAULT_FAILURE_THRESHOLD = 5
+    DEFAULT_RECOVERY_TIMEOUT = 60.0
 
     def __init__(
         self,
@@ -79,6 +94,9 @@ class BaseLLMAdapter(ABC):
         base_url: Optional[str] = None,
         max_tokens: int = 800,
         temperature: float = 0.85,
+        circuit_breaker_enabled: bool = True,
+        circuit_breaker_threshold: int = 5,
+        circuit_breaker_timeout: float = 60.0,
         **kwargs,
     ) -> None:
         """
@@ -90,6 +108,9 @@ class BaseLLMAdapter(ABC):
             base_url: Optional base URL for API
             max_tokens: Maximum tokens in response
             temperature: Sampling temperature
+            circuit_breaker_enabled: Enable circuit breaker protection
+            circuit_breaker_threshold: Failures before circuit opens
+            circuit_breaker_timeout: Recovery timeout in seconds
             **kwargs: Additional provider-specific options
         """
         self.api_key = api_key
@@ -98,6 +119,20 @@ class BaseLLMAdapter(ABC):
         self.max_tokens = max_tokens
         self.temperature = temperature
         self.extra_options = kwargs
+
+        # Initialize circuit breaker
+        self._circuit_breaker_enabled = circuit_breaker_enabled
+        circuit_name = f"llm_{self.__class__.__name__.replace('Adapter', '').lower()}"
+
+        if circuit_breaker_enabled:
+            self._circuit_breaker = CircuitBreakerRegistry.get_or_create(
+                name=circuit_name,
+                failure_threshold=circuit_breaker_threshold,
+                recovery_timeout=circuit_breaker_timeout,
+                exceptions=(LLMException, ConnectionError, TimeoutError),
+            )
+        else:
+            self._circuit_breaker = None
 
     @abstractmethod
     async def generate(
@@ -147,6 +182,8 @@ class BaseLLMAdapter(ABC):
         """
         Generate with automatic retry on failure.
 
+        Uses circuit breaker if enabled to prevent cascade failures.
+
         Args:
             prompt: User prompt
             system_prompt: Optional system prompt
@@ -157,6 +194,7 @@ class BaseLLMAdapter(ABC):
             LLMResponse: Generated response
 
         Raises:
+            CircuitOpenError: If circuit breaker is open
             Exception: If all retries fail
         """
         import asyncio
@@ -168,7 +206,19 @@ class BaseLLMAdapter(ABC):
         last_error = None
         for attempt in range(max_retries):
             try:
-                return await self.generate(prompt, system_prompt, **kwargs)
+                # Use circuit breaker if enabled
+                if self._circuit_breaker_enabled and self._circuit_breaker:
+                    return await self._circuit_breaker.call(
+                        self.generate, prompt, system_prompt, **kwargs
+                    )
+                else:
+                    return await self.generate(prompt, system_prompt, **kwargs)
+
+            except CircuitOpenError as e:
+                # Don't retry if circuit is open
+                logger.warning(f"Circuit breaker open for LLM: {e}")
+                raise
+
             except Exception as e:
                 last_error = e
                 wait_time = 2**attempt  # Exponential backoff
@@ -217,4 +267,21 @@ class BaseLLMAdapter(ABC):
             "model": self.model,
             "max_tokens": self.max_tokens,
             "temperature": self.temperature,
+            "circuit_breaker_enabled": self._circuit_breaker_enabled,
         }
+
+    def get_circuit_breaker_status(self) -> Optional[dict[str, Any]]:
+        """
+        Get circuit breaker status.
+
+        Returns:
+            dict | None: Circuit breaker status or None if disabled
+        """
+        if self._circuit_breaker:
+            return self._circuit_breaker.get_status()
+        return None
+
+    def reset_circuit_breaker(self) -> None:
+        """Reset circuit breaker to closed state."""
+        if self._circuit_breaker:
+            self._circuit_breaker.reset()
