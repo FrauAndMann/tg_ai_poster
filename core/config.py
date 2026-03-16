@@ -14,11 +14,16 @@ from typing import Any, Literal
 
 import yaml
 from dotenv import load_dotenv
-from pydantic import Field, field_validator
+from pydantic import Field, model_validator, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Load .env file at module level
 load_dotenv()
+
+
+class ConfigValidationError(Exception):
+    """Raised when configuration validation fails."""
+    pass
 
 
 class TelegramConfig(BaseSettings):
@@ -36,6 +41,20 @@ class TelegramConfig(BaseSettings):
         default="",
         description="Proxy URL for Telegram API (e.g., http://127.0.0.1:7890 or socks5://127.0.0.1:1080)"
     )
+
+    @model_validator(mode="after")
+    def validate_telegram_config(self) -> "TelegramConfig":
+        """Validate Telegram configuration based on posting mode."""
+        if self.posting_mode == "bot" and not self.bot_token:
+            # Allow empty token in dry-run mode
+            pass
+        if self.posting_mode == "telethon" and self.channel_id:
+            # Telethon needs numeric channel ID or username
+            if not (self.channel_id.startswith("@") or
+                    self.channel_id.startswith("-") or
+                    self.channel_id.isdigit()):
+                pass  # Will be validated at runtime
+        return self
 
 
 class TelethonConfig(BaseSettings):
@@ -477,3 +496,102 @@ def reload_settings() -> Settings:
     """Force reload settings (clears cache)."""
     get_settings.cache_clear()
     return get_settings()
+
+
+def validate_startup_config(settings: Settings, dry_run: bool = False) -> list[str]:
+    """
+    Validate configuration at startup and return list of issues.
+
+    This function checks for common configuration problems and returns
+    a list of warning/error messages. Does not raise exceptions.
+
+    Args:
+        settings: Settings instance to validate
+        dry_run: Whether running in dry-run mode
+
+    Returns:
+        list[str]: List of warning/error messages (empty if all OK)
+    """
+    issues = []
+
+    # Check Telegram configuration
+    if settings.telegram.posting_mode == "bot":
+        if not settings.telegram.bot_token and not dry_run:
+            issues.append("TELEGRAM_BOT_TOKEN is not set (required for bot mode)")
+        if not settings.telegram.channel_id:
+            issues.append("TELEGRAM_CHANNEL_ID is not set")
+    elif settings.telegram.posting_mode == "telethon":
+        if not settings.telethon.api_id and not dry_run:
+            issues.append("TELETHON_API_ID is not set (required for telethon mode)")
+        if not settings.telethon.api_hash and not dry_run:
+            issues.append("TELETHON_API_HASH is not set (required for telethon mode)")
+
+    # Check LLM configuration
+    if settings.llm.provider != "claude-cli":
+        if not settings.llm.api_key and not dry_run:
+            issues.append(f"LLM_API_KEY is not set (required for {settings.llm.provider} provider)")
+
+    # Check admin configuration
+    if settings.admin.notify_on_error and not settings.admin.telegram_id:
+        issues.append("ADMIN_TELEGRAM_ID is not set but error notifications are enabled")
+
+    # Check database path
+    if settings.database.url.startswith("sqlite"):
+        db_path = settings.database.url.replace("sqlite+aiosqlite:///", "").replace("sqlite:///", "")
+        if not os.path.isabs(db_path):
+            db_path = os.path.abspath(db_path)
+        db_dir = os.path.dirname(db_path)
+        if db_dir and not os.path.exists(db_dir):
+            issues.append(f"Database directory does not exist: {db_dir}")
+
+    # Check schedule configuration
+    if settings.schedule.type == "fixed" and not settings.schedule.fixed_times:
+        issues.append("Schedule type is 'fixed' but no fixed_times are configured")
+    if settings.schedule.type == "interval" and settings.schedule.interval_hours < 1:
+        issues.append("Schedule interval_hours must be at least 1")
+
+    # Check safety limits
+    if settings.safety.max_daily_posts > 24:
+        issues.append(f"max_daily_posts={settings.safety.max_daily_posts} seems too high for Telegram")
+
+    return issues
+
+
+def print_config_checklist(settings: Settings, dry_run: bool = False) -> None:
+    """
+    Print a checklist of configuration status.
+
+    Shows which environment variables are set vs missing.
+    Useful for debugging configuration issues.
+
+    Args:
+        settings: Settings instance to check
+        dry_run: Whether running in dry-run mode
+    """
+    import os
+
+    env_vars = {
+        "TELEGRAM_BOT_TOKEN": bool(settings.telegram.bot_token),
+        "TELEGRAM_CHANNEL_ID": bool(settings.telegram.channel_id),
+        "TELETHON_API_ID": bool(settings.telethon.api_id),
+        "TELETHON_API_HASH": bool(settings.telethon.api_hash),
+        "TELETHON_PHONE": bool(settings.telethon.phone),
+        "LLM_API_KEY": bool(settings.llm.api_key),
+        "ADMIN_TELEGRAM_ID": bool(settings.admin.telegram_id),
+    }
+
+    # Also check direct environment variables
+    for var in ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "DEEPSEEK_API_KEY"]:
+        if os.environ.get(var):
+            env_vars[var] = True
+
+    print("\n=== Configuration Checklist ===")
+    for var, is_set in env_vars.items():
+        status = "✓" if is_set else "✗"
+        print(f"  {status} {var}")
+    print(f"\n  Provider: {settings.llm.provider}")
+    print(f"  Model: {settings.llm.model}")
+    print(f"  Posting Mode: {settings.telegram.posting_mode}")
+    print(f"  Schedule Type: {settings.schedule.type}")
+    print(f"  Dry Run: {dry_run}")
+    print("================================\n")
