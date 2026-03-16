@@ -232,7 +232,8 @@ class ContextBuilder:
             # Remove www. prefix
             if domain.startswith("www."):
                 domain = domain[4:]
-        except Exception:
+        except (ValueError, AttributeError) as e:
+            logger.debug("Failed to parse URL for domain: %s", e)
             return 3, 50.0
 
         for tier_name, tier_data in self.domain_config.get("tiers", {}).items():

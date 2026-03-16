@@ -69,7 +69,7 @@ class PostVersion(Base):
     change_reason: Mapped[str | None] = mapped_column(String(500))
 
     # Relationship
-    post: Mapped["Post"] = relationship("Post", back_populates="versions")
+    post: Mapped["Post"] = relationship("Post", back_populates="versions", foreign_keys=[post_id])
 
     __table_args__ = (
         Index("ix_post_versions_post_id", "post_id"),
@@ -269,7 +269,7 @@ class Post(Base):
 
     # Relationships
     versions: Mapped[list["PostVersion"]] = relationship(
-        back_populates="post", order_by="PostVersion.version_number"
+        back_populates="post", order_by="PostVersion.version_number", foreign_keys="[PostVersion.post_id]"
     )
 
     # Timestamps

@@ -200,7 +200,8 @@ class TelethonPublisher(BasePublisher):
         try:
             await self._client.get_me()
             return True
-        except Exception:
+        except Exception as e:
+            logger.debug("Telethon health check failed: %s", e)
             return False
 
     def _get_channel_peer(self):

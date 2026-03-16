@@ -348,7 +348,8 @@ class VectorStore:
 
         try:
             return self._collection.count()
-        except Exception:
+        except Exception as e:
+            logger.warning("Failed to get collection count: %s", e)
             return 0
 
     async def clear_all(self) -> bool:

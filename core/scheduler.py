@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Callable, Optional
 
 from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED, JobEvent
+from apscheduler.exceptions import JobLookupError
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
@@ -178,8 +179,11 @@ class Scheduler:
         # Remove existing random job if any
         try:
             self.scheduler.remove_job("post_job_random")
-        except Exception:
-            pass
+        except JobLookupError:
+            # Job doesn't exist, which is fine
+            logger.debug("No existing random job to remove")
+        except Exception as e:
+            logger.warning("Unexpected error removing random job: %s", e)
 
         # Add new job
         self.scheduler.add_job(

@@ -184,7 +184,8 @@ class SourceVerifier:
             if domain.startswith("www."):
                 domain = domain[4:]
             return domain
-        except Exception:
+        except (ValueError, AttributeError) as e:
+            logger.debug("Failed to extract domain from URL: %s", e)
             return ""
     
     def _get_trust_score(self, url: str) -> float:

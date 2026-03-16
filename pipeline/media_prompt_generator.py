@@ -179,7 +179,7 @@ class MediaPromptGenerator:
         return not any(term in content.lower() for term in face_terms)
 
 
-    async generate_media_prompt(
+    async def generate_media_prompt(
         self,
         post_content: str,
         topic: str,
@@ -231,11 +231,15 @@ Example: "cinematic futuristic technology illustration, neural network nodes con
             if len(prompt_text) > 500:
                 prompt_text = prompt_text[:500]
 
+            exclusions = self.default_exclusions.copy()
+            if self._should_exclude_faces(post_content):
+                exclusions.extend(self.face_exclusions)
+
             return MediaPromptResult(
                 prompt=prompt_text,
                 visual_concept=self._extract_visual_concept(post_content, topic),
                 style_keywords=["cinematic", "futuristic", "technology"],
-                exclusions=self.default_exclusions + (self._should_exclude_faces(post_content) * self.face_exclusions),
+                exclusions=exclusions,
                 confidence=0.0,
             )
 
