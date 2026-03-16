@@ -24,9 +24,9 @@ class PostType(Enum):
     TOOL_ROUNDUP = "tool_roundup"
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class PostTypeConfig:
-    """Configuration for each post type."""
+    """Configuration for each post type. Immutable and memory-efficient."""
 
     min_length: int
     max_length: int
@@ -73,9 +73,9 @@ POST_TYPE_CONFIGS: dict[PostType, PostTypeConfig] = {
 }
 
 
-@dataclass
+@dataclass(slots=True)
 class PostContent:
-    """Content components of a post."""
+    """Content components of a post. Memory-optimized with __slots__."""
 
     title: str
     body: str
@@ -86,9 +86,9 @@ class PostContent:
     hashtags: list[str] = field(default_factory=list)
 
 
-@dataclass
+@dataclass(slots=True)
 class PostMetadata:
-    """Metadata for a generated post."""
+    """Metadata for a generated post. Memory-optimized with __slots__."""
 
     created_at: datetime = field(default_factory=datetime.now)
     llm_model: str = ""
@@ -96,12 +96,13 @@ class PostMetadata:
     tokens_used: int = 0
 
 
-@dataclass
+@dataclass(slots=True)
 class Post:
     """
     Post aggregate root.
 
     Represents a complete post with all its components.
+    Memory-optimized with __slots__.
     """
 
     topic: str

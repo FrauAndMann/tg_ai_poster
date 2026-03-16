@@ -20,7 +20,7 @@ from utils.exceptions import (
 )
 
 
-@dataclass
+@dataclass(slots=True)
 class LLMResponse:
     """
     Standardized response from LLM providers.
@@ -31,6 +31,8 @@ class LLMResponse:
         usage: Token usage statistics
         finish_reason: Why generation finished
         raw_response: Original response from provider
+
+    Memory-optimized with __slots__ for high-frequency usage.
     """
 
     content: str
@@ -55,7 +57,7 @@ class LLMResponse:
         return self.usage.get("completion_tokens", 0)
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class Message:
     """
     Chat message structure.
@@ -63,6 +65,8 @@ class Message:
     Attributes:
         role: Message role (system, user, assistant)
         content: Message content
+
+    Immutable and memory-efficient with __slots__.
     """
 
     role: str  # system, user, assistant

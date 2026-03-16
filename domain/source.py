@@ -9,12 +9,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Source:
     """
     Source value object.
 
     Represents a content source with its credibility score.
+    Immutable and memory-efficient with __slots__.
     """
 
     name: str

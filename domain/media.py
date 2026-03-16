@@ -10,12 +10,13 @@ from dataclasses import dataclass
 from typing import Optional
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Media:
     """
     Media value object.
 
     Represents an image attached to a post with attribution.
+    Immutable and memory-efficient with __slots__.
     """
 
     url: str
