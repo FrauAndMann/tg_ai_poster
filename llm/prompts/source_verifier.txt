@@ -31,22 +31,22 @@ VERIFICATION TASK:
 4. Rate overall credibility
 
 RESPOND IN JSON FORMAT:
-{
+{{
   "verified": true/false,
   "credibility_score": 0-100,
   "primary_source": "name of most authoritative source",
   "cross_reference_count": number of sources confirming,
   "sources": [
-    {
+    {{
       "name": "source name",
       "url": "url",
       "trust_level": "high/medium/low",
       "is_primary": true/false
-    }
+    }}
   ],
   "inconsistencies": ["list of any conflicting information"],
   "recommendation": "publish/needs_review/reject",
   "reasoning": "brief explanation"
-}
+}}
 
 Be strict - if only one low-trust source covers the story, flag for review.

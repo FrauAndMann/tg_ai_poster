@@ -39,7 +39,7 @@ MANDATORY ADDITION:
 Add at least one original observation or insight that is not present in the source material.
 
 Return the corrected post in the SAME JSON schema:
-{
+{{
   "title": "improved title",
   "hook": "improved hook",
   "body": "improved body",
@@ -53,6 +53,6 @@ Return the corrected post in the SAME JSON schema:
   "needs_review": true/false,
   "post_type": "unchanged or corrected",
   "editor_changes": ["list of changes made"]
-}
+}}
 
 If the post is already excellent with no improvements needed, return it unchanged with "editor_changes": ["No changes needed - post passed editorial review"]

@@ -29,7 +29,7 @@ INSTRUCTIONS:
 16. Hashtags must include: one company-specific, one technology, one general AI/ML
 17. Choose post_type: "breaking" (urgent news), "deep_dive" (analysis), "tool_roundup" (product comparison), or "analysis" (trend discussion)
 
-CRITICAL: Your response MUST be ONLY a valid JSON object. No markdown, no code fences, no explanation before or after. Start your response with { and end with }.
+CRITICAL: Your response MUST be ONLY a valid JSON object. No markdown, no code fences, no explanation before or after. Start your response with {{ and end with }}.
 
 JSON SCHEMA:
 {{

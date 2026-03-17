@@ -197,11 +197,13 @@ class PromptBuilder:
             "Language: {language}",
         )
 
+        # Escape curly braces in source_context to prevent str.format() errors
+        safe_source = (source_context or "No additional context provided. Use your knowledge.").replace("{", "{{").replace("}", "}}")
+
         return template.format(
             topic=topic,
             channel_topic=self.channel_topic,
-            source_context=source_context
-            or "No additional context provided. Use your knowledge.",
+            source_context=safe_source,
             post_length_min=self.post_length_min,
             post_length_max=self.post_length_max,
             emojis_per_post=self.emojis_per_post,

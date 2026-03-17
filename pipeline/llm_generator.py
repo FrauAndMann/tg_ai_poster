@@ -133,11 +133,14 @@ class LLMGenerator:
         )
 
         try:
+            logger.debug(f"Calling LLM with prompt length: {len(user_prompt)}")
             response = await self.llm.generate(
                 prompt=user_prompt,
                 system_prompt=system_prompt,
                 temperature=temperature,
             )
+            logger.debug(f"LLM response received: {len(response.content)} chars")
+            logger.debug(f"LLM response preview: {response.content[:300]}...")
 
             generation_time = time.time() - start_time
 
@@ -210,6 +213,9 @@ class LLMGenerator:
                 )
 
                 post.attempts = attempt
+
+                # Log LLM response for debugging
+                logger.debug(f"LLM response (attempt {attempt}): {post.content[:500]}...")
 
                 # Validate if function provided
                 if validation_func:
