@@ -62,3 +62,7 @@ pytest-cov>=4.1.0
 # Type checking and linting
 mypy>=1.7.1
 ruff>=0.1.8
+
+
+# Grammar and spelling
+language-tool-python>=2.7.1

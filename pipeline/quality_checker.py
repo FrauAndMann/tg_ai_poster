@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Optional
 from core.logger import get_logger
 from llm.base import BaseLLMAdapter
 from memory.post_store import PostStore
+from pipeline.grammar_checker import get_grammar_checker
 
 if TYPE_CHECKING:
     from memory.vector_store import VectorStore
@@ -386,6 +387,28 @@ class QualityChecker:
             issues.append(issue)
             suggestions.append("Make the content more unique")
             score -= 25
+
+        # Grammar and spelling check
+        try:
+            grammar_checker = get_grammar_checker()
+            grammar_report = grammar_checker.check(text_content, check_grammar=True, check_readability=True)
+
+            if grammar_report.error_count > 0:
+                # Add grammar errors (limit to 3 for readability)
+                for gi in grammar_report.issues[:3]:
+                    if gi.severity == "error":
+                        issues.append(f"Грамматика: {gi.message}")
+                score -= grammar_report.error_count * 5
+
+            if grammar_report.warning_count > 0:
+                suggestions.append(f"Проверьте текст: {grammar_report.warning_count} предупреждений")
+
+            # Add readability feedback
+            if grammar_report.readability:
+                if grammar_report.readability.grade_level == "complex":
+                    suggestions.append("Упростите длинные предложения для лучшей читаемости")
+        except Exception as e:
+            logger.debug(f"Grammar check skipped: {e}")
 
         # Ensure score is within bounds
         score = max(0, min(100, score))
