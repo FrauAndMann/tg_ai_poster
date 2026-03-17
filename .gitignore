@@ -84,3 +84,16 @@ tmp/
 temp/
 *.tmp
 *.temp
+
+# AI assistant files (never commit)
+CLAUDE.md
+.claude/
+.serena/
+.cursorrules
+.cursorignore
+.mcp*
+*.mcp
+GEMINI.md
+AGENTS.md
+.copilot/
+.aider*
