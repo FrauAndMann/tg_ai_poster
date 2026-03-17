@@ -22,6 +22,7 @@ logger = get_logger(__name__)
 
 class ClaimType(Enum):
     """Types of verifiable claims."""
+
     STATISTIC = "statistic"
     DATE = "date"
     NAME = "name"
@@ -34,6 +35,7 @@ class ClaimType(Enum):
 
 class VerificationStatus(Enum):
     """Status of claim verification."""
+
     VERIFIED = "verified"
     DISPUTED = "disputed"
     UNVERIFIABLE = "unverifiable"
@@ -195,7 +197,9 @@ class FactualVerifier:
         context_end = min(len(text), end + window)
         return text[context_start:context_end]
 
-    async def verify_claim(self, claim: Claim, sources: Optional[list[str]] = None) -> Claim:
+    async def verify_claim(
+        self, claim: Claim, sources: Optional[list[str]] = None
+    ) -> Claim:
         """
         Verify a single claim.
 
@@ -226,7 +230,9 @@ class FactualVerifier:
         if self.llm and self.web_search_enabled:
             try:
                 verification = await self._llm_verify(claim)
-                claim.status = verification.get("status", VerificationStatus.UNVERIFIABLE)
+                claim.status = verification.get(
+                    "status", VerificationStatus.UNVERIFIABLE
+                )
                 claim.sources = verification.get("sources", [])
                 claim.conflicting_sources = verification.get("conflicting_sources", [])
                 claim.correction = verification.get("correction")
@@ -264,6 +270,7 @@ class FactualVerifier:
         try:
             response = await self.llm.generate(prompt)
             import json
+
             content = response.content
 
             if "```json" in content:
@@ -277,7 +284,9 @@ class FactualVerifier:
                 "unverifiable": VerificationStatus.UNVERIFIABLE,
                 "hallucination": VerificationStatus.HALLUCINATION,
             }
-            result["status"] = status_map.get(result.get("status", "unverifiable"), VerificationStatus.UNVERIFIABLE)
+            result["status"] = status_map.get(
+                result.get("status", "unverifiable"), VerificationStatus.UNVERIFIABLE
+            )
 
             return result
 
@@ -285,7 +294,9 @@ class FactualVerifier:
             logger.error("Failed to parse LLM verification: %s", e)
             return {"status": VerificationStatus.UNVERIFIABLE, "notes": str(e)}
 
-    async def verify_content(self, text: str, sources: Optional[list[str]] = None) -> VerificationReport:
+    async def verify_content(
+        self, text: str, sources: Optional[list[str]] = None
+    ) -> VerificationReport:
         """
         Verify all claims in content.
 
@@ -304,7 +315,9 @@ class FactualVerifier:
 
         if not claims:
             report.overall_credibility = 1.0
-            report.recommendations.append("No verifiable claims found - content may be too vague")
+            report.recommendations.append(
+                "No verifiable claims found - content may be too vague"
+            )
             return report
 
         # Verify each claim
@@ -360,24 +373,33 @@ class FactualVerifier:
                 "Рекомендуется существенная переработка."
             )
 
-    def get_correction_suggestions(self, report: VerificationReport) -> list[dict[str, str]]:
+    def get_correction_suggestions(
+        self, report: VerificationReport
+    ) -> list[dict[str, str]]:
         """Get suggested corrections for problematic claims."""
         suggestions = []
 
         for claim in report.claims:
-            if claim.status in [VerificationStatus.DISPUTED, VerificationStatus.HALLUCINATION]:
+            if claim.status in [
+                VerificationStatus.DISPUTED,
+                VerificationStatus.HALLUCINATION,
+            ]:
                 if claim.correction:
-                    suggestions.append({
-                        "original": claim.text,
-                        "suggestion": claim.correction,
-                        "reason": claim.verification_notes,
-                    })
+                    suggestions.append(
+                        {
+                            "original": claim.text,
+                            "suggestion": claim.correction,
+                            "reason": claim.verification_notes,
+                        }
+                    )
                 else:
-                    suggestions.append({
-                        "original": claim.text,
-                        "suggestion": "[Требуется проверка]",
-                        "reason": f"{claim.status.value}: {claim.verification_notes}",
-                    })
+                    suggestions.append(
+                        {
+                            "original": claim.text,
+                            "suggestion": "[Требуется проверка]",
+                            "reason": f"{claim.status.value}: {claim.verification_notes}",
+                        }
+                    )
 
         return suggestions
 

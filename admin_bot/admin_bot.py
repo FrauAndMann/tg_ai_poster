@@ -76,10 +76,7 @@ class AdminBot:
             )
 
             self._application = (
-                Application.builder()
-                .token(self.bot_token)
-                .request(request)
-                .build()
+                Application.builder().token(self.bot_token).request(request).build()
             )
 
             # Create command handler

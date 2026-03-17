@@ -69,6 +69,7 @@ class Database:
                 # Use StaticPool with single connection for in-memory databases
                 # This ensures all operations share the same database
                 from sqlalchemy.pool import StaticPool
+
                 kwargs["poolclass"] = StaticPool
                 kwargs["connect_args"] = {"check_same_thread": False}
             else:
@@ -76,12 +77,14 @@ class Database:
                 kwargs["poolclass"] = NullPool
         else:
             # PostgreSQL and others use connection pooling
-            kwargs.update({
-                "pool_size": self.pool_size,
-                "max_overflow": self.max_overflow,
-                "pool_pre_ping": True,
-                "pool_recycle": 3600,
-            })
+            kwargs.update(
+                {
+                    "pool_size": self.pool_size,
+                    "max_overflow": self.max_overflow,
+                    "pool_pre_ping": True,
+                    "pool_recycle": 3600,
+                }
+            )
 
         return kwargs
 
@@ -98,7 +101,9 @@ class Database:
         elif db_url.startswith("postgresql://"):
             db_url = db_url.replace("postgresql://", "postgresql+asyncpg://")
 
-        logger.info(f"Initializing database: {db_url.split('@')[-1] if '@' in db_url else db_url}")
+        logger.info(
+            f"Initializing database: {db_url.split('@')[-1] if '@' in db_url else db_url}"
+        )
 
         self._engine = create_async_engine(db_url, **self._get_engine_kwargs())
 
@@ -241,9 +246,7 @@ def get_database() -> Database:
         RuntimeError: If database is not initialized
     """
     if _db is None:
-        raise RuntimeError(
-            "Database not initialized. Call init_database() first."
-        )
+        raise RuntimeError("Database not initialized. Call init_database() first.")
     return _db
 
 
@@ -257,5 +260,3 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
     db = get_database()
     async with db.session() as session:
         yield session
-
-

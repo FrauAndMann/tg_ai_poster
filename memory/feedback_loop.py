@@ -209,18 +209,14 @@ STYLE INSTRUCTIONS:"""
         top_posts = await self.get_top_posts()
 
         if len(top_posts) < 3:
-            logger.warning(
-                f"Not enough posts for style analysis: {len(top_posts)} < 3"
-            )
+            logger.warning(f"Not enough posts for style analysis: {len(top_posts)} < 3")
             return None
 
         # Format posts for analysis
         posts_text = self._format_posts_for_analysis(top_posts)
 
         # Build prompt
-        prompt = self._analyzer_prompt.format(
-            top_posts_with_scores=posts_text
-        )
+        prompt = self._analyzer_prompt.format(top_posts_with_scores=posts_text)
 
         try:
             # Get style analysis from LLM
@@ -230,9 +226,7 @@ STYLE INSTRUCTIONS:"""
             # Create new style profile
             async with self.db.session() as session:
                 # Deactivate old profiles
-                old_profiles = await session.execute(
-                    select(StyleProfile)
-                )
+                old_profiles = await session.execute(select(StyleProfile))
                 for profile in old_profiles.scalars().all():
                     # We don't delete, just mark as inactive
                     pass
@@ -241,7 +235,9 @@ STYLE INSTRUCTIONS:"""
                 new_profile = StyleProfile(
                     common_phrases=json.dumps(self._extract_phrases(top_posts)),
                     emoji_patterns=json.dumps(self._analyze_emoji_patterns(top_posts)),
-                    hashtag_patterns=json.dumps(self._analyze_hashtag_patterns(top_posts)),
+                    hashtag_patterns=json.dumps(
+                        self._analyze_hashtag_patterns(top_posts)
+                    ),
                     posts_analyzed=len(top_posts),
                 )
 
@@ -298,14 +294,15 @@ STYLE INSTRUCTIONS:"""
 
             # Simple emoji detection (could be enhanced)
             import re
+
             emoji_pattern = re.compile(
                 "["
-                "\U0001F600-\U0001F64F"  # emoticons
-                "\U0001F300-\U0001F5FF"  # symbols & pictographs
-                "\U0001F680-\U0001F6FF"  # transport & map
-                "\U0001F1E0-\U0001F1FF"  # flags
-                "\U00002702-\U000027B0"
-                "\U000024C2-\U0001F251"
+                "\U0001f600-\U0001f64f"  # emoticons
+                "\U0001f300-\U0001f5ff"  # symbols & pictographs
+                "\U0001f680-\U0001f6ff"  # transport & map
+                "\U0001f1e0-\U0001f1ff"  # flags
+                "\U00002702-\U000027b0"
+                "\U000024c2-\U0001f251"
                 "]+",
                 flags=re.UNICODE,
             )
@@ -338,6 +335,7 @@ STYLE INSTRUCTIONS:"""
 
             # Extract hashtags
             import re
+
             hashtags = re.findall(r"#\w+", post.content)
             for tag in hashtags:
                 tag_lower = tag.lower()
@@ -360,11 +358,7 @@ STYLE INSTRUCTIONS:"""
             Optional[StyleProfile]: Active style profile, or None
         """
         async with self.db.session() as session:
-            stmt = (
-                select(StyleProfile)
-                .order_by(desc(StyleProfile.created_at))
-                .limit(1)
-            )
+            stmt = select(StyleProfile).order_by(desc(StyleProfile.created_at)).limit(1)
 
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
@@ -382,7 +376,11 @@ STYLE INSTRUCTIONS:"""
         profile = await self.get_active_style_profile()
 
         if profile and profile.common_phrases:
-            phrases = json.loads(profile.common_phrases) if isinstance(profile.common_phrases, str) else profile.common_phrases
+            phrases = (
+                json.loads(profile.common_phrases)
+                if isinstance(profile.common_phrases, str)
+                else profile.common_phrases
+            )
 
             if phrases:
                 return (
@@ -412,9 +410,8 @@ STYLE INSTRUCTIONS:"""
 
         async with self.db.session() as session:
             # Total posts
-            total_stmt = (
-                select(func.count(Post.id))
-                .where(Post.published_at >= cutoff_date)
+            total_stmt = select(func.count(Post.id)).where(
+                Post.published_at >= cutoff_date
             )
             total_result = await session.execute(total_stmt)
             total_posts = total_result.scalar() or 0
@@ -447,7 +444,9 @@ STYLE INSTRUCTIONS:"""
                     "id": top_post.id,
                     "engagement": top_post.engagement_score,
                     "topic": top_post.topic,
-                } if top_post else None,
+                }
+                if top_post
+                else None,
             }
 
     async def should_update_style(self) -> bool:

@@ -106,7 +106,10 @@ def with_retry(
         async def fetch_data():
             ...
     """
-    def decorator(func: Callable[..., Coroutine[Any, Any, Any]]) -> Callable[..., Coroutine[Any, Any, Any]]:
+
+    def decorator(
+        func: Callable[..., Coroutine[Any, Any, Any]],
+    ) -> Callable[..., Coroutine[Any, Any, Any]]:
         @functools.wraps(func)
         async def wrapper(*args, **kwargs) -> Any:
             last_exception = None
@@ -263,7 +266,9 @@ class RetryContext:
     async def wait(self) -> None:
         """Wait before next attempt."""
         if self.attempt > 0 and self.attempt < self.max_attempts:
-            backoff = calculate_backoff(self.attempt, self.backoff_base, 2.0, 60.0, True)
+            backoff = calculate_backoff(
+                self.attempt, self.backoff_base, 2.0, 60.0, True
+            )
             await asyncio.sleep(backoff)
 
     @property

@@ -5,7 +5,6 @@ Tests duplicate detection, forbidden words, length checks,
 and Telegram markdown validation.
 """
 
-
 from utils.validators import (
     check_duplicate,
     check_forbidden_words,
@@ -47,9 +46,7 @@ class TestCheckDuplicate:
     def test_near_duplicate(self):
         """Test with near-duplicate content."""
         content = "Artificial intelligence is transforming the world rapidly."
-        recent = [
-            "Artificial intelligence is transforming the world quickly."
-        ]
+        recent = ["Artificial intelligence is transforming the world quickly."]
 
         is_unique, info = check_duplicate(content, recent, threshold=0.8)
         assert is_unique is False
@@ -98,7 +95,9 @@ class TestCheckForbiddenWords:
         content = "This is SPAM content."
         forbidden = ["spam"]
 
-        is_clean, found = check_forbidden_words(content, forbidden, case_sensitive=False)
+        is_clean, found = check_forbidden_words(
+            content, forbidden, case_sensitive=False
+        )
         assert is_clean is False
 
     def test_case_sensitive(self):

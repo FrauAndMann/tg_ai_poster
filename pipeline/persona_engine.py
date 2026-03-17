@@ -32,7 +32,9 @@ class Persona:
     analogy_style: str  # "simple", "technical", "real_world"
     assumed_knowledge: list[str] = field(default_factory=list)
     preferred_topics: list[str] = field(default_factory=list)
-    engagement_history: dict[str, float] = field(default_factory=dict)  # topic_cluster -> avg_engagement
+    engagement_history: dict[str, float] = field(
+        default_factory=dict
+    )  # topic_cluster -> avg_engagement
     weight: float = 1.0  # Importance weight for this persona
 
     def to_dict(self) -> dict:
@@ -73,8 +75,17 @@ DEFAULT_PERSONAS = [
         description="Experienced ML practitioner interested in SOTA techniques",
         vocabulary_level="expert",
         analogy_style="technical",
-        assumed_knowledge=["transformers", "backpropagation", "gradient_descent", "regularization"],
-        preferred_topics=["research papers", "model architecture", "training techniques"],
+        assumed_knowledge=[
+            "transformers",
+            "backpropagation",
+            "gradient_descent",
+            "regularization",
+        ],
+        preferred_topics=[
+            "research papers",
+            "model architecture",
+            "training techniques",
+        ],
         weight=1.0,
     ),
     Persona(
@@ -103,7 +114,11 @@ DEFAULT_PERSONAS = [
         description="CTO/VP Engineering evaluating AI for organization",
         vocabulary_level="advanced",
         analogy_style="real_world",
-        assumed_knowledge=["software architecture", "team management", "cloud infrastructure"],
+        assumed_knowledge=[
+            "software architecture",
+            "team management",
+            "cloud infrastructure",
+        ],
         preferred_topics=["enterprise AI", "ROI analysis", "implementation guides"],
         weight=0.9,
     ),
@@ -273,10 +288,12 @@ class PersonaEngine:
 
     async def _select_persona_llm(self, topic: str, content: str) -> PersonaMatch:
         """LLM-based persona selection."""
-        persona_descriptions = "\n".join([
-            f"- {p.id}: {p.description} (level: {p.vocabulary_level})"
-            for p in self.personas.values()
-        ])
+        persona_descriptions = "\n".join(
+            [
+                f"- {p.id}: {p.description} (level: {p.vocabulary_level})"
+                for p in self.personas.values()
+            ]
+        )
 
         prompt = f"""Select the best target audience persona for this content.
 
@@ -361,7 +378,9 @@ Return JSON:
             persona.weight = max(0.1, persona.weight - self.learning_rate)
             logger.info(
                 "Downweighted persona %s to %.2f (low engagement: %.2f)",
-                persona_id, persona.weight, engagement_score,
+                persona_id,
+                persona.weight,
+                engagement_score,
             )
         else:
             # Gradually restore weight on good performance
@@ -408,15 +427,17 @@ Return JSON:
 
         knowledge_note = ""
         if persona.assumed_knowledge:
-            knowledge_note = f"Assume familiarity with: {', '.join(persona.assumed_knowledge[:5])}."
+            knowledge_note = (
+                f"Assume familiarity with: {', '.join(persona.assumed_knowledge[:5])}."
+            )
 
         return f"""
 TARGET AUDIENCE: {persona.name}
 {persona.description}
 
 WRITING GUIDELINES:
-{level_instructions.get(persona.vocabulary_level, '')}
-{analogy_instructions.get(persona.analogy_style, '')}
+{level_instructions.get(persona.vocabulary_level, "")}
+{analogy_instructions.get(persona.analogy_style, "")}
 {knowledge_note}
 """.strip()
 

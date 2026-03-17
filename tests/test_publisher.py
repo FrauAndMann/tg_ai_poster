@@ -44,26 +44,38 @@ class TestBasePublisher:
 
     def test_channel_id(self):
         """Test channel ID initialization."""
+
         # Create concrete implementation for testing
         class ConcretePublisher(BasePublisher):
             async def send_post(self, text, parse_mode="MarkdownV2"):
                 return 1
-            async def send_post_with_image(self, text, image_url, parse_mode="MarkdownV2"):
+
+            async def send_post_with_image(
+                self, text, image_url, parse_mode="MarkdownV2"
+            ):
                 return 1
+
             async def edit_post(self, message_id, text, parse_mode="MarkdownV2"):
                 return True
+
             async def delete_post(self, message_id):
                 return True
+
             async def pin_post(self, message_id):
                 return True
+
             async def unpin_post(self, message_id):
                 return True
+
             async def get_post_views(self, message_id):
                 return None
+
             async def start(self):
                 pass
+
             async def stop(self):
                 pass
+
             async def health_check(self):
                 return True
 

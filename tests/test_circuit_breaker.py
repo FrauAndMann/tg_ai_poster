@@ -56,7 +56,7 @@ class TestCircuitBreakerStateTransitions:
 
         # Record failures
         for i in range(3):
-            cb.record_failure(Exception(f"Error {i+1}"))
+            cb.record_failure(Exception(f"Error {i + 1}"))
 
         assert cb.state == CircuitState.OPEN
         assert cb.is_open is True
@@ -233,6 +233,7 @@ class TestCircuitBreakerAsync:
             failure_threshold=1,
             recovery_timeout=10.0,
         )
+
         async def success_func():
             return "success"
 

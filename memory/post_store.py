@@ -99,7 +99,12 @@ class PostStore:
         async with self.db.session() as session:
             # Convert sources to JSON
             sources_data = [
-                {"name": s.name, "url": s.url, "title": s.title, "credibility": s.credibility}
+                {
+                    "name": s.name,
+                    "url": s.url,
+                    "title": s.title,
+                    "credibility": s.credibility,
+                }
                 for s in domain_post.sources
             ]
 
@@ -116,9 +121,13 @@ class PostStore:
                 post_body=domain_post.content.body,
                 post_tldr=domain_post.content.tldr,
                 post_analysis=domain_post.content.analysis,
-                post_key_facts=json.dumps(domain_post.content.key_facts, ensure_ascii=False),
+                post_key_facts=json.dumps(
+                    domain_post.content.key_facts, ensure_ascii=False
+                ),
                 post_sources=json.dumps(sources_data, ensure_ascii=False),
-                post_hashtags=json.dumps(domain_post.content.hashtags, ensure_ascii=False),
+                post_hashtags=json.dumps(
+                    domain_post.content.hashtags, ensure_ascii=False
+                ),
                 media_prompt=domain_post.content.media_prompt,
                 # Metadata
                 quality_score=domain_post.metadata.quality_score,
@@ -129,14 +138,18 @@ class PostStore:
                 # Media
                 media_url=domain_post.media.url if domain_post.media else None,
                 media_source=domain_post.media.source if domain_post.media else None,
-                media_photographer=domain_post.media.photographer if domain_post.media else None,
+                media_photographer=domain_post.media.photographer
+                if domain_post.media
+                else None,
                 # Pipeline version
                 pipeline_version="2.0",
             )
             session.add(post)
             await session.flush()
             await session.refresh(post)
-            logger.info(f"Created post id={post.id}, type={domain_post.post_type.value}")
+            logger.info(
+                f"Created post id={post.id}, type={domain_post.post_type.value}"
+            )
             return post
 
     async def get_by_id(self, post_id: int) -> PostModel | None:
@@ -314,7 +327,9 @@ class PostStore:
             published_at=datetime.utcnow(),
         )
 
-    async def mark_failed(self, post_id: int, error: str | None = None) -> PostModel | None:
+    async def mark_failed(
+        self, post_id: int, error: str | None = None
+    ) -> PostModel | None:
         """
         Mark post as failed.
 
@@ -349,12 +364,7 @@ class PostStore:
             PostModel | None: Updated post
         """
         # Calculate engagement score (weighted)
-        engagement_score = (
-            views * 0.1 +
-            reactions * 1.0 +
-            shares * 2.0 +
-            comments * 1.5
-        )
+        engagement_score = views * 0.1 + reactions * 1.0 + shares * 2.0 + comments * 1.5
 
         return await self.update(
             post_id,
@@ -493,7 +503,8 @@ class PostStore:
                 "failed_posts": failed_posts,
                 "success_rate": (
                     (total_posts - failed_posts) / total_posts * 100
-                    if total_posts > 0 else 100
+                    if total_posts > 0
+                    else 100
                 ),
                 "avg_engagement_score": round(avg_engagement, 2),
                 "total_views": total_views,

@@ -1,13 +1,12 @@
 """
 Tests for Phase 1 Features: Draft System, Approval Workflow, A/B Testing.
 """
+
 import pytest
 import pytest_asyncio
 from unittest.mock import patch
 
-from memory.models import (
-    Post, PostVersion, ABExperiment, ABVariant, PostStatus
-)
+from memory.models import Post, PostVersion, ABExperiment, ABVariant, PostStatus
 from memory.database import Database
 from pipeline.draft_manager import DraftManager
 from pipeline.approval_workflow import ApprovalWorkflow, TRANSITIONS
@@ -21,9 +20,11 @@ async def db():
     await database.init()
 
     # Patch get_database in all modules that use it
-    with patch('pipeline.draft_manager.get_database', return_value=database), \
-         patch('pipeline.approval_workflow.get_database', return_value=database), \
-         patch('pipeline.ab_test_manager.get_database', return_value=database):
+    with (
+        patch("pipeline.draft_manager.get_database", return_value=database),
+        patch("pipeline.approval_workflow.get_database", return_value=database),
+        patch("pipeline.ab_test_manager.get_database", return_value=database),
+    ):
         yield database
 
     await database.close()
@@ -52,6 +53,7 @@ def ab_manager():
 # DraftManager Tests
 # ============================================
 
+
 class TestDraftManager:
     """Tests for DraftManager."""
 
@@ -71,9 +73,7 @@ class TestDraftManager:
 
             # Create version
             version = await draft_manager.create_version(
-                post,
-                reason="Initial version",
-                created_by="ai"
+                post, reason="Initial version", created_by="ai"
             )
 
             assert version is not None
@@ -124,30 +124,51 @@ class TestDraftManager:
 # ApprovalWorkflow Tests
 # ============================================
 
+
 class TestApprovalWorkflow:
     """Tests for ApprovalWorkflow."""
 
     def test_can_transition_valid(self, approval_workflow):
         """Test valid transitions."""
-        assert approval_workflow.can_transition(PostStatus.DRAFT, PostStatus.PENDING_REVIEW)
-        assert approval_workflow.can_transition(PostStatus.PENDING_REVIEW, PostStatus.APPROVED)
-        assert approval_workflow.can_transition(PostStatus.APPROVED, PostStatus.SCHEDULED)
+        assert approval_workflow.can_transition(
+            PostStatus.DRAFT, PostStatus.PENDING_REVIEW
+        )
+        assert approval_workflow.can_transition(
+            PostStatus.PENDING_REVIEW, PostStatus.APPROVED
+        )
+        assert approval_workflow.can_transition(
+            PostStatus.APPROVED, PostStatus.SCHEDULED
+        )
 
-        assert approval_workflow.can_transition(PostStatus.SCHEDULED, PostStatus.PUBLISHED)
+        assert approval_workflow.can_transition(
+            PostStatus.SCHEDULED, PostStatus.PUBLISHED
+        )
 
         assert approval_workflow.can_transition(PostStatus.SCHEDULED, PostStatus.FAILED)
 
     def test_can_transition_invalid(self, approval_workflow):
         """Test invalid transitions."""
-        assert not approval_workflow.can_transition(PostStatus.DRAFT, PostStatus.APPROVED)
-        assert not approval_workflow.can_transition(PostStatus.PUBLISHED, PostStatus.DRAFT)
-        assert not approval_workflow.can_transition(PostStatus.REJECTED, PostStatus.APPROVED)
+        assert not approval_workflow.can_transition(
+            PostStatus.DRAFT, PostStatus.APPROVED
+        )
+        assert not approval_workflow.can_transition(
+            PostStatus.PUBLISHED, PostStatus.DRAFT
+        )
+        assert not approval_workflow.can_transition(
+            PostStatus.REJECTED, PostStatus.APPROVED
+        )
         # PENDING_REVIEW can go to APPROVED, NEEDS_REVISION, or REJECTED
-        assert approval_workflow.can_transition(PostStatus.PENDING_REVIEW, PostStatus.NEEDS_REVISION)
+        assert approval_workflow.can_transition(
+            PostStatus.PENDING_REVIEW, PostStatus.NEEDS_REVISION
+        )
 
-        assert approval_workflow.can_transition(PostStatus.PENDING_REVIEW, PostStatus.REJECTED)
+        assert approval_workflow.can_transition(
+            PostStatus.PENDING_REVIEW, PostStatus.REJECTED
+        )
 
-        assert not approval_workflow.can_transition(PostStatus.PENDING_REVIEW, PostStatus.SCHEDULED)
+        assert not approval_workflow.can_transition(
+            PostStatus.PENDING_REVIEW, PostStatus.SCHEDULED
+        )
 
     @pytest.mark.asyncio
     async def test_auto_approve_passing(self, db, approval_workflow):
@@ -215,7 +236,9 @@ class TestApprovalWorkflow:
             await session.commit()
             await session.refresh(post)
 
-            result = await approval_workflow.transition_status(post, PostStatus.PENDING_REVIEW)
+            result = await approval_workflow.transition_status(
+                post, PostStatus.PENDING_REVIEW
+            )
             assert result is True
             # Refresh to get updated status
             await session.refresh(post)
@@ -230,7 +253,9 @@ class TestApprovalWorkflow:
             await session.commit()
             await session.refresh(post)
 
-            result = await approval_workflow.transition_status(post, PostStatus.APPROVED)
+            result = await approval_workflow.transition_status(
+                post, PostStatus.APPROVED
+            )
             assert result is False
             assert post.status == "draft"  # Unchanged
 
@@ -249,6 +274,7 @@ class TestApprovalWorkflow:
 # ============================================
 # ABTestManager Tests
 # ============================================
+
 
 class TestABTestManager:
     """Tests for ABTestManager."""
@@ -338,7 +364,9 @@ class TestABTestManager:
             await session.refresh(post_a)
             await session.refresh(post_b)
 
-            experiment = await ab_manager.create_experiment("exp_to_end", post_a, post_b)
+            experiment = await ab_manager.create_experiment(
+                "exp_to_end", post_a, post_b
+            )
 
             result = await ab_manager.end_experiment(experiment.id)
             assert result is True
@@ -352,6 +380,7 @@ class TestABTestManager:
 # ============================================
 # Model Tests
 # ============================================
+
 
 class TestPostVersionModel:
     """Tests for PostVersion model."""

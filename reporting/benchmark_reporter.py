@@ -23,6 +23,7 @@ logger = get_logger(__name__)
 
 class ReportPeriod(Enum):
     """Report time periods."""
+
     DAILY = "daily"
     WEEKLY = "weekly"
     MONTHLY = "monthly"
@@ -31,6 +32,7 @@ class ReportPeriod(Enum):
 
 class MetricCategory(Enum):
     """Categories of metrics."""
+
     VOLUME = "volume"
     QUALITY = "quality"
     ENGAGEMENT = "engagement"
@@ -214,8 +216,11 @@ class BenchmarkReporter:
         try:
             posts = await self.post_store.list(limit=1000)
             filtered = [
-                p for p in posts
-                if report.start_date <= (p.published_at or datetime.min) <= report.end_date
+                p
+                for p in posts
+                if report.start_date
+                <= (p.published_at or datetime.min)
+                <= report.end_date
             ]
 
             report.total_posts = len(filtered)
@@ -223,14 +228,18 @@ class BenchmarkReporter:
             # Count by type
             for post in filtered:
                 post_type = post.post_type or "unknown"
-                report.posts_by_type[post_type] = report.posts_by_type.get(post_type, 0) + 1
+                report.posts_by_type[post_type] = (
+                    report.posts_by_type.get(post_type, 0) + 1
+                )
 
-            report.metrics.append(MetricValue(
-                name="Total Posts",
-                value=report.total_posts,
-                unit="posts",
-                category=MetricCategory.VOLUME,
-            ))
+            report.metrics.append(
+                MetricValue(
+                    name="Total Posts",
+                    value=report.total_posts,
+                    unit="posts",
+                    category=MetricCategory.VOLUME,
+                )
+            )
 
         except Exception as e:
             logger.error("Failed to gather volume metrics: %s", e)
@@ -243,8 +252,11 @@ class BenchmarkReporter:
         try:
             posts = await self.post_store.list(limit=1000)
             filtered = [
-                p for p in posts
-                if report.start_date <= (p.published_at or datetime.min) <= report.end_date
+                p
+                for p in posts
+                if report.start_date
+                <= (p.published_at or datetime.min)
+                <= report.end_date
                 and p.quality_score is not None
             ]
 
@@ -262,15 +274,20 @@ class BenchmarkReporter:
                         bucket = "acceptable"
                     else:
                         bucket = "needs_improvement"
-                    report.quality_distribution[bucket] = report.quality_distribution.get(bucket, 0) + 1
+                    report.quality_distribution[bucket] = (
+                        report.quality_distribution.get(bucket, 0) + 1
+                    )
 
-            report.metrics.append(MetricValue(
-                name="Avg Quality Score",
-                value=report.avg_quality_score,
-                unit="points",
-                category=MetricCategory.QUALITY,
-                is_positive=report.avg_quality_score >= self.QUALITY_THRESHOLDS["good"],
-            ))
+            report.metrics.append(
+                MetricValue(
+                    name="Avg Quality Score",
+                    value=report.avg_quality_score,
+                    unit="points",
+                    category=MetricCategory.QUALITY,
+                    is_positive=report.avg_quality_score
+                    >= self.QUALITY_THRESHOLDS["good"],
+                )
+            )
 
         except Exception as e:
             logger.error("Failed to gather quality metrics: %s", e)
@@ -283,27 +300,39 @@ class BenchmarkReporter:
         try:
             posts = await self.post_store.list(limit=1000)
             filtered = [
-                p for p in posts
-                if report.start_date <= (p.published_at or datetime.min) <= report.end_date
+                p
+                for p in posts
+                if report.start_date
+                <= (p.published_at or datetime.min)
+                <= report.end_date
             ]
 
             report.total_views = sum(p.views or 0 for p in filtered)
-            report.total_reactions = sum(getattr(p, "reactions", 0) or 0 for p in filtered)
-            report.total_forwards = sum(getattr(p, "forwards", 0) or 0 for p in filtered)
+            report.total_reactions = sum(
+                getattr(p, "reactions", 0) or 0 for p in filtered
+            )
+            report.total_forwards = sum(
+                getattr(p, "forwards", 0) or 0 for p in filtered
+            )
 
             if report.total_posts > 0:
                 report.avg_views_per_post = report.total_views / report.total_posts
 
             if report.total_views > 0:
-                report.engagement_rate = (report.total_reactions + report.total_forwards) / report.total_views
+                report.engagement_rate = (
+                    report.total_reactions + report.total_forwards
+                ) / report.total_views
 
-            report.metrics.append(MetricValue(
-                name="Engagement Rate",
-                value=report.engagement_rate * 100,
-                unit="%",
-                category=MetricCategory.ENGAGEMENT,
-                is_positive=report.engagement_rate >= self.ENGAGEMENT_BENCHMARKS["medium"],
-            ))
+            report.metrics.append(
+                MetricValue(
+                    name="Engagement Rate",
+                    value=report.engagement_rate * 100,
+                    unit="%",
+                    category=MetricCategory.ENGAGEMENT,
+                    is_positive=report.engagement_rate
+                    >= self.ENGAGEMENT_BENCHMARKS["medium"],
+                )
+            )
 
         except Exception as e:
             logger.error("Failed to gather engagement metrics: %s", e)
@@ -315,13 +344,15 @@ class BenchmarkReporter:
         report.success_rate = 0.95  # Default estimate
         report.llm_cost_estimate = report.total_posts * 0.02  # Estimate $0.02 per post
 
-        report.metrics.append(MetricValue(
-            name="Success Rate",
-            value=report.success_rate * 100,
-            unit="%",
-            category=MetricCategory.EFFICIENCY,
-            is_positive=report.success_rate >= 0.9,
-        ))
+        report.metrics.append(
+            MetricValue(
+                name="Success Rate",
+                value=report.success_rate * 100,
+                unit="%",
+                category=MetricCategory.EFFICIENCY,
+                is_positive=report.success_rate >= 0.9,
+            )
+        )
 
     async def _identify_top_performers(self, report: BenchmarkReport) -> None:
         """Identify top performing posts."""
@@ -331,21 +362,28 @@ class BenchmarkReporter:
         try:
             posts = await self.post_store.list(limit=100)
             filtered = [
-                p for p in posts
-                if report.start_date <= (p.published_at or datetime.min) <= report.end_date
+                p
+                for p in posts
+                if report.start_date
+                <= (p.published_at or datetime.min)
+                <= report.end_date
             ]
 
             # Sort by views
             sorted_posts = sorted(filtered, key=lambda p: p.views or 0, reverse=True)
 
             for post in sorted_posts[:5]:
-                report.top_posts.append({
-                    "id": post.id,
-                    "topic": post.topic or "Unknown",
-                    "views": post.views or 0,
-                    "quality_score": post.quality_score or 0,
-                    "published_at": post.published_at.isoformat() if post.published_at else None,
-                })
+                report.top_posts.append(
+                    {
+                        "id": post.id,
+                        "topic": post.topic or "Unknown",
+                        "views": post.views or 0,
+                        "quality_score": post.quality_score or 0,
+                        "published_at": post.published_at.isoformat()
+                        if post.published_at
+                        else None,
+                    }
+                )
 
             # Extract top topics
             topics: dict[str, int] = {}
@@ -353,7 +391,9 @@ class BenchmarkReporter:
                 if post.topic:
                     topics[post.topic] = topics.get(post.topic, 0) + (post.views or 1)
 
-            report.top_topics = sorted(topics.keys(), key=lambda t: topics[t], reverse=True)[:5]
+            report.top_topics = sorted(
+                topics.keys(), key=lambda t: topics[t], reverse=True
+            )[:5]
 
         except Exception as e:
             logger.error("Failed to identify top performers: %s", e)
@@ -368,7 +408,10 @@ class BenchmarkReporter:
                 "Improve content quality - focus on deeper analysis and better sourcing"
             )
 
-        if report.quality_distribution.get("needs_improvement", 0) > report.total_posts * 0.1:
+        if (
+            report.quality_distribution.get("needs_improvement", 0)
+            > report.total_posts * 0.1
+        ):
             recommendations.append(
                 "Review quality check rules - too many posts failing quality threshold"
             )
@@ -401,9 +444,13 @@ class BenchmarkReporter:
         prev = self._previous_reports.get(report.period)
         if prev:
             if report.total_posts > prev.total_posts:
-                trends.append(f"Posting frequency increased by {report.total_posts - prev.total_posts} posts")
+                trends.append(
+                    f"Posting frequency increased by {report.total_posts - prev.total_posts} posts"
+                )
             elif report.total_posts < prev.total_posts:
-                trends.append(f"Posting frequency decreased by {prev.total_posts - report.total_posts} posts")
+                trends.append(
+                    f"Posting frequency decreased by {prev.total_posts - report.total_posts} posts"
+                )
 
             if report.avg_quality_score > prev.avg_quality_score + 5:
                 trends.append("Quality scores improving significantly")
@@ -426,7 +473,9 @@ class BenchmarkReporter:
             for prev_metric in prev.metrics:
                 if prev_metric.name == metric.name and prev_metric.value > 0:
                     metric.previous_value = prev_metric.value
-                    metric.change_pct = ((metric.value - prev_metric.value) / prev_metric.value) * 100
+                    metric.change_pct = (
+                        (metric.value - prev_metric.value) / prev_metric.value
+                    ) * 100
                     break
 
     def export_report(
@@ -498,20 +547,24 @@ class BenchmarkReporter:
             lines.append(f"- **{bucket.title()}:** {count} posts")
 
         if report.recommendations:
-            lines.extend([
-                "",
-                "## Recommendations",
-                "",
-            ])
+            lines.extend(
+                [
+                    "",
+                    "## Recommendations",
+                    "",
+                ]
+            )
             for rec in report.recommendations:
                 lines.append(f"- {rec}")
 
         if report.trends:
-            lines.extend([
-                "",
-                "## Trends",
-                "",
-            ])
+            lines.extend(
+                [
+                    "",
+                    "## Trends",
+                    "",
+                ]
+            )
             for trend in report.trends:
                 lines.append(f"- {trend}")
 

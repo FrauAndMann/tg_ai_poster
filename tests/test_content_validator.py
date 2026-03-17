@@ -77,7 +77,7 @@ class TestMetaTextDetection:
 
     def test_clean_content_passes(self, validator):
         """Test that clean content passes validation."""
-        content = '''OpenAI выпустила GPT-5
+        content = """OpenAI выпустила GPT-5
 
 Компания OpenAI анонсировала новую версию своей языковой модели GPT-5. Модель демонстрирует значительное улучшение в задачах рассуждения.
 
@@ -95,7 +95,7 @@ class TestMetaTextDetection:
 💡 TL;DR
 OpenAI выпустила GPT-5 с улучшенной производительностью.
 
-#OpenAI #GPT5 #AI'''
+#OpenAI #GPT5 #AI"""
         result = validator.validate_raw_response(content)
         assert result.is_valid
         assert result.score >= 80
@@ -166,7 +166,9 @@ class TestJSONValidation:
                 "API доступен сразу",
             ],
             "analysis": "Это важный шаг в развитии ИИ.",
-            "sources": [{"name": "OpenAI", "url": "https://openai.com", "confidence": 0.95}],
+            "sources": [
+                {"name": "OpenAI", "url": "https://openai.com", "confidence": 0.95}
+            ],
             "tldr": "OpenAI выпустила GPT-5 с улучшениями.",
             "hashtags": ["OpenAI", "GPT5", "AI"],
         }
@@ -222,7 +224,7 @@ class TestFormattedPostValidation:
 
     def test_valid_formatted_post(self, validator):
         """Test validation of valid formatted post."""
-        content = '''🤖 OpenAI выпустила GPT-5
+        content = """🤖 OpenAI выпустила GPT-5
 
 Компания OpenAI анонсировала новую версию. Модель показывает улучшение на 40%.
 
@@ -239,7 +241,7 @@ class TestFormattedPostValidation:
 💡 TL;DR
 OpenAI выпустила GPT-5 с улучшениями.
 
-#OpenAI #GPT5 #AI'''
+#OpenAI #GPT5 #AI"""
         result = validator.validate_formatted_post(content)
         assert result.is_ready or result.score >= 60
 
@@ -267,7 +269,7 @@ class TestIsPublicationReady:
 
     def test_ready_content(self, validator):
         """Test that good content is ready."""
-        content = '''🤖 OpenAI выпустила GPT-5
+        content = """🤖 OpenAI выпустила GPT-5
 
 Компания OpenAI анонсировала новую версию модели. Улучшение на 40% в бенчмарках.
 
@@ -284,7 +286,7 @@ class TestIsPublicationReady:
 💡 TL;DR
 GPT-5 вышел с улучшениями.
 
-#OpenAI #AI'''
+#OpenAI #AI"""
         is_ready, reason = validator.is_publication_ready(content)
         assert is_ready
 

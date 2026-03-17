@@ -20,6 +20,7 @@ logger = get_logger(__name__)
 @dataclass
 class MediaPromptResult:
     """Result of media prompt generation."""
+
     prompt: str
     visual_concept: str
     style_keywords: list[str]
@@ -104,28 +105,71 @@ class MediaPromptGenerator:
         concepts = []
 
         # Neural network / AI concepts
-        if any(term in content.lower() for term in [
-            "нейron", "neural", "network", "model", "transformer", "gpt", "llm", "ai", "ис",
-            "algorithm", "learning", "training", "inference"
-        ]):
+        if any(
+            term in content.lower()
+            for term in [
+                "нейron",
+                "neural",
+                "network",
+                "model",
+                "transformer",
+                "gpt",
+                "llm",
+                "ai",
+                "ис",
+                "algorithm",
+                "learning",
+                "training",
+                "inference",
+            ]
+        ):
             concepts.append("neural network architecture visualization")
 
         # Data / cloud concepts
-        if any(term in content.lower() for term in [
-            "data", "cloud", "server", "api", "database", "compute", "gpu", "chip", "processor"
-        ]):
+        if any(
+            term in content.lower()
+            for term in [
+                "data",
+                "cloud",
+                "server",
+                "api",
+                "database",
+                "compute",
+                "gpu",
+                "chip",
+                "processor",
+            ]
+        ):
             concepts.append("data center and computing infrastructure")
 
         # Robot / automation concepts
-        if any(term in content.lower() for term in [
-            "robot", "automation", "autonomous", "agent", "assistant", "bot", "chatbot"
-        ]):
+        if any(
+            term in content.lower()
+            for term in [
+                "robot",
+                "automation",
+                "autonomous",
+                "agent",
+                "assistant",
+                "bot",
+                "chatbot",
+            ]
+        ):
             concepts.append("autonomous system and AI agent visualization")
 
         # Research / science concepts
-        if any(term in content.lower() for term in [
-            "research", "study", "paper", "arxiv", "experiment", "benchmark", "result"
-        ]):
+        if any(
+            term in content.lower()
+            for term in [
+                "research",
+                "study",
+                "paper",
+                "arxiv",
+                "experiment",
+                "benchmark",
+                "result",
+            ]
+        ):
             concepts.append("scientific research and data visualization")
 
         # Default: use topic
@@ -148,9 +192,10 @@ class MediaPromptGenerator:
         modifiers = []
 
         # Add cyber/digital feel for tech posts
-        if any(term in content.lower() for term in [
-            "cyber", "security", "hack", "breach", "attack"
-        ]):
+        if any(
+            term in content.lower()
+            for term in ["cyber", "security", "hack", "breach", "attack"]
+        ):
             modifiers.append("cyberpunk aesthetic, neon accents")
 
         # Add clean minimalist feel for product launches
@@ -174,9 +219,16 @@ class MediaPromptGenerator:
             bool: True if faces should be excluded
         """
         # Exclude faces for most AI/tech content
-        face_terms = ["face", "person", "people", "human", "employee", "user", "researcher"]
+        face_terms = [
+            "face",
+            "person",
+            "people",
+            "human",
+            "employee",
+            "user",
+            "researcher",
+        ]
         return not any(term in content.lower() for term in face_terms)
-
 
     async def generate_media_prompt(
         self,
@@ -271,8 +323,7 @@ Example: "cinematic futuristic technology illustration, neural network nodes con
             exclusions.extend(self.face_exclusions)
 
         prompt = self.style_template.format(
-            visual_concept=visual_concept,
-            style_modifiers=style_modifiers
+            visual_concept=visual_concept, style_modifiers=style_modifiers
         )
 
         # Add exclusions

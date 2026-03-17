@@ -143,7 +143,9 @@ class TelethonPublisher(BasePublisher):
         # Get channel entity
         try:
             self._channel_entity = await self._client.get_entity(self.channel_id)
-            logger.info(f"Channel entity resolved: {getattr(self._channel_entity, 'title', self.channel_id)}")
+            logger.info(
+                f"Channel entity resolved: {getattr(self._channel_entity, 'title', self.channel_id)}"
+            )
         except Exception as e:
             logger.warning(f"Could not resolve channel entity: {e}")
 
@@ -234,7 +236,9 @@ class TelethonPublisher(BasePublisher):
         try:
             # Telethon uses different parse modes
             # Convert MarkdownV2 to Telethon's markdown
-            telethon_parse_mode = "md" if parse_mode in ["Markdown", "MarkdownV2"] else parse_mode
+            telethon_parse_mode = (
+                "md" if parse_mode in ["Markdown", "MarkdownV2"] else parse_mode
+            )
 
             message = await self._client.send_message(
                 self.channel_id,
@@ -278,7 +282,9 @@ class TelethonPublisher(BasePublisher):
             raise RuntimeError("Publisher not started")
 
         try:
-            telethon_parse_mode = "md" if parse_mode in ["Markdown", "MarkdownV2"] else parse_mode
+            telethon_parse_mode = (
+                "md" if parse_mode in ["Markdown", "MarkdownV2"] else parse_mode
+            )
 
             # Check if it's a URL or file path
             if image_url.startswith(("http://", "https://")):
@@ -327,7 +333,9 @@ class TelethonPublisher(BasePublisher):
             raise RuntimeError("Publisher not started")
 
         try:
-            telethon_parse_mode = "md" if parse_mode in ["Markdown", "MarkdownV2"] else parse_mode
+            telethon_parse_mode = (
+                "md" if parse_mode in ["Markdown", "MarkdownV2"] else parse_mode
+            )
 
             await self._client.edit_message(
                 self.channel_id,

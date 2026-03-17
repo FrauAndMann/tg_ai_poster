@@ -59,17 +59,23 @@ class Keyboards:
         keyboard = []
 
         if has_open_circuits:
-            keyboard.append([
-                InlineKeyboardButton("Reset All", callback_data="circuit_reset"),
-            ])
+            keyboard.append(
+                [
+                    InlineKeyboardButton("Reset All", callback_data="circuit_reset"),
+                ]
+            )
 
-        keyboard.append([
-            InlineKeyboardButton("Refresh", callback_data="circuit"),
-        ])
+        keyboard.append(
+            [
+                InlineKeyboardButton("Refresh", callback_data="circuit"),
+            ]
+        )
 
-        keyboard.append([
-            InlineKeyboardButton("Back", callback_data="status"),
-        ])
+        keyboard.append(
+            [
+                InlineKeyboardButton("Back", callback_data="status"),
+            ]
+        )
 
         return InlineKeyboardMarkup(keyboard)
 
@@ -100,16 +106,22 @@ class Keyboards:
         keyboard = []
 
         if has_items:
-            keyboard.append([
-                InlineKeyboardButton("Clear Queue", callback_data="queue_clear"),
-            ])
+            keyboard.append(
+                [
+                    InlineKeyboardButton("Clear Queue", callback_data="queue_clear"),
+                ]
+            )
 
-        keyboard.append([
-            InlineKeyboardButton("Refresh", callback_data="queue"),
-        ])
+        keyboard.append(
+            [
+                InlineKeyboardButton("Refresh", callback_data="queue"),
+            ]
+        )
 
-        keyboard.append([
-            InlineKeyboardButton("Back", callback_data="main_menu"),
-        ])
+        keyboard.append(
+            [
+                InlineKeyboardButton("Back", callback_data="main_menu"),
+            ]
+        )
 
         return InlineKeyboardMarkup(keyboard)

@@ -64,11 +64,27 @@ class HashtagIntelligence:
 
     # Default AI/tech hashtags
     DEFAULT_HASHTAGS = [
-        "#AI", "#ИИ", "#MachineLearning", "#ML", "#ArtificialIntelligence",
-        "#LLM", "#GPT", "#NeuralNetworks", "#DeepLearning",
-        "#TechNews", "#TechTrends", "#Innovation", "#Future",
-        "#Automation", "#DataScience", "#NeuralNetwork", "#ChatGPT",
-        "#Claude", "#OpenAI", "#Anthropic", "#TechCrunch",
+        "#AI",
+        "#ИИ",
+        "#MachineLearning",
+        "#ML",
+        "#ArtificialIntelligence",
+        "#LLM",
+        "#GPT",
+        "#NeuralNetworks",
+        "#DeepLearning",
+        "#TechNews",
+        "#TechTrends",
+        "#Innovation",
+        "#Future",
+        "#Automation",
+        "#DataScience",
+        "#NeuralNetwork",
+        "#ChatGPT",
+        "#Claude",
+        "#OpenAI",
+        "#Anthropic",
+        "#TechCrunch",
     ]
 
     def __init__(
@@ -136,7 +152,12 @@ class HashtagIntelligence:
         ):
             self.blacklist(tag, f"Low engagement rate: {stats.engagement_rate:.2%}")
 
-        logger.debug("Recorded hashtag %s: %d impressions, %d engagements", tag, impressions, engagements)
+        logger.debug(
+            "Recorded hashtag %s: %d impressions, %d engagements",
+            tag,
+            impressions,
+            engagements,
+        )
 
     def blacklist(self, hashtag: str, reason: str = "") -> None:
         """Add hashtag to blacklist."""
@@ -174,7 +195,8 @@ class HashtagIntelligence:
             List of top performing hashtags
         """
         candidates = [
-            stats for stats in self._hashtags.values()
+            stats
+            for stats in self._hashtags.values()
             if not stats.blacklisted and stats.posts_count > 0
         ]
 
@@ -213,7 +235,9 @@ class HashtagIntelligence:
             if stats.blacklisted:
                 continue
 
-            score = self._calculate_tag_score(tag, stats, content_lower, topic_lower, trending_tags)
+            score = self._calculate_tag_score(
+                tag, stats, content_lower, topic_lower, trending_tags
+            )
             scored.append((stats.hashtag, score))
 
         # Sort by score

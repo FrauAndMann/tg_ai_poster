@@ -108,7 +108,9 @@ class PromptBuilder:
 
         for i, post in enumerate(posts, 1):
             # Truncate for context
-            content = post.content[:400] + "..." if len(post.content) > 400 else post.content
+            content = (
+                post.content[:400] + "..." if len(post.content) > 400 else post.content
+            )
             context_parts.append(f"\n--- Post {i} ---\n{content}")
 
         return "\n".join(context_parts)
@@ -198,7 +200,8 @@ class PromptBuilder:
         return template.format(
             topic=topic,
             channel_topic=self.channel_topic,
-            source_context=source_context or "No additional context provided. Use your knowledge.",
+            source_context=source_context
+            or "No additional context provided. Use your knowledge.",
             post_length_min=self.post_length_min,
             post_length_max=self.post_length_max,
             emojis_per_post=self.emojis_per_post,
@@ -261,10 +264,12 @@ class PromptBuilder:
             "Sources:\n{sources_text}",
         )
 
-        sources_text = "\n".join([
-            f"- {s.get('title', 'Unknown')}\n  URL: {s.get('url', '')}\n  Source: {s.get('source', '')}"
-            for s in sources[:5]
-        ])
+        sources_text = "\n".join(
+            [
+                f"- {s.get('title', 'Unknown')}\n  URL: {s.get('url', '')}\n  Source: {s.get('source', '')}"
+                for s in sources[:5]
+            ]
+        )
 
         return template.format(
             topic=topic,

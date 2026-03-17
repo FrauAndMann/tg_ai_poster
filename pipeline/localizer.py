@@ -103,9 +103,7 @@ class Localizer:
             raise ValueError(f"Unsupported language: {target_language}")
 
         source_lang = self._detect_language(content)
-        context = self._cultural_context.get(
-            source_lang, self.CULTURAL_CONTEXT["ru"]
-        )
+        context = self._cultural_context.get(source_lang, self.CULTURAL_CONTEXT["ru"])
 
         # Create base localized content
         localized = LocalizedContent(

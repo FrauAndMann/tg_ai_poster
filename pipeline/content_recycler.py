@@ -157,7 +157,7 @@ class ContentRecycler:
             candidates.sort(key=lambda x: x.engagement_score, reverse=True)
 
             # Limit candidates
-            candidates = candidates[:self.max_candidates]
+            candidates = candidates[: self.max_candidates]
 
             logger.info("Found %d recyclable post candidates", len(candidates))
             return candidates
@@ -267,7 +267,11 @@ class ContentRecycler:
                 recycled.original_post_id = candidate.post_id
                 results.append(recycled)
 
-        logger.info("Recycling cycle complete: %d/%d posts recycled", len(results), len(candidates))
+        logger.info(
+            "Recycling cycle complete: %d/%d posts recycled",
+            len(results),
+            len(candidates),
+        )
         return results
 
 

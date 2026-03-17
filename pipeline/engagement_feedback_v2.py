@@ -161,7 +161,9 @@ class EngagementFeedbackLoopV2:
         for post_id in post_ids:
             message_id = message_ids.get(post_id)
             if message_id:
-                snapshot = await self.pull_engagement(post_id, message_id, channel_entity)
+                snapshot = await self.pull_engagement(
+                    post_id, message_id, channel_entity
+                )
                 if snapshot and post_id in self._time_series:
                     results[post_id] = self._time_series[post_id]
         return results

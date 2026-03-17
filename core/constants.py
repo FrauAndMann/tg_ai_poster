@@ -345,8 +345,10 @@ BACKUP_FILE_EXTENSION = ".tar.gz"
 # STATUS CONSTANTS
 # =============================================================================
 
+
 class PostStatus:
     """Post status lifecycle constants."""
+
     DRAFT = "draft"
     PENDING_REVIEW = "pending_review"
     NEEDS_REVISION = "needs_revision"
@@ -359,6 +361,7 @@ class PostStatus:
 
 class PostType:
     """Post type constants."""
+
     BREAKING = "breaking"
     DEEP_DIVE = "deep_dive"
     TOOL_ROUNDUP = "tool_roundup"
@@ -367,6 +370,7 @@ class PostType:
 
 class SourceType:
     """Source type constants."""
+
     RSS = "rss"
     API = "api"
     MANUAL = "manual"
@@ -376,6 +380,7 @@ class SourceType:
 
 class Recommendation:
     """Verification recommendation constants."""
+
     PUBLISH = "publish"
     NEEDS_REVIEW = "needs_review"
     REJECT = "reject"
@@ -383,6 +388,7 @@ class Recommendation:
 
 class EntityType:
     """Entity type constants for extraction."""
+
     COMPANY = "company"
     MODEL = "model"
     RESEARCHER = "researcher"

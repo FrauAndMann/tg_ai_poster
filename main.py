@@ -249,10 +249,7 @@ async def run_scheduled(
             result = await orchestrator.run(dry_run=dry_run)
 
             if result.success:
-                logger.info(
-                    f"Scheduled post completed. "
-                    f"Post ID: {result.post_id}"
-                )
+                logger.info(f"Scheduled post completed. Post ID: {result.post_id}")
 
                 # Notify admin if configured
                 if settings.admin.notify_on_post and settings.admin.telegram_id:
@@ -274,9 +271,7 @@ async def run_scheduled(
     _scheduler = Scheduler(settings, job_func)
     _scheduler.start()
 
-    logger.info(
-        f"Scheduler started. Next runs: {_scheduler.get_next_run_times()}"
-    )
+    logger.info(f"Scheduler started. Next runs: {_scheduler.get_next_run_times()}")
 
     # Wait for shutdown signal
     await _shutdown_event.wait()

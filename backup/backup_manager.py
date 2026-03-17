@@ -137,6 +137,7 @@ class BackupManager:
                 manifest_path = staging_dir / "manifest.json"
                 with open(manifest_path, "w", encoding="utf-8") as f:
                     import json
+
                     json.dump(manifest, f, indent=2)
 
                 # Create compressed archive
@@ -216,13 +217,15 @@ class BackupManager:
         for backup_file in self.backup_dir.glob("backup_*.tar.gz"):
             try:
                 stat = backup_file.stat()
-                backups.append({
-                    "path": str(backup_file),
-                    "name": backup_file.name,
-                    "size_mb": stat.st_size / (1024 * 1024),
-                    "created_at": datetime.fromtimestamp(stat.st_ctime),
-                    "type": self._extract_backup_type(backup_file.name),
-                })
+                backups.append(
+                    {
+                        "path": str(backup_file),
+                        "name": backup_file.name,
+                        "size_mb": stat.st_size / (1024 * 1024),
+                        "created_at": datetime.fromtimestamp(stat.st_ctime),
+                        "type": self._extract_backup_type(backup_file.name),
+                    }
+                )
             except Exception as e:
                 logger.warning(f"Error reading backup {backup_file}: {e}")
 

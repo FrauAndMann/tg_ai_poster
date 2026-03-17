@@ -27,14 +27,12 @@ TRUSTED_DOMAINS = {
     "arstechnica.com": 90,
     "wired.com": 90,
     "venturebeat.com": 85,
-
     # Academic and scientific
     "nature.com": 98,
     "science.org": 98,
     "arxiv.org": 95,
     "sciencedirect.com": 95,
     "springer.com": 90,
-
     # Official company blogs
     "openai.com": 95,
     "anthropic.com": 95,
@@ -45,29 +43,24 @@ TRUSTED_DOMAINS = {
     "facebook.com": 80,
     "microsoft.com": 85,
     "azure.microsoft.com": 85,
-
     # Code and models
     "github.com": 90,
     "huggingface.co": 90,
     "paperswithcode.com": 88,
-
     # Wire services
     "reuters.com": 95,
     "bloomberg.com": 90,
     "wsj.com": 88,
     "ft.com": 88,
-
     # Industry
     "deeplearning.ai": 85,
     "oreilly.com": 85,
     "mit.edu": 95,
     "stanford.edu": 95,
-
     # Regional tech
     "vc.ru": 75,
     "forbes.ru": 70,
     "incrussia.ru": 70,
-
     # Community
     "reddit.com": 60,
     "news.ycombinator.com": 70,
@@ -89,6 +82,7 @@ class VerifiedSource:
         is_primary: Whether this is the primary/authoritative source
         verification_notes: Notes about verification
     """
+
     article: Article
     trust_score: float
     is_primary: bool = False
@@ -120,6 +114,7 @@ class VerificationResult:
         recommendation: publish/needs_review/reject
         reasoning: Explanation of the verdict
     """
+
     verified: bool
     credibility_score: float
     sources: list[VerifiedSource] = field(default_factory=list)
@@ -134,7 +129,9 @@ class VerificationResult:
             "verified": self.verified,
             "credibility_score": self.credibility_score,
             "sources": [s.to_dict() for s in self.sources],
-            "primary_source": self.primary_source.to_dict() if self.primary_source else None,
+            "primary_source": self.primary_source.to_dict()
+            if self.primary_source
+            else None,
             "cross_reference_count": self.cross_reference_count,
             "inconsistencies": self.inconsistencies,
             "recommendation": self.recommendation,
@@ -200,7 +197,9 @@ class SourceVerifier:
         if len(parts) > 2:
             parent_domain = ".".join(parts[-2:])
             if parent_domain in self.trusted_domains:
-                return self.trusted_domains[parent_domain] * 0.9  # Slightly lower for subdomains
+                return (
+                    self.trusted_domains[parent_domain] * 0.9
+                )  # Slightly lower for subdomains
 
         # Unknown domain - low trust
         return 40.0
@@ -221,7 +220,7 @@ class SourceVerifier:
             words1 = set(a1.title.lower().split() + a1.summary.lower().split())
             words1 = {w for w in words1 if len(w) > 3}  # Filter short words
 
-            for j, a2 in enumerate(articles[i+1:], i+1):
+            for j, a2 in enumerate(articles[i + 1 :], i + 1):
                 words2 = set(a2.title.lower().split() + a2.summary.lower().split())
                 words2 = {w for w in words2 if len(w) > 3}
 
@@ -291,20 +290,27 @@ class SourceVerifier:
             credibility_score = 0
         else:
             # Weighted average, with bonus for multiple sources
-            base_score = sum(vs.trust_score for vs in verified_sources) / len(verified_sources)
+            base_score = sum(vs.trust_score for vs in verified_sources) / len(
+                verified_sources
+            )
 
             # Bonus for cross-references
             cross_ref_bonus = min(cross_ref_count * 5, 15)
 
             # Penalty for only low-trust sources
-            high_trust_count = len([vs for vs in verified_sources if vs.trust_score >= 70])
+            high_trust_count = len(
+                [vs for vs in verified_sources if vs.trust_score >= 70]
+            )
             if high_trust_count == 0:
                 base_score *= 0.7
 
             credibility_score = min(100, base_score + cross_ref_bonus)
 
         # Determine recommendation
-        if credibility_score >= self.min_credibility and len(verified_sources) >= self.min_sources:
+        if (
+            credibility_score >= self.min_credibility
+            and len(verified_sources) >= self.min_sources
+        ):
             recommendation = "publish"
             verified = True
             reasoning = f"Verified with {len(verified_sources)} sources, credibility {credibility_score:.0f}%"
@@ -363,10 +369,12 @@ class SourceVerifier:
 
         try:
             # Build prompt for AI verification
-            sources_text = "\n".join([
-                f"- {a.title}\n  URL: {a.url}\n  Source: {a.source}\n  Summary: {a.summary[:200]}..."
-                for a in articles[:5]
-            ])
+            sources_text = "\n".join(
+                [
+                    f"- {a.title}\n  URL: {a.url}\n  Source: {a.source}\n  Summary: {a.summary[:200]}..."
+                    for a in articles[:5]
+                ]
+            )
 
             prompt = f"""Verify these sources for a news post about: {topic}
 
@@ -399,19 +407,24 @@ Respond in JSON:
             ai_result = json.loads(response_text.strip())
 
             # Combine results
-            combined_score = (base_result.credibility_score + ai_result.get("credibility_score", 50)) / 2
+            combined_score = (
+                base_result.credibility_score + ai_result.get("credibility_score", 50)
+            ) / 2
 
             return VerificationResult(
-                verified=ai_result.get("verified", base_result.verified) and base_result.verified,
+                verified=ai_result.get("verified", base_result.verified)
+                and base_result.verified,
                 credibility_score=combined_score,
                 sources=base_result.sources,
                 primary_source=base_result.primary_source,
                 cross_reference_count=max(
                     base_result.cross_reference_count,
-                    ai_result.get("cross_reference_count", 0)
+                    ai_result.get("cross_reference_count", 0),
                 ),
                 inconsistencies=ai_result.get("inconsistencies", []),
-                recommendation=ai_result.get("recommendation", base_result.recommendation),
+                recommendation=ai_result.get(
+                    "recommendation", base_result.recommendation
+                ),
                 reasoning=ai_result.get("reasoning", base_result.reasoning),
             )
 
@@ -438,7 +451,9 @@ Respond in JSON:
         parts = ["VERIFIED SOURCES (use ONLY these facts):\n"]
 
         for i, vs in enumerate(verified_sources[:3], 1):
-            parts.append(f"\n[Source {i}] {vs.article.source} (trust: {vs.trust_score:.0f}%)")
+            parts.append(
+                f"\n[Source {i}] {vs.article.source} (trust: {vs.trust_score:.0f}%)"
+            )
             parts.append(f"Title: {vs.article.title}")
             parts.append(f"URL: {vs.article.url}")
             if vs.article.summary:
@@ -446,6 +461,8 @@ Respond in JSON:
             if vs.is_primary:
                 parts.append("(PRIMARY SOURCE)")
 
-        parts.append("\n\nIMPORTANT: Use only facts from these sources. Include source URLs in your post.")
+        parts.append(
+            "\n\nIMPORTANT: Use only facts from these sources. Include source URLs in your post."
+        )
 
         return "\n".join(parts)

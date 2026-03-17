@@ -191,7 +191,9 @@ class PipelineCoordinator:
                 post_id=self._pipeline_data.get("post_id"),
                 content=content,
                 topic=self._pipeline_data.get("topic"),
-                media_url=self._pipeline_data.get("media", {}).get("url") if self._pipeline_data.get("media") else None,
+                media_url=self._pipeline_data.get("media", {}).get("url")
+                if self._pipeline_data.get("media")
+                else None,
                 duration=duration,
             )
             self._result_future.set_result(result)
@@ -199,7 +201,9 @@ class PipelineCoordinator:
             # Emit completion event
             self.bus.emit(
                 EventType.PIPELINE_COMPLETE.value,
-                PipelineEvent(type=EventType.PIPELINE_COMPLETE, data={"result": result}),
+                PipelineEvent(
+                    type=EventType.PIPELINE_COMPLETE, data={"result": result}
+                ),
             )
 
     def _fail_pipeline(self, error: str) -> None:

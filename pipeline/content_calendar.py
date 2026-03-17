@@ -22,6 +22,7 @@ logger = get_logger(__name__)
 
 class ContentType(Enum):
     """Content type categories."""
+
     NEWS = "news"
     ANALYSIS = "analysis"
     TUTORIAL = "tutorial"
@@ -228,7 +229,9 @@ class ContentCalendar:
 
         return 5
 
-    def find_topic_gaps(self, topics: list[str], days_threshold: int = 14) -> list[TopicGap]:
+    def find_topic_gaps(
+        self, topics: list[str], days_threshold: int = 14
+    ) -> list[TopicGap]:
         """
         Find topics that haven't been covered recently.
 
@@ -246,19 +249,23 @@ class ContentCalendar:
             last_covered = self._find_last_coverage(topic)
 
             if last_covered is None:
-                gaps.append(TopicGap(
-                    topic=topic,
-                    last_covered=None,
-                    suggested_priority=2,
-                    reason="Never covered",
-                ))
+                gaps.append(
+                    TopicGap(
+                        topic=topic,
+                        last_covered=None,
+                        suggested_priority=2,
+                        reason="Never covered",
+                    )
+                )
             elif (now - last_covered).days >= days_threshold:
-                gaps.append(TopicGap(
-                    topic=topic,
-                    last_covered=last_covered,
-                    suggested_priority=min(10, (now - last_covered).days // 2),
-                    reason=f"Not covered for {(now - last_covered).days} days",
-                ))
+                gaps.append(
+                    TopicGap(
+                        topic=topic,
+                        last_covered=last_covered,
+                        suggested_priority=min(10, (now - last_covered).days // 2),
+                        reason=f"Not covered for {(now - last_covered).days} days",
+                    )
+                )
 
         return sorted(gaps, key=lambda g: g.suggested_priority)
 
@@ -305,7 +312,9 @@ class ContentCalendar:
 
         for slot in self._calendar.values():
             if slot.status == "published":
-                type_counts[slot.content_type] = type_counts.get(slot.content_type, 0) + 1
+                type_counts[slot.content_type] = (
+                    type_counts.get(slot.content_type, 0) + 1
+                )
 
         total = sum(type_counts.values()) or 1
 
@@ -323,12 +332,14 @@ class ContentCalendar:
             analysis["target_mix"][content_type.value] = target_pct
 
             if target_pct > 0 and current_pct < target_pct * 0.7:
-                analysis["gaps"].append({
-                    "type": content_type.value,
-                    "current": current_pct,
-                    "target": target_pct,
-                    "shortfall": target_pct - current_pct,
-                })
+                analysis["gaps"].append(
+                    {
+                        "type": content_type.value,
+                        "current": current_pct,
+                        "target": target_pct,
+                        "shortfall": target_pct - current_pct,
+                    }
+                )
 
         return analysis
 

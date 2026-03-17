@@ -22,23 +22,31 @@ class TestCalculateBackoff:
 
     def test_first_attempt(self):
         """Test first attempt backoff."""
-        backoff = calculate_backoff(1, base=1.0, multiplier=2.0, max_backoff=60.0, jitter=False)
+        backoff = calculate_backoff(
+            1, base=1.0, multiplier=2.0, max_backoff=60.0, jitter=False
+        )
         assert backoff == 1.0
 
     def test_second_attempt(self):
         """Test second attempt backoff."""
-        backoff = calculate_backoff(2, base=1.0, multiplier=2.0, max_backoff=60.0, jitter=False)
+        backoff = calculate_backoff(
+            2, base=1.0, multiplier=2.0, max_backoff=60.0, jitter=False
+        )
         assert backoff == 2.0
 
     def test_max_backoff(self):
         """Test maximum backoff cap."""
-        backoff = calculate_backoff(10, base=1.0, multiplier=2.0, max_backoff=10.0, jitter=False)
+        backoff = calculate_backoff(
+            10, base=1.0, multiplier=2.0, max_backoff=10.0, jitter=False
+        )
         assert backoff <= 10.0
 
     def test_jitter(self):
         """Test jitter adds randomness."""
         backoffs = [
-            calculate_backoff(3, base=1.0, multiplier=2.0, max_backoff=60.0, jitter=True)
+            calculate_backoff(
+                3, base=1.0, multiplier=2.0, max_backoff=60.0, jitter=True
+            )
             for _ in range(10)
         ]
         # With jitter, values should vary
@@ -47,7 +55,9 @@ class TestCalculateBackoff:
     def test_no_jitter(self):
         """Test without jitter."""
         backoffs = [
-            calculate_backoff(3, base=1.0, multiplier=2.0, max_backoff=60.0, jitter=False)
+            calculate_backoff(
+                3, base=1.0, multiplier=2.0, max_backoff=60.0, jitter=False
+            )
             for _ in range(10)
         ]
         # Without jitter, all values should be the same
@@ -92,6 +102,7 @@ class TestWithRetry:
     @pytest.mark.asyncio
     async def test_all_attempts_fail(self):
         """Test when all attempts fail."""
+
         @with_retry(max_attempts=2, backoff_base=0.01)
         async def fail_func():
             raise ValueError("Always fails")
@@ -162,6 +173,7 @@ class TestTokenBucket:
         """Test token refill."""
         bucket = TokenBucket(capacity=10, refill_rate=10.0, tokens=0.0)
         import time
+
         time.sleep(0.5)
         bucket._refill()
         assert bucket.tokens > 0
@@ -171,6 +183,7 @@ class TestTokenBucket:
         """Test waiting for token availability."""
         bucket = TokenBucket(capacity=10, refill_rate=100.0, tokens=0.0)
         import time
+
         start = time.time()
         await bucket.wait_for_token(1.0)
         elapsed = time.time() - start

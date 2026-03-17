@@ -3,6 +3,7 @@ Draft and Version Management Module.
 
 Manages post versions, draft operations, and version history.
 """
+
 from __future__ import annotations
 
 
@@ -22,10 +23,7 @@ class DraftManager:
         pass
 
     async def create_version(
-        self,
-        post: Post,
-        reason: str | None = None,
-        created_by: str = "ai"
+        self, post: Post, reason: str | None = None, created_by: str = "ai"
     ) -> PostVersion:
         """
         Create new version snapshot.
@@ -67,9 +65,7 @@ class DraftManager:
             await session.flush()
 
             # Update post version - get fresh post from this session
-            result = await session.execute(
-                select(Post).where(Post.id == post.id)
-            )
+            result = await session.execute(select(Post).where(Post.id == post.id))
             db_post = result.scalar_one_or_none()
             if db_post:
                 db_post.version = version_number
@@ -139,18 +135,14 @@ class DraftManager:
 
         async with get_database().session() as session:
             # Get the post
-            result = await session.execute(
-                select(Post).where(Post.id == post_id)
-            )
+            result = await session.execute(select(Post).where(Post.id == post_id))
             post = result.scalar_one_or_none()
             if not post:
                 return None
 
             # Create a version snapshot of current state before restore
             await self.create_version(
-                post,
-                reason=f"Before restore to version {version}",
-                created_by="system"
+                post, reason=f"Before restore to version {version}", created_by="system"
             )
 
             # Restore content from version
@@ -192,8 +184,12 @@ class DraftManager:
             "version_2": v2,
             "content_changed": version1.content != version2.content,
             "title_changed": version1.post_title != version2.post_title,
-            "v1_created_at": version1.created_at.isoformat() if version1.created_at else None,
-            "v2_created_at": version2.created_at.isoformat() if version2.created_at else None,
+            "v1_created_at": version1.created_at.isoformat()
+            if version1.created_at
+            else None,
+            "v2_created_at": version2.created_at.isoformat()
+            if version2.created_at
+            else None,
             "v1_reason": version1.change_reason,
             "v2_reason": version2.change_reason,
         }

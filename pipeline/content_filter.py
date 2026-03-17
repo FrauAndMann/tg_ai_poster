@@ -95,12 +95,65 @@ class ContentFilter:
 
         # Remove common words
         stop_words = {
-            "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for",
-            "of", "with", "by", "from", "as", "is", "was", "are", "were", "been",
-            "be", "have", "has", "had", "do", "does", "did", "will", "would",
-            "could", "should", "may", "might", "must", "shall", "can", "need",
-            "и", "в", "на", "с", "по", "к", "из", "за", "от", "до", "о", "об",
-            "не", "но", "а", "или", "что", "как", "это", "для", "так",
+            "the",
+            "a",
+            "an",
+            "and",
+            "or",
+            "but",
+            "in",
+            "on",
+            "at",
+            "to",
+            "for",
+            "of",
+            "with",
+            "by",
+            "from",
+            "as",
+            "is",
+            "was",
+            "are",
+            "were",
+            "been",
+            "be",
+            "have",
+            "has",
+            "had",
+            "do",
+            "does",
+            "did",
+            "will",
+            "would",
+            "could",
+            "should",
+            "may",
+            "might",
+            "must",
+            "shall",
+            "can",
+            "need",
+            "и",
+            "в",
+            "на",
+            "с",
+            "по",
+            "к",
+            "из",
+            "за",
+            "от",
+            "до",
+            "о",
+            "об",
+            "не",
+            "но",
+            "а",
+            "или",
+            "что",
+            "как",
+            "это",
+            "для",
+            "так",
         }
 
         words = re.findall(r"\b[a-zA-Zа-яА-Я]{3,}\b", text.lower())
@@ -150,7 +203,9 @@ class ContentFilter:
 
         # Recency bonus
         if self.prefer_recent and article.published_at:
-            hours_ago = (datetime.utcnow() - article.published_at).total_seconds() / 3600
+            hours_ago = (
+                datetime.utcnow() - article.published_at
+            ).total_seconds() / 3600
 
             if hours_ago <= self.recent_hours:
                 recency_bonus = (self.recent_hours - hours_ago) / self.recent_hours * 15
@@ -300,13 +355,15 @@ class ContentFilter:
 
         topics = []
         for sa in scored:
-            topics.append({
-                "title": sa.article.title,
-                "summary": sa.article.summary[:200],
-                "source_url": sa.article.url,
-                "source_name": sa.article.source,
-                "score": sa.score,
-                "tags": sa.article.tags,
-            })
+            topics.append(
+                {
+                    "title": sa.article.title,
+                    "summary": sa.article.summary[:200],
+                    "source_url": sa.article.url,
+                    "source_name": sa.article.source,
+                    "score": sa.score,
+                    "tags": sa.article.tags,
+                }
+            )
 
         return topics

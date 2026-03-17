@@ -35,7 +35,9 @@ from pipeline.topic_selector import TopicSelector
 logger = get_logger(__name__)
 
 
-def parse_json_post(response: str | dict, validator: ContentValidator | None = None) -> dict[str, Any]:
+def parse_json_post(
+    response: str | dict, validator: ContentValidator | None = None
+) -> dict[str, Any]:
     """
     Parse JSON response from LLM and extract structured post data.
 
@@ -65,7 +67,7 @@ def parse_json_post(response: str | dict, validator: ContentValidator | None = N
         # Strategy 2: Remove markdown code blocks (```json ... ```)
         if "```" in text:
             # Try to extract from code block
-            code_block_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', text)
+            code_block_match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text)
             if code_block_match:
                 extracted = code_block_match.group(1).strip()
                 if extracted.startswith("{"):
@@ -75,24 +77,26 @@ def parse_json_post(response: str | dict, validator: ContentValidator | None = N
         first_brace = text.find("{")
         last_brace = text.rfind("}")
         if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
-            return text[first_brace:last_brace + 1]
+            return text[first_brace : last_brace + 1]
 
         return None
 
     def fix_common_json_errors(text: str) -> str:
         """Fix common JSON formatting errors."""
         # Remove trailing commas before } or ]
-        text = re.sub(r',\s*([}\]])', r'\1', text)
+        text = re.sub(r",\s*([}\]])", r"\1", text)
         # Fix unescaped quotes in strings (simple heuristic)
         # Fix missing quotes around keys
-        text = re.sub(r'(\w+)\s*:', r'"\1":', text)
+        text = re.sub(r"(\w+)\s*:", r'"\1":', text)
         return text
 
     # Pre-validate for LLM meta-text if validator provided
     if validator:
         pre_check = validator.validate_raw_response(response)
         if pre_check.needs_regeneration:
-            logger.warning(f"LLM meta-text detected in response: {pre_check.critical_issues}")
+            logger.warning(
+                f"LLM meta-text detected in response: {pre_check.critical_issues}"
+            )
 
     # Extract JSON from response
     json_text = extract_json(response)
@@ -104,7 +108,7 @@ def parse_json_post(response: str | dict, validator: ContentValidator | None = N
     parse_attempts = [
         ("raw", lambda t: t),
         ("fixed", fix_common_json_errors),
-        ("no_comments", lambda t: re.sub(r'//.*$', '', t, flags=re.MULTILINE)),
+        ("no_comments", lambda t: re.sub(r"//.*$", "", t, flags=re.MULTILINE)),
     ]
 
     for strategy_name, transformer in parse_attempts:
@@ -119,7 +123,9 @@ def parse_json_post(response: str | dict, validator: ContentValidator | None = N
 
             # Check for at least body or content field
             if not data.get("body") and not data.get("content"):
-                logger.error(f"JSON missing both 'body' and 'content' fields (strategy: {strategy_name})")
+                logger.error(
+                    f"JSON missing both 'body' and 'content' fields (strategy: {strategy_name})"
+                )
                 continue
 
             if strategy_name != "raw":
@@ -417,10 +423,7 @@ class PipelineOrchestrator:
             kwargs["api_key"] = settings.llm.api_key
             kwargs["base_url"] = settings.llm.get_base_url()
 
-        return get_llm_adapter(
-            provider=settings.llm.provider,
-            **kwargs
-        )
+        return get_llm_adapter(provider=settings.llm.provider, **kwargs)
 
     async def _check_posting_allowed(self) -> tuple[bool, str]:
         """
@@ -432,7 +435,10 @@ class PipelineOrchestrator:
         # Check daily limit
         today_count = await self.post_store.get_today_post_count()
         if today_count >= self.settings.safety.max_daily_posts:
-            return False, f"Daily post limit reached ({today_count}/{self.settings.safety.max_daily_posts})"
+            return (
+                False,
+                f"Daily post limit reached ({today_count}/{self.settings.safety.max_daily_posts})",
+            )
 
         # Check minimum interval
         can_post = await self.post_store.can_post_now(
@@ -837,7 +843,9 @@ class PipelineOrchestrator:
 
             if topic_meta and topic_meta.get("source_article"):
                 article = topic_meta["source_article"]
-                source_context = f"Source: {article.get('source', '')}\n{article.get('summary', '')}"
+                source_context = (
+                    f"Source: {article.get('source', '')}\n{article.get('summary', '')}"
+                )
                 source_articles = [article]
 
             # Use verified sources if available
@@ -910,9 +918,15 @@ class PipelineOrchestrator:
                         feedback_parts.extend(editor_result.remaining_concerns[:4])
                     if quality and quality.issues:
                         feedback_parts.extend(quality.issues[:4])
-                    feedback = "; ".join(feedback_parts)[:800] if feedback_parts else "Improve structure and quality."
+                    feedback = (
+                        "; ".join(feedback_parts)[:800]
+                        if feedback_parts
+                        else "Improve structure and quality."
+                    )
 
-                    logger.warning(f"Regenerating post with feedback: {feedback[:100]}...")
+                    logger.warning(
+                        f"Regenerating post with feedback: {feedback[:100]}..."
+                    )
                     generated = await self.generator.generate(
                         topic=topic,
                         source_context=source_context,
@@ -930,14 +944,18 @@ class PipelineOrchestrator:
                 parsed = parse_json_post(generated.content, self.content_validator)
 
                 if parsed is None:
-                    last_error = "LLM returned non-JSON or meta-text instead of valid post"
+                    last_error = (
+                        "LLM returned non-JSON or meta-text instead of valid post"
+                    )
                     logger.error(f"Attempt {attempt}: {last_error}")
                     continue
 
                 post_data = parsed
 
                 # Validate JSON structure using ContentValidator
-                content_validation = self.content_validator.validate_json_post(post_data)
+                content_validation = self.content_validator.validate_json_post(
+                    post_data
+                )
 
                 if not content_validation.is_valid:
                     last_error = f"JSON validation failed: {'; '.join(content_validation.critical_issues[:3])}"
@@ -949,9 +967,13 @@ class PipelineOrchestrator:
                 raw_text_for_review = format_post_from_json(post_data)
 
                 # Final content validation on rendered text
-                rendered_validation = self.content_validator.validate_formatted_post(raw_text_for_review)
+                rendered_validation = self.content_validator.validate_formatted_post(
+                    raw_text_for_review
+                )
                 if not rendered_validation.is_ready:
-                    logger.warning(f"Attempt {attempt}: Rendered content issues: {rendered_validation.critical_issues}")
+                    logger.warning(
+                        f"Attempt {attempt}: Rendered content issues: {rendered_validation.critical_issues}"
+                    )
                     if rendered_validation.needs_regeneration:
                         last_error = f"Content not ready: {'; '.join(rendered_validation.critical_issues[:2])}"
                         continue
@@ -977,23 +999,36 @@ class PipelineOrchestrator:
                 # Stage 7: Quality check
                 quality = await self._quality_check(final_content)
                 if not quality.approved:
-                    logger.warning(f"Attempt {attempt}: Quality issues: {quality.issues}")
+                    logger.warning(
+                        f"Attempt {attempt}: Quality issues: {quality.issues}"
+                    )
 
                 # FINAL CHECK: Is content publication-ready?
-                is_ready, ready_reason = self.content_validator.is_publication_ready(final_content)
+                is_ready, ready_reason = self.content_validator.is_publication_ready(
+                    final_content
+                )
 
                 if is_ready and quality.score >= 60:
                     generation_success = True
-                    logger.info(f"Attempt {attempt}: Content approved for publication (score={quality.score})")
+                    logger.info(
+                        f"Attempt {attempt}: Content approved for publication (score={quality.score})"
+                    )
                     break
                 else:
-                    last_error = f"Not ready: {ready_reason}, quality_score={quality.score}"
+                    last_error = (
+                        f"Not ready: {ready_reason}, quality_score={quality.score}"
+                    )
                     logger.warning(f"Attempt {attempt}: {last_error}")
 
                     # On last attempt, check if we can salvage
                     if attempt == max_attempts:
-                        if quality.score >= 50 and not content_validation.needs_regeneration:
-                            logger.warning("Last attempt: Content has issues but may be salvageable")
+                        if (
+                            quality.score >= 50
+                            and not content_validation.needs_regeneration
+                        ):
+                            logger.warning(
+                                "Last attempt: Content has issues but may be salvageable"
+                            )
                             generation_success = True
                         else:
                             logger.error(f"Last attempt failed: {last_error}")
@@ -1050,9 +1085,13 @@ class PipelineOrchestrator:
                     topic=topic,
                     quality_score=quality.score,
                     editor_score=editor_result.score,
-                    verification_score=verification_result.credibility_score if verification_result else 0,
+                    verification_score=verification_result.credibility_score
+                    if verification_result
+                    else 0,
                     media_prompt=media_prompt,
-                    sources=[{"url": a.url, "source": a.source} for a in source_articles],
+                    sources=[
+                        {"url": a.url, "source": a.source} for a in source_articles
+                    ],
                     duration=time.time() - start_time,
                 )
 
@@ -1094,7 +1133,9 @@ class PipelineOrchestrator:
                 topic=topic,
                 quality_score=quality.score,
                 editor_score=editor_result.score,
-                verification_score=verification_result.credibility_score if verification_result else 0,
+                verification_score=verification_result.credibility_score
+                if verification_result
+                else 0,
                 media_prompt=media_prompt,
                 sources=[{"url": a.url, "source": a.source} for a in source_articles],
                 duration=duration,
@@ -1132,7 +1173,9 @@ class PipelineOrchestrator:
         source_context = None
         if topic_meta and topic_meta.get("source_article"):
             article = topic_meta["source_article"]
-            source_context = f"Source: {article.get('source', '')}\n{article.get('summary', '')}"
+            source_context = (
+                f"Source: {article.get('source', '')}\n{article.get('summary', '')}"
+            )
 
         if verification_result and verification_result.sources:
             source_context = self.source_verifier.get_source_context_for_post(
@@ -1161,9 +1204,14 @@ class PipelineOrchestrator:
             "generation_time": generated.generation_time,
             "quality_score": quality.score,
             "editor_score": editor_result.score,
-            "verification_score": verification_result.credibility_score if verification_result else 0,
+            "verification_score": verification_result.credibility_score
+            if verification_result
+            else 0,
             "media_prompt": media_prompt,
-            "sources": [{"url": a.url, "source": a.source} for a in (verification_result.sources if verification_result else [])],
+            "sources": [
+                {"url": a.url, "source": a.source}
+                for a in (verification_result.sources if verification_result else [])
+            ],
         }
 
         return formatted, metadata

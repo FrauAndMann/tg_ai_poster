@@ -24,6 +24,7 @@ logger = get_logger(__name__)
 
 class HealthStatus(Enum):
     """System health status levels."""
+
     HEALTHY = "healthy"
     DEGRADED = "degraded"
     UNHEALTHY = "unhealthy"
@@ -32,6 +33,7 @@ class HealthStatus(Enum):
 
 class AlertSeverity(Enum):
     """Alert severity levels."""
+
     INFO = "info"
     WARNING = "warning"
     ERROR = "error"
@@ -169,13 +171,15 @@ class Watchdog:
         cooldown_minutes: int = 5,
     ) -> None:
         """Register a recovery action."""
-        self._recovery_actions.append(RecoveryAction(
-            name=name,
-            trigger_condition=trigger_condition,
-            action=action,
-            max_attempts=max_attempts,
-            cooldown_minutes=cooldown_minutes,
-        ))
+        self._recovery_actions.append(
+            RecoveryAction(
+                name=name,
+                trigger_condition=trigger_condition,
+                action=action,
+                max_attempts=max_attempts,
+                cooldown_minutes=cooldown_minutes,
+            )
+        )
 
     async def run_health_checks(self) -> dict[str, HealthCheck]:
         """Run all registered health checks."""
@@ -192,7 +196,8 @@ class Watchdog:
                     # Generate alerts for unhealthy checks
                     if result.status in [HealthStatus.UNHEALTHY, HealthStatus.CRITICAL]:
                         self._create_alert(
-                            AlertSeverity.ERROR if result.status == HealthStatus.UNHEALTHY
+                            AlertSeverity.ERROR
+                            if result.status == HealthStatus.UNHEALTHY
                             else AlertSeverity.CRITICAL,
                             name,
                             result.message,
@@ -247,6 +252,7 @@ class Watchdog:
         try:
             # Cross-platform memory check
             import psutil
+
             memory = psutil.virtual_memory()
             used_pct = memory.percent
 
@@ -255,21 +261,30 @@ class Watchdog:
                     name="memory_usage",
                     status=HealthStatus.CRITICAL,
                     message=f"Memory critically high: {used_pct:.1f}% used",
-                    details={"used_pct": used_pct, "available_gb": memory.available / (1024**3)},
+                    details={
+                        "used_pct": used_pct,
+                        "available_gb": memory.available / (1024**3),
+                    },
                 )
             elif used_pct >= self.MEMORY_THRESHOLD_PCT - 10:
                 return HealthCheck(
                     name="memory_usage",
                     status=HealthStatus.DEGRADED,
                     message=f"Memory usage high: {used_pct:.1f}% used",
-                    details={"used_pct": used_pct, "available_gb": memory.available / (1024**3)},
+                    details={
+                        "used_pct": used_pct,
+                        "available_gb": memory.available / (1024**3),
+                    },
                 )
 
             return HealthCheck(
                 name="memory_usage",
                 status=HealthStatus.HEALTHY,
                 message=f"Memory OK: {used_pct:.1f}% used",
-                details={"used_pct": used_pct, "available_gb": memory.available / (1024**3)},
+                details={
+                    "used_pct": used_pct,
+                    "available_gb": memory.available / (1024**3),
+                },
             )
         except ImportError:
             return HealthCheck(
@@ -421,7 +436,9 @@ class Watchdog:
 
     def record_failure(self, component: str) -> None:
         """Record a failure for tracking."""
-        self._consecutive_failures[component] = self._consecutive_failures.get(component, 0) + 1
+        self._consecutive_failures[component] = (
+            self._consecutive_failures.get(component, 0) + 1
+        )
 
     def record_success(self, component: str) -> None:
         """Record a success, resetting failure counter."""
@@ -469,7 +486,9 @@ class Watchdog:
                         return False
 
                 except Exception as e:
-                    logger.error("Recovery action %s raised exception: %s", action.name, e)
+                    logger.error(
+                        "Recovery action %s raised exception: %s", action.name, e
+                    )
                     action.last_attempt = datetime.now()
                     action.attempt_count += 1
                     return False
@@ -493,6 +512,7 @@ class Watchdog:
             logger.info("Attempting cache cleanup...")
             # Clear any in-memory caches
             import gc
+
             gc.collect()
             return True
         except Exception as e:

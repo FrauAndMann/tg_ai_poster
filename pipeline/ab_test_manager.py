@@ -3,6 +3,7 @@ A/B Testing Module.
 
 Manages experiments for testing different post formats and content variants.
 """
+
 from __future__ import annotations
 
 import random
@@ -84,14 +85,10 @@ class ABTestManager:
 
             # Update posts with experiment info
             # Get fresh posts from DB
-            result_a = await session.execute(
-                select(Post).where(Post.id == post_a.id)
-            )
+            result_a = await session.execute(select(Post).where(Post.id == post_a.id))
             db_post_a = result_a.scalar_one()
 
-            result_b = await session.execute(
-                select(Post).where(Post.id == post_b.id)
-            )
+            result_b = await session.execute(select(Post).where(Post.id == post_b.id))
             db_post_b = result_b.scalar_one()
 
             db_post_a.ab_experiment_id = experiment.id
@@ -166,9 +163,7 @@ class ABTestManager:
             )
 
     async def record_engagement(
-        self,
-        variant: ABVariant,
-        engagement_score: float
+        self, variant: ABVariant, engagement_score: float
     ) -> None:
         """
         Record engagement metric.
@@ -226,8 +221,10 @@ class ABTestManager:
             variant_a, variant_b = variants
 
             # Check sample size
-            if (variant_a.impressions < self.min_sample_size or
-                variant_b.impressions < self.min_sample_size):
+            if (
+                variant_a.impressions < self.min_sample_size
+                or variant_b.impressions < self.min_sample_size
+            ):
                 return {
                     "status": "insufficient_data",
                     "variant_a_impressions": variant_a.impressions,
@@ -238,17 +235,17 @@ class ABTestManager:
             # Calculate average engagement
             avg_a = (
                 variant_a.total_engagement / variant_a.impressions
-                if variant_a.impressions > 0 else 0
+                if variant_a.impressions > 0
+                else 0
             )
             avg_b = (
                 variant_b.total_engagement / variant_b.impressions
-                if variant_b.impressions > 0 else 0
+                if variant_b.impressions > 0
+                else 0
             )
 
             # Calculate improvement
-            improvement = (
-                (avg_b - avg_a) / avg_a if avg_a > 0 else 0
-            )
+            improvement = (avg_b - avg_a) / avg_a if avg_a > 0 else 0
 
             # Determine winner and confidence
             # Using simplified significance test based on effect size
@@ -318,10 +315,7 @@ class ABTestManager:
             )
             return result.scalar_one_or_none()
 
-    async def get_experiment_variants(
-        self,
-        experiment_id: int
-    ) -> list[ABVariant]:
+    async def get_experiment_variants(self, experiment_id: int) -> list[ABVariant]:
         """Get all variants for an experiment."""
         async with get_database().session() as session:
             result = await session.execute(

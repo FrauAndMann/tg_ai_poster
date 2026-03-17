@@ -75,7 +75,10 @@ class TestDatabase:
         # Check that tables exist
         async with db.session() as session:
             from sqlalchemy import text
-            result = await session.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))
+
+            result = await session.execute(
+                text("SELECT name FROM sqlite_master WHERE type='table'")
+            )
             tables = [row[0] for row in result.fetchall()]
             assert "posts" in tables
             assert "topics" in tables
@@ -89,6 +92,7 @@ class TestDatabase:
         async with db.session() as session:
             # Should be able to execute queries
             from sqlalchemy import text
+
             result = await session.execute(text("SELECT 1"))
             assert result.scalar() == 1
 
@@ -268,4 +272,3 @@ class TestTopicStore:
         assert "Topic 3" in names
         # Unused topics should come first
         assert names[0] in ["Topic 1", "Topic 2"]
-

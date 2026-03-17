@@ -18,6 +18,7 @@ logger = get_logger(__name__)
 
 class StructureType(Enum):
     """Types of post structures."""
+
     CLASSIC = "classic"  # Title -> Hook -> Body -> Key Facts -> Analysis -> Sources
     INVERTED = "inverted"  # Key Fact first -> Context -> Analysis
     STORY = "story"  # Narrative arc with personal angle
@@ -31,6 +32,7 @@ class StructureType(Enum):
 @dataclass(slots=True)
 class StructureTemplate:
     """Template for post structure."""
+
     name: str
     structure_type: StructureType
     sections: list[str]
@@ -41,6 +43,7 @@ class StructureTemplate:
 @dataclass(slots=True)
 class StructureVariationReport:
     """Report on structure variation analysis."""
+
     current_structure: str
     suggested_alternatives: list[str]
     variety_score: float
@@ -62,7 +65,15 @@ class StructureVariator:
         StructureType.CLASSIC: StructureTemplate(
             name="classic",
             structure_type=StructureType.CLASSIC,
-            sections=["title", "hook", "body", "key_facts", "analysis", "sources", "tldr"],
+            sections=[
+                "title",
+                "hook",
+                "body",
+                "key_facts",
+                "analysis",
+                "sources",
+                "tldr",
+            ],
             hooks=[
                 "Что если",
                 "Представьте",
@@ -80,7 +91,13 @@ class StructureVariator:
         StructureType.INVERTED: StructureTemplate(
             name="inverted",
             structure_type=StructureType.INVERTED,
-            sections=["key_fact_first", "context", "analysis", "implications", "sources"],
+            sections=[
+                "key_fact_first",
+                "context",
+                "analysis",
+                "implications",
+                "sources",
+            ],
             hooks=[
                 "Главный факт:",
                 "Суть в одном предложении:",
@@ -113,7 +130,13 @@ class StructureVariator:
         StructureType.QUESTION_LED: StructureTemplate(
             name="question_led",
             structure_type=StructureType.QUESTION_LED,
-            sections=["provocative_question", "context", "answer", "implications", "sources"],
+            sections=[
+                "provocative_question",
+                "context",
+                "answer",
+                "implications",
+                "sources",
+            ],
             hooks=[
                 "Почему",
                 "Как",
@@ -173,7 +196,9 @@ class StructureVariator:
         self._used_structures: list[StructureType] = []
         self._max_history = 10
 
-    def get_structure(self, post_type: str, avoid_recent: bool = True) -> StructureTemplate:
+    def get_structure(
+        self, post_type: str, avoid_recent: bool = True
+    ) -> StructureTemplate:
         """
         Get a structure template for a post type.
 
@@ -186,10 +211,22 @@ class StructureVariator:
         """
         # Map post types to preferred structures
         type_preferences = {
-            "news": [StructureType.CLASSIC, StructureType.DATA_FIRST, StructureType.INVERTED],
-            "analysis": [StructureType.QUESTION_LED, StructureType.CLASSIC, StructureType.STORY],
+            "news": [
+                StructureType.CLASSIC,
+                StructureType.DATA_FIRST,
+                StructureType.INVERTED,
+            ],
+            "analysis": [
+                StructureType.QUESTION_LED,
+                StructureType.CLASSIC,
+                StructureType.STORY,
+            ],
             "tutorial": [StructureType.BULLET_HEAVY, StructureType.CLASSIC],
-            "deep_dive": [StructureType.STORY, StructureType.COMPARISON, StructureType.CLASSIC],
+            "deep_dive": [
+                StructureType.STORY,
+                StructureType.COMPARISON,
+                StructureType.CLASSIC,
+            ],
             "tool_roundup": [StructureType.BULLET_HEAVY, StructureType.COMPARISON],
             "breaking": [StructureType.INVERTED, StructureType.DATA_FIRST],
         }
@@ -216,7 +253,9 @@ class StructureVariator:
 
     def get_hook(self, structure_type: StructureType) -> str:
         """Get a hook phrase for the structure."""
-        template = self.TEMPLATES.get(structure_type, self.TEMPLATES[StructureType.CLASSIC])
+        template = self.TEMPLATES.get(
+            structure_type, self.TEMPLATES[StructureType.CLASSIC]
+        )
         return self._rng.choice(template.hooks) if template.hooks else ""
 
     def get_transition(self, transition_type: str) -> str:
@@ -255,7 +294,11 @@ class StructureVariator:
 
         # Find overused and underused
         recommendations = []
-        dominant = max(structure_counts.items(), key=lambda x: x[1])[0] if structure_counts else "classic"
+        dominant = (
+            max(structure_counts.items(), key=lambda x: x[1])[0]
+            if structure_counts
+            else "classic"
+        )
 
         if structure_counts.get(dominant, 0) > total * 0.5:
             recommendations.append(
@@ -266,11 +309,15 @@ class StructureVariator:
         # Suggest alternatives
         unused = [s.value for s in StructureType if s.value not in structure_counts]
         if unused:
-            recommendations.append(f"Try these unused structures: {', '.join(unused[:3])}")
+            recommendations.append(
+                f"Try these unused structures: {', '.join(unused[:3])}"
+            )
 
         return StructureVariationReport(
             current_structure=dominant,
-            suggested_alternatives=unused[:5] if unused else [s.value for s in StructureType],
+            suggested_alternatives=unused[:5]
+            if unused
+            else [s.value for s in StructureType],
             variety_score=variety_score,
             recommendations=recommendations,
         )

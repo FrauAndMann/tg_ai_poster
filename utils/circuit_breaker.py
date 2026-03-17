@@ -162,7 +162,9 @@ class CircuitBreaker:
             self._transition_to_open()
         elif self._state == CircuitState.CLOSED:
             # Check if this exception should trigger the breaker
-            if should_trigger_circuit_breaker(error) or isinstance(error, self.exceptions):
+            if should_trigger_circuit_breaker(error) or isinstance(
+                error, self.exceptions
+            ):
                 self._failure_count += 1
                 if self._failure_count >= self.failure_threshold:
                     self._transition_to_open()
@@ -176,7 +178,9 @@ class CircuitBreaker:
         state = self.state  # This may trigger state transition
         return state != CircuitState.OPEN
 
-    async def call(self, func: Callable[..., Coroutine[Any, Any, Any]], *args, **kwargs) -> Any:
+    async def call(
+        self, func: Callable[..., Coroutine[Any, Any, Any]], *args, **kwargs
+    ) -> Any:
         """
         Execute a function with circuit breaker protection.
 
@@ -250,6 +254,7 @@ class CircuitOpenError(Exception):
 # =============================================================================
 # Circuit Breaker Registry
 # =============================================================================
+
 
 class CircuitBreakerRegistry:
     """
@@ -326,6 +331,7 @@ class CircuitBreakerRegistry:
 # Decorator for Circuit Breaker
 # =============================================================================
 
+
 def with_circuit_breaker(
     name: str,
     failure_threshold: int = 5,
@@ -350,7 +356,9 @@ def with_circuit_breaker(
             ...
     """
 
-    def decorator(func: Callable[..., Coroutine[Any, Any, Any]]) -> Callable[..., Coroutine[Any, Any, Any]]:
+    def decorator(
+        func: Callable[..., Coroutine[Any, Any, Any]],
+    ) -> Callable[..., Coroutine[Any, Any, Any]]:
         circuit = CircuitBreakerRegistry.get_or_create(
             name=name,
             failure_threshold=failure_threshold,

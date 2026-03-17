@@ -23,6 +23,7 @@ logger = get_logger(__name__)
 @dataclass
 class KeyFact:
     """A verified key fact with confidence score."""
+
     content: str
     source_url: str
     source_name: str
@@ -42,6 +43,7 @@ class KeyFact:
 @dataclass
 class Entity:
     """An extracted entity (company, model, researcher, etc.)."""
+
     name: str
     entity_type: str  # company, model, researcher, benchmark, technology
     mentions: int = 1
@@ -59,6 +61,7 @@ class Entity:
 @dataclass
 class VerifiedSource:
     """A verified source with trust score."""
+
     article: Article
     tier: int
     trust_score: float
@@ -73,7 +76,9 @@ class VerifiedSource:
             "tier": self.tier,
             "trust_score": self.trust_score,
             "url_valid": self.url_valid,
-            "published_at": self.article.published_at.isoformat() if self.article.published_at else None,
+            "published_at": self.article.published_at.isoformat()
+            if self.article.published_at
+            else None,
         }
 
 
@@ -85,6 +90,7 @@ class StructuredContext:
     Contains all verified information needed to generate a post,
     eliminating hallucination surface area.
     """
+
     topic: str
     sources: list[VerifiedSource]
     key_facts: list[KeyFact]
@@ -122,7 +128,9 @@ class StructuredContext:
         # Key facts with confidence
         parts.append("KEY FACTS:")
         for f in self.key_facts:
-            verification_marker = " [requires verification]" if f.needs_verification else ""
+            verification_marker = (
+                " [requires verification]" if f.needs_verification else ""
+            )
             parts.append(f"- {f.content}{verification_marker}")
             parts.append(f"  Source: {f.source_name} (confidence: {f.confidence:.0%})")
         parts.append("")
@@ -156,26 +164,71 @@ class ContextBuilder:
 
     # Known AI companies and their patterns
     KNOWN_COMPANIES = [
-        "OpenAI", "Anthropic", "Google", "DeepMind", "Meta", "Microsoft",
-        "Amazon", "NVIDIA", "Stability AI", "Midjourney", "Cohere",
-        "Mistral", "Inflection", "Character.AI", "Hugging Face",
-        "DeepSeek", "Alibaba", "Baidu", "Tencent", "xAI",
+        "OpenAI",
+        "Anthropic",
+        "Google",
+        "DeepMind",
+        "Meta",
+        "Microsoft",
+        "Amazon",
+        "NVIDIA",
+        "Stability AI",
+        "Midjourney",
+        "Cohere",
+        "Mistral",
+        "Inflection",
+        "Character.AI",
+        "Hugging Face",
+        "DeepSeek",
+        "Alibaba",
+        "Baidu",
+        "Tencent",
+        "xAI",
     ]
 
     # Known AI models
     KNOWN_MODELS = [
-        "GPT-4", "GPT-4o", "GPT-3.5", "ChatGPT", "DALL-E", "Sora",
-        "Claude", "Claude 3", "Claude 4", "Gemini", "PaLM", "Bard",
-        "Llama", "Llama 2", "Llama 3", "Mistral", "Mixtral",
-        "Stable Diffusion", "Midjourney", "DALL-E 3",
-        "DeepSeek", "Qwen", "Gemma", "Phi",
+        "GPT-4",
+        "GPT-4o",
+        "GPT-3.5",
+        "ChatGPT",
+        "DALL-E",
+        "Sora",
+        "Claude",
+        "Claude 3",
+        "Claude 4",
+        "Gemini",
+        "PaLM",
+        "Bard",
+        "Llama",
+        "Llama 2",
+        "Llama 3",
+        "Mistral",
+        "Mixtral",
+        "Stable Diffusion",
+        "Midjourney",
+        "DALL-E 3",
+        "DeepSeek",
+        "Qwen",
+        "Gemma",
+        "Phi",
     ]
 
     # Known benchmarks
     KNOWN_BENCHMARKS = [
-        "MMLU", "GSM8K", "HumanEval", "MBPP", "HellaSwag",
-        "ARC", "WinoGrande", "TruthfulQA", "BBH",
-        "MATH", "GPQA", "MuSR", "IFEval",
+        "MMLU",
+        "GSM8K",
+        "HumanEval",
+        "MBPP",
+        "HellaSwag",
+        "ARC",
+        "WinoGrande",
+        "TruthfulQA",
+        "BBH",
+        "MATH",
+        "GPQA",
+        "MuSR",
+        "IFEval",
     ]
 
     def __init__(
@@ -202,7 +255,7 @@ class ContextBuilder:
         """Load domain trust configuration."""
         if config_path and config_path.exists():
             try:
-                with open(config_path, 'r', encoding='utf-8') as f:
+                with open(config_path, "r", encoding="utf-8") as f:
                     return json.load(f)
             except Exception as e:
                 logger.warning(f"Failed to load domain config: {e}")
@@ -228,6 +281,7 @@ class ContextBuilder:
         """
         try:
             from urllib.parse import urlparse
+
             domain = urlparse(url).netloc.lower()
             # Remove www. prefix
             if domain.startswith("www."):
@@ -241,7 +295,9 @@ class ContextBuilder:
             tier_domains = tier_data.get("domains", [])
 
             for allowed_domain in tier_domains:
-                if domain == allowed_domain.lower() or domain.endswith("." + allowed_domain.lower()):
+                if domain == allowed_domain.lower() or domain.endswith(
+                    "." + allowed_domain.lower()
+                ):
                     return tier_num, float(tier_data.get("score", 50))
 
         # Default to tier 3
@@ -263,53 +319,61 @@ class ContextBuilder:
         for company in self.KNOWN_COMPANIES:
             count = len(re.findall(re.escape(company), text, re.IGNORECASE))
             if count > 0:
-                entities.append(Entity(
-                    name=company,
-                    entity_type="company",
-                    mentions=count,
-                    confidence=0.95,
-                ))
+                entities.append(
+                    Entity(
+                        name=company,
+                        entity_type="company",
+                        mentions=count,
+                        confidence=0.95,
+                    )
+                )
 
         # Extract models
         for model in self.KNOWN_MODELS:
             count = len(re.findall(re.escape(model), text, re.IGNORECASE))
             if count > 0:
-                entities.append(Entity(
-                    name=model,
-                    entity_type="model",
-                    mentions=count,
-                    confidence=0.9,
-                ))
+                entities.append(
+                    Entity(
+                        name=model,
+                        entity_type="model",
+                        mentions=count,
+                        confidence=0.9,
+                    )
+                )
 
         # Extract benchmarks
         for benchmark in self.KNOWN_BENCHMARKS:
             count = len(re.findall(re.escape(benchmark), text, re.IGNORECASE))
             if count > 0:
-                entities.append(Entity(
-                    name=benchmark,
-                    entity_type="benchmark",
-                    mentions=count,
-                    confidence=0.85,
-                ))
+                entities.append(
+                    Entity(
+                        name=benchmark,
+                        entity_type="benchmark",
+                        mentions=count,
+                        confidence=0.85,
+                    )
+                )
 
         # Extract numbers (metrics, benchmarks)
         number_patterns = [
-            r'(\d+(?:\.\d+)?)\s*(?:billion|млрд|миллиард)',
-            r'(\d+(?:\.\d+)?)\s*(?:million|млн|миллион)',
-            r'(\d+(?:\.\d+)?)\s*%',
-            r'\$(\d+(?:\.\d+)?)[MBK]?',
-            r'(\d+(?:,\d+)?)\s*(?:параметров|parameters|токенов|tokens)',
+            r"(\d+(?:\.\d+)?)\s*(?:billion|млрд|миллиард)",
+            r"(\d+(?:\.\d+)?)\s*(?:million|млн|миллион)",
+            r"(\d+(?:\.\d+)?)\s*%",
+            r"\$(\d+(?:\.\d+)?)[MBK]?",
+            r"(\d+(?:,\d+)?)\s*(?:параметров|parameters|токенов|tokens)",
         ]
 
         for pattern in number_patterns:
             matches = re.findall(pattern, text, re.IGNORECASE)
             for match in matches:
-                entities.append(Entity(
-                    name=str(match),
-                    entity_type="metric",
-                    mentions=1,
-                    confidence=0.8,
-                ))
+                entities.append(
+                    Entity(
+                        name=str(match),
+                        entity_type="metric",
+                        mentions=1,
+                        confidence=0.8,
+                    )
+                )
 
         return entities
 
@@ -334,7 +398,7 @@ class ContextBuilder:
             text = f"{article.title} {article.summary}"
 
             # Split into sentences
-            sentences = re.split(r'[.!?]\s+', text)
+            sentences = re.split(r"[.!?]\s+", text)
 
             for sentence in sentences:
                 sentence = sentence.strip()
@@ -348,13 +412,15 @@ class ContextBuilder:
                     tier, trust = self._get_domain_tier(article.url)
                     confidence = min(score, trust / 100)
 
-                    facts.append(KeyFact(
-                        content=sentence,
-                        source_url=article.url,
-                        source_name=article.source,
-                        confidence=confidence,
-                        needs_verification=confidence < 0.8,
-                    ))
+                    facts.append(
+                        KeyFact(
+                            content=sentence,
+                            source_url=article.url,
+                            source_name=article.source,
+                            confidence=confidence,
+                            needs_verification=confidence < 0.8,
+                        )
+                    )
 
         # Sort by confidence and limit
         facts.sort(key=lambda f: f.confidence, reverse=True)
@@ -373,21 +439,31 @@ class ContextBuilder:
         score = 0.5  # Base score
 
         # Boost for specific indicators
-        if re.search(r'\d+', sentence):
+        if re.search(r"\d+", sentence):
             score += 0.15  # Contains numbers
 
-        if re.search(r'(?:announced|released|launched|представил|выпустил|запустил)', sentence, re.IGNORECASE):
+        if re.search(
+            r"(?:announced|released|launched|представил|выпустил|запустил)",
+            sentence,
+            re.IGNORECASE,
+        ):
             score += 0.1  # Action verb
 
-        if re.search(r'(?:today|yesterday|сегодня|вчера|на этой неделе)', sentence, re.IGNORECASE):
+        if re.search(
+            r"(?:today|yesterday|сегодня|вчера|на этой неделе)", sentence, re.IGNORECASE
+        ):
             score += 0.05  # Temporal marker
 
         # Penalize vague language
-        if re.search(r'(?:might|could|possibly|возможно|может быть)', sentence, re.IGNORECASE):
+        if re.search(
+            r"(?:might|could|possibly|возможно|может быть)", sentence, re.IGNORECASE
+        ):
             score -= 0.15
 
         # Penalize opinions
-        if re.search(r'(?:I think|we believe|по моему мнению)', sentence, re.IGNORECASE):
+        if re.search(
+            r"(?:I think|we believe|по моему мнению)", sentence, re.IGNORECASE
+        ):
             score -= 0.2
 
         return max(0, min(1, score))
@@ -415,12 +491,14 @@ class ContextBuilder:
         verified_sources = []
         for article in articles:
             tier, trust_score = self._get_domain_tier(article.url)
-            verified_sources.append(VerifiedSource(
-                article=article,
-                tier=tier,
-                trust_score=trust_score / 100,
-                snapshot=article.summary[:500] if article.summary else None,
-            ))
+            verified_sources.append(
+                VerifiedSource(
+                    article=article,
+                    tier=tier,
+                    trust_score=trust_score / 100,
+                    snapshot=article.summary[:500] if article.summary else None,
+                )
+            )
 
         # Sort by trust score
         verified_sources.sort(key=lambda s: s.trust_score, reverse=True)
@@ -494,9 +572,13 @@ class ContextBuilder:
         # Add sources
         parts.append("SOURCE ARTICLES:")
         for i, source in enumerate(sources[:5], 1):
-            confidence_note = "" if source.trust_score >= 0.8 else " [lower confidence source]"
+            confidence_note = (
+                "" if source.trust_score >= 0.8 else " [lower confidence source]"
+            )
             parts.append(f"\n{i}. {source.article.title}")
-            parts.append(f"   Source: {source.article.source} (Tier {source.tier}){confidence_note}")
+            parts.append(
+                f"   Source: {source.article.source} (Tier {source.tier}){confidence_note}"
+            )
             parts.append(f"   URL: {source.article.url}")
             if source.article.summary:
                 parts.append(f"   Summary: {source.article.summary[:300]}...")

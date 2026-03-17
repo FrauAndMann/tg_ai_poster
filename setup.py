@@ -56,6 +56,7 @@ def get_input(
         try:
             if is_secret:
                 import getpass
+
                 value = getpass.getpass(prompt_text)
             else:
                 value = input(prompt_text).strip()
@@ -162,7 +163,9 @@ def create_config_yaml(config: dict) -> None:
         },
         "channel": {
             "topic": config.get("channel_topic", "AI technologies and automation"),
-            "style": config.get("channel_style", "Expert but accessible. Think pieces. No hype."),
+            "style": config.get(
+                "channel_style", "Expert but accessible. Think pieces. No hype."
+            ),
             "language": config.get("language", "ru"),
             "post_length_min": 200,
             "post_length_max": 900,
@@ -302,13 +305,19 @@ Choose how to post to your channel:
 """)
 
     mode = get_input("Posting mode", default="bot")
-    config["posting_mode"] = "telethon" if mode.lower() in ("2", "telethon", "user") else "bot"
+    config["posting_mode"] = (
+        "telethon" if mode.lower() in ("2", "telethon", "user") else "bot"
+    )
 
     if config["posting_mode"] == "telethon":
         print("\nTelethon requires API credentials from https://my.telegram.org")
         config["telethon_api_id"] = get_input("API ID", required=False)
-        config["telethon_api_hash"] = get_input("API Hash", required=False, is_secret=True)
-        config["telethon_phone"] = get_input("Phone number (with country code)", required=False)
+        config["telethon_api_hash"] = get_input(
+            "API Hash", required=False, is_secret=True
+        )
+        config["telethon_phone"] = get_input(
+            "Phone number (with country code)", required=False
+        )
 
     # LLM Configuration
     print_section("LLM Configuration")
@@ -329,7 +338,9 @@ Choose your LLM provider:
         config["llm_model"] = get_input("Model name", default="gpt-4o")
         config["openai_api_key"] = get_input("OpenAI API key", is_secret=True)
     elif config["llm_provider"] == "claude":
-        config["llm_model"] = get_input("Model name", default="claude-3-5-sonnet-20241022")
+        config["llm_model"] = get_input(
+            "Model name", default="claude-3-5-sonnet-20241022"
+        )
         config["anthropic_api_key"] = get_input("Anthropic API key", is_secret=True)
     else:
         config["llm_model"] = get_input("Model name", default="deepseek-chat")

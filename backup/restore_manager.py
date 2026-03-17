@@ -104,7 +104,9 @@ class RestoreManager:
                 if manifest_file:
                     manifest_data = json.loads(manifest_file.read().decode("utf-8"))
                     result["manifest"] = manifest_data
-                    result["components"] = list(manifest_data.get("components", {}).keys())
+                    result["components"] = list(
+                        manifest_data.get("components", {}).keys()
+                    )
 
             result["valid"] = True
             return result
@@ -153,6 +155,7 @@ class RestoreManager:
         if create_pre_backup:
             try:
                 from backup.backup_manager import BackupManager
+
                 backup_manager = BackupManager(self.settings, str(self.backup_dir))
                 result["pre_backup_path"] = await backup_manager.create_backup(
                     backup_type="pre_restore"
@@ -163,7 +166,10 @@ class RestoreManager:
 
         try:
             # Extract backup to temporary directory
-            extract_dir = self.backup_dir / f"restore_temp_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            extract_dir = (
+                self.backup_dir
+                / f"restore_temp_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            )
             extract_dir.mkdir(exist_ok=True)
 
             try:

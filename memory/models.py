@@ -36,14 +36,15 @@ class Base(DeclarativeBase):
 
 class PostStatus(str, Enum):
     """Post status lifecycle."""
-    DRAFT = "draft"                    # Initial AI-generated
+
+    DRAFT = "draft"  # Initial AI-generated
     PENDING_REVIEW = "pending_review"  # Awaiting quality check
     NEEDS_REVISION = "needs_revision"  # Failed quality check
-    APPROVED = "approved"              # Passed all checks
-    REJECTED = "rejected"              # Discarded
-    SCHEDULED = "scheduled"            # Queued for publishing
-    PUBLISHED = "published"            # Live on Telegram
-    FAILED = "failed"                  # Publishing failed
+    APPROVED = "approved"  # Passed all checks
+    REJECTED = "rejected"  # Discarded
+    SCHEDULED = "scheduled"  # Queued for publishing
+    PUBLISHED = "published"  # Live on Telegram
+    FAILED = "failed"  # Publishing failed
 
 
 class PostVersion(Base):
@@ -69,7 +70,9 @@ class PostVersion(Base):
     change_reason: Mapped[str | None] = mapped_column(String(500))
 
     # Relationship
-    post: Mapped["Post"] = relationship("Post", back_populates="versions", foreign_keys=[post_id])
+    post: Mapped["Post"] = relationship(
+        "Post", back_populates="versions", foreign_keys=[post_id]
+    )
 
     __table_args__ = (
         Index("ix_post_versions_post_id", "post_id"),
@@ -121,7 +124,9 @@ class ABExperiment(Base):
     variants: Mapped[list["ABVariant"]] = relationship(back_populates="experiment")
 
     def __repr__(self) -> str:
-        return f"<ABExperiment(id={self.id}, name='{self.name}', active={self.is_active})>"
+        return (
+            f"<ABExperiment(id={self.id}, name='{self.name}', active={self.is_active})>"
+        )
 
     def to_dict(self) -> dict:
         return {
@@ -249,27 +254,39 @@ class Post(Base):
 
     # Source tracking
     source_count: Mapped[int] = mapped_column(Integer, default=0)
-    source_tiers: Mapped[str] = mapped_column(String(100), nullable=True)  # JSON array of tiers
+    source_tiers: Mapped[str] = mapped_column(
+        String(100), nullable=True
+    )  # JSON array of tiers
 
     # Media fields
     media_url: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
-    media_source: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # unsplash, pexels, generated
-    media_photographer: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    media_source: Mapped[Optional[str]] = mapped_column(
+        String(50), nullable=True
+    )  # unsplash, pexels, generated
+    media_photographer: Mapped[Optional[str]] = mapped_column(
+        String(200), nullable=True
+    )
 
     # Pipeline version tracking
     pipeline_version: Mapped[str] = mapped_column(String(50), default="1.0")
 
     # Version control fields
     version: Mapped[int] = mapped_column(Integer, default=1)
-    current_version_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("post_versions.id"), nullable=True)
+    current_version_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("post_versions.id"), nullable=True
+    )
 
     # A/B testing fields
-    ab_experiment_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("ab_experiments.id"), nullable=True)
+    ab_experiment_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("ab_experiments.id"), nullable=True
+    )
     ab_variant_id: Mapped[str | None] = mapped_column(String(10), nullable=True)
 
     # Relationships
     versions: Mapped[list["PostVersion"]] = relationship(
-        back_populates="post", order_by="PostVersion.version_number", foreign_keys="[PostVersion.post_id]"
+        back_populates="post",
+        order_by="PostVersion.version_number",
+        foreign_keys="[PostVersion.post_id]",
     )
 
     # Timestamps
@@ -303,7 +320,9 @@ class Post(Base):
             "topic": self.topic,
             "source": self.source,
             "source_url": self.source_url,
-            "published_at": self.published_at.isoformat() if self.published_at else None,
+            "published_at": self.published_at.isoformat()
+            if self.published_at
+            else None,
             "status": self.status,
             "character_count": self.character_count,
             "has_emoji": self.has_emoji,
@@ -483,7 +502,9 @@ class Source(Base):
             "url": self.url,
             "name": self.name,
             "type": self.type,
-            "last_fetched": self.last_fetched.isoformat() if self.last_fetched else None,
+            "last_fetched": self.last_fetched.isoformat()
+            if self.last_fetched
+            else None,
             "fetch_count": self.fetch_count,
             "item_count": self.item_count,
             "new_items_count": self.new_items_count,
@@ -545,14 +566,22 @@ class StyleProfile(Base):
             "id": self.id,
             "avg_sentence_length": self.avg_sentence_length,
             "avg_paragraph_count": self.avg_paragraph_count,
-            "common_phrases": json.loads(self.common_phrases) if self.common_phrases else [],
+            "common_phrases": json.loads(self.common_phrases)
+            if self.common_phrases
+            else [],
             "vocabulary_richness": self.vocabulary_richness,
-            "emoji_patterns": json.loads(self.emoji_patterns) if self.emoji_patterns else {},
-            "hashtag_patterns": json.loads(self.hashtag_patterns) if self.hashtag_patterns else {},
+            "emoji_patterns": json.loads(self.emoji_patterns)
+            if self.emoji_patterns
+            else {},
+            "hashtag_patterns": json.loads(self.hashtag_patterns)
+            if self.hashtag_patterns
+            else {},
             "formality_score": self.formality_score,
             "enthusiasm_score": self.enthusiasm_score,
             "technicality_score": self.technicality_score,
             "posts_analyzed": self.posts_analyzed,
-            "last_updated": self.last_updated.isoformat() if self.last_updated else None,
+            "last_updated": self.last_updated.isoformat()
+            if self.last_updated
+            else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }

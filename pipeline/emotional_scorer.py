@@ -87,7 +87,9 @@ class EmotionalScorer:
             llm_adapter: LLM adapter for scoring
         """
         self.llm = llm_adapter
-        self._engagement_history: dict[str, float] = {}  # emotion_profile -> avg_engagement
+        self._engagement_history: dict[
+            str, float
+        ] = {}  # emotion_profile -> avg_engagement
         self._scored_posts: dict[int, EmotionalProfile] = {}  # post_id -> profile
 
     async def score(self, content: str) -> Optional[EmotionalProfile]:
@@ -110,54 +112,121 @@ class EmotionalScorer:
         except Exception as e:
             logger.error("Emotional scoring failed: %s", e)
             return self._score_rule_based(content)
+
     def _parse_response(self, content: str) -> Optional[EmotionalProfile]:
         """Parse LLM response into EmotionalProfile."""
         import json
+
         try:
-                # Extract JSON
-                if "```json" in content:
-                    content = content.split("```json")[1].split("```")[0]
-                data = json.loads(content.strip())
-                return EmotionalProfile(
-                    curiosity=float(data.get("curiosity", 5)),
-                    urgency=float(data.get("urgency", 5)),
-                    empathy=float(data.get("empathy", 5)),
-                    inspiration=float(data.get("inspiration", 5)),
-                    humor=float(data.get("humor", 5)),
-                    controversy=float(data.get("controversy", 5)),
-                    overall_score=sum(data.values()) / 6,
-                    dominant_emotion=data.get("dominant_emotion", "curiosity"),
-                    confidence=float(data.get("confidence", 1.0)),
-                )
+            # Extract JSON
+            if "```json" in content:
+                content = content.split("```json")[1].split("```")[0]
+            data = json.loads(content.strip())
+            return EmotionalProfile(
+                curiosity=float(data.get("curiosity", 5)),
+                urgency=float(data.get("urgency", 5)),
+                empathy=float(data.get("empathy", 5)),
+                inspiration=float(data.get("inspiration", 5)),
+                humor=float(data.get("humor", 5)),
+                controversy=float(data.get("controversy", 5)),
+                overall_score=sum(data.values()) / 6,
+                dominant_emotion=data.get("dominant_emotion", "curiosity"),
+                confidence=float(data.get("confidence", 1.0)),
+            )
         except (json.JSONDecodeError, KeyError):
             return None
+
     def _score_rule_based(self, content: str) -> EmotionalProfile:
         """Simple rule-based emotional scoring."""
         content_lower = content.lower()
-        curiosity = self._count_patterns(content_lower, [
-            "как", "почему", "что это значит", "интерес", "узнать", "понять",
-            "how", "why", "что", "why does",
-        ])
-        urgency = self._count_patterns(content_lower, [
-            "срочно", "немедленно", "прямо сейчас", "уже сегодня", "бьющая тревогу",
-            "breaking", "urgent", "только что", "deadline",
-        ])
-        empathy = self._count_patterns(content_lower, [
-            "представь", "понимаю", "чувствую", "больно", "радость", "переживания",
-            "трудно", "сочувствую", "empower", "support",
-        ])
-        inspiration = self._count_patterns(content_lower, [
-            "вдохновляет", "успех", "прорыв", "возможности", "будущее", "мечта",
-            "inspire", "dream", "hope", "vision",
-        ])
-        humor = self._count_patterns(content_lower, [
-            "смешно", "забавно", "ирония", "курьез", "неожиданно", "humor",
-            "funny", "lol", "ironic",
-        ])
-        controversy = self._count_patterns(content_lower, [
-            "спор", "критика", "скандал", "обвинения", "проблема", "разочарование",
-            "controversial", "debate", "argue", "criticism",
-        ])
+        curiosity = self._count_patterns(
+            content_lower,
+            [
+                "как",
+                "почему",
+                "что это значит",
+                "интерес",
+                "узнать",
+                "понять",
+                "how",
+                "why",
+                "что",
+                "why does",
+            ],
+        )
+        urgency = self._count_patterns(
+            content_lower,
+            [
+                "срочно",
+                "немедленно",
+                "прямо сейчас",
+                "уже сегодня",
+                "бьющая тревогу",
+                "breaking",
+                "urgent",
+                "только что",
+                "deadline",
+            ],
+        )
+        empathy = self._count_patterns(
+            content_lower,
+            [
+                "представь",
+                "понимаю",
+                "чувствую",
+                "больно",
+                "радость",
+                "переживания",
+                "трудно",
+                "сочувствую",
+                "empower",
+                "support",
+            ],
+        )
+        inspiration = self._count_patterns(
+            content_lower,
+            [
+                "вдохновляет",
+                "успех",
+                "прорыв",
+                "возможности",
+                "будущее",
+                "мечта",
+                "inspire",
+                "dream",
+                "hope",
+                "vision",
+            ],
+        )
+        humor = self._count_patterns(
+            content_lower,
+            [
+                "смешно",
+                "забавно",
+                "ирония",
+                "курьез",
+                "неожиданно",
+                "humor",
+                "funny",
+                "lol",
+                "ironic",
+            ],
+        )
+        controversy = self._count_patterns(
+            content_lower,
+            [
+                "спор",
+                "критика",
+                "скандал",
+                "обвинения",
+                "проблема",
+                "разочарование",
+                "controversial",
+                "debate",
+                "argue",
+                "criticism",
+            ],
+        )
         profile = EmotionalProfile(
             curiosity=min(1.0, curiosity / 5),
             urgency=min(1.0, urgency / 5),
@@ -167,14 +236,20 @@ class EmotionalScorer:
             controversy=min(1.0, controversy / 5),
         )
         profile.overall_score = (
-            profile.curiosity + profile.urgency + profile.empathy +
-            profile.inspiration + profile.humor + profile.controversy
+            profile.curiosity
+            + profile.urgency
+            + profile.empathy
+            + profile.inspiration
+            + profile.humor
+            + profile.controversy
         ) / 6
         return profile
+
     def _count_patterns(self, text: str, patterns: list[str]) -> float:
         """Count pattern matches and normalize."""
         count = sum(1 for p in patterns if p in text)
         return count / len(patterns)
+
     def record_engagement(
         self,
         post_id: int,
@@ -199,11 +274,16 @@ class EmotionalScorer:
         self._scored_posts[post_id] = emotional_profile
         logger.debug(
             "Recorded engagement for %s profile: %.2f",
-            profile_key, engagement_rate,
+            profile_key,
+            engagement_rate,
         )
+
     def get_optimal_profile(self) -> dict[str, float]:
         """Get optimal emotional profile based on history."""
-        return dict(sorted(self._engagement_history.items(), key=lambda x: x[1], reverse=True))
+        return dict(
+            sorted(self._engagement_history.items(), key=lambda x: x[1], reverse=True)
+        )
+
     def get_target_emotional_instructions(self) -> str:
         """Generate instructions for target emotional profile."""
         optimal = self.get_optimal_profile()

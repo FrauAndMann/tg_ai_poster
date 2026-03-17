@@ -18,6 +18,7 @@ logger = get_logger(__name__)
 
 class ToneAttribute(Enum):
     """Tone attributes for voice."""
+
     PROFESSIONAL = "professional"
     CASUAL = "casual"
     TECHNICAL = "technical"
@@ -31,6 +32,7 @@ class ToneAttribute(Enum):
 @dataclass(slots=True)
 class VoiceProfile:
     """Brand voice profile."""
+
     name: str
     tone_attributes: list[ToneAttribute]
     formality_level: float  # 0.0 (very casual) to 1.0 (very formal)
@@ -43,6 +45,7 @@ class VoiceProfile:
 @dataclass(slots=True)
 class VoiceAnalysis:
     """Result of voice analysis on text."""
+
     detected_tone: list[ToneAttribute]
     formality_score: float
     emoji_count: int
@@ -87,48 +90,98 @@ class VoiceConsistencyChecker:
     # Tone indicators
     TONE_INDICATORS = {
         ToneAttribute.PROFESSIONAL: [
-            "анализ", "исследование", "данные", "показывают",
-            "analysis", "research", "data", "indicates",
+            "анализ",
+            "исследование",
+            "данные",
+            "показывают",
+            "analysis",
+            "research",
+            "data",
+            "indicates",
         ],
         ToneAttribute.CASUAL: [
-            "кстати", "прикинь", "короче", "в общем",
-            "btw", "basically", "honestly", "actually",
+            "кстати",
+            "прикинь",
+            "короче",
+            "в общем",
+            "btw",
+            "basically",
+            "honestly",
+            "actually",
         ],
         ToneAttribute.TECHNICAL: [
-            "алгоритм", "нейросеть", "API", "интеграция",
-            "algorithm", "neural network", "implementation",
+            "алгоритм",
+            "нейросеть",
+            "API",
+            "интеграция",
+            "algorithm",
+            "neural network",
+            "implementation",
         ],
         ToneAttribute.FRIENDLY: [
-            "поможет", "полезный", "рекомендую", "совет",
-            "helpful", "useful", "recommend", "tip",
+            "поможет",
+            "полезный",
+            "рекомендую",
+            "совет",
+            "helpful",
+            "useful",
+            "recommend",
+            "tip",
         ],
         ToneAttribute.AUTHORITATIVE: [
-            "важно понимать", "ключевой момент", "эксперты",
-            "important to understand", "key point", "experts",
+            "важно понимать",
+            "ключевой момент",
+            "эксперты",
+            "important to understand",
+            "key point",
+            "experts",
         ],
         ToneAttribute.PLAYFUL: [
-            "забавно", "интересный факт", "представьте",
-            "fun fact", "imagine", "cool thing",
+            "забавно",
+            "интересный факт",
+            "представьте",
+            "fun fact",
+            "imagine",
+            "cool thing",
         ],
         ToneAttribute.SERIOUS: [
-            "критический", "серьезный", "последствия",
-            "critical", "serious", "implications",
+            "критический",
+            "серьезный",
+            "последствия",
+            "critical",
+            "serious",
+            "implications",
         ],
         ToneAttribute.ENTHUSIASTIC: [
-            "потрясающе", "увлекательно", "не пропустите",
-            "amazing", "exciting", "don't miss",
+            "потрясающе",
+            "увлекательно",
+            "не пропустите",
+            "amazing",
+            "exciting",
+            "don't miss",
         ],
     }
 
     # Formality markers
     FORMAL_MARKERS = [
-        "следовательно", "таким образом", "в свою очередь",
-        "therefore", "thus", "consequently", "furthermore",
+        "следовательно",
+        "таким образом",
+        "в свою очередь",
+        "therefore",
+        "thus",
+        "consequently",
+        "furthermore",
     ]
 
     INFORMAL_MARKERS = [
-        "типа", "как бы", "вроде", "прикинь",
-        "kinda", "sorta", "like", "basically",
+        "типа",
+        "как бы",
+        "вроде",
+        "прикинь",
+        "kinda",
+        "sorta",
+        "like",
+        "basically",
     ]
 
     def __init__(
@@ -211,7 +264,9 @@ class VoiceConsistencyChecker:
         text_lower = text.lower()
 
         formal_count = sum(1 for m in self.FORMAL_MARKERS if m.lower() in text_lower)
-        informal_count = sum(1 for m in self.INFORMAL_MARKERS if m.lower() in text_lower)
+        informal_count = sum(
+            1 for m in self.INFORMAL_MARKERS if m.lower() in text_lower
+        )
 
         total = formal_count + informal_count
         if total == 0:
@@ -223,16 +278,16 @@ class VoiceConsistencyChecker:
         """Count emoji usage."""
         emoji_pattern = re.compile(
             "["
-            "\U0001F600-\U0001F64F"  # emoticons
-            "\U0001F300-\U0001F5FF"  # symbols & pictographs
-            "\U0001F680-\U0001F6FF"  # transport & map symbols
-            "\U0001F700-\U0001F77F"  # alchemical symbols
-            "\U0001F780-\U0001F7FF"  # Geometric Shapes
-            "\U0001F800-\U0001F8FF"  # Supplemental Arrows-C
-            "\U0001F900-\U0001F9FF"  # Supplemental Symbols and Pictographs
-            "\U0001FA00-\U0001FA6F"  # Chess Symbols
-            "\U0001FA70-\U0001FAFF"  # Symbols and Pictographs Extended-A
-            "\U00002702-\U000027B0"  # Dingbats
+            "\U0001f600-\U0001f64f"  # emoticons
+            "\U0001f300-\U0001f5ff"  # symbols & pictographs
+            "\U0001f680-\U0001f6ff"  # transport & map symbols
+            "\U0001f700-\U0001f77f"  # alchemical symbols
+            "\U0001f780-\U0001f7ff"  # Geometric Shapes
+            "\U0001f800-\U0001f8ff"  # Supplemental Arrows-C
+            "\U0001f900-\U0001f9ff"  # Supplemental Symbols and Pictographs
+            "\U0001fa00-\U0001fa6f"  # Chess Symbols
+            "\U0001fa70-\U0001faff"  # Symbols and Pictographs Extended-A
+            "\U00002702-\U000027b0"  # Dingbats
             "]+",
             flags=re.UNICODE,
         )
@@ -241,7 +296,7 @@ class VoiceConsistencyChecker:
 
     def _avg_sentence_length(self, text: str) -> float:
         """Calculate average sentence length."""
-        sentences = re.split(r'[.!?]+', text)
+        sentences = re.split(r"[.!?]+", text)
         sentences = [s.strip() for s in sentences if s.strip()]
 
         if not sentences:
@@ -258,9 +313,9 @@ class VoiceConsistencyChecker:
             return 0.0
 
         technical_patterns = [
-            r'\b[A-Z]{2,}\b',  # Acronyms
-            r'\b\w+\d+\w*\b',  # Terms with numbers (GPT-4, etc.)
-            r'\b[A-Z][a-z]+[A-Z]',  # CamelCase
+            r"\b[A-Z]{2,}\b",  # Acronyms
+            r"\b\w+\d+\w*\b",  # Terms with numbers (GPT-4, etc.)
+            r"\b[A-Z][a-z]+[A-Z]",  # CamelCase
         ]
 
         technical_count = 0
@@ -314,11 +369,21 @@ class VoiceConsistencyChecker:
             score -= 0.1
 
         # Check sentence complexity
-        if self.target_voice.sentence_complexity == "simple" and avg_sentence_length > 15:
-            deviations.append(f"Sentences too long (avg {avg_sentence_length:.1f} words) for 'simple' target")
+        if (
+            self.target_voice.sentence_complexity == "simple"
+            and avg_sentence_length > 15
+        ):
+            deviations.append(
+                f"Sentences too long (avg {avg_sentence_length:.1f} words) for 'simple' target"
+            )
             score -= 0.1
-        elif self.target_voice.sentence_complexity == "complex" and avg_sentence_length < 15:
-            deviations.append(f"Sentences too short (avg {avg_sentence_length:.1f} words) for 'complex' target")
+        elif (
+            self.target_voice.sentence_complexity == "complex"
+            and avg_sentence_length < 15
+        ):
+            deviations.append(
+                f"Sentences too short (avg {avg_sentence_length:.1f} words) for 'complex' target"
+            )
             score -= 0.1
 
         return max(0.0, score), deviations
@@ -335,7 +400,8 @@ class VoiceConsistencyChecker:
             elif "formality" in deviation.lower():
                 if "differs" in deviation:
                     suggestions.append(
-                        "Use more formal language" if self.target_voice.formality_level > 0.5
+                        "Use more formal language"
+                        if self.target_voice.formality_level > 0.5
                         else "Use more casual, conversational language"
                     )
             elif "emoji" in deviation.lower():
@@ -344,7 +410,8 @@ class VoiceConsistencyChecker:
                 )
             elif "sentences" in deviation.lower():
                 suggestions.append(
-                    "Break up long sentences" if "too long" in deviation
+                    "Break up long sentences"
+                    if "too long" in deviation
                     else "Combine short sentences for better flow"
                 )
 
@@ -362,8 +429,8 @@ class VoiceConsistencyChecker:
 
         # Detect drift
         if len(recent) >= 5:
-            early = recent[:len(recent)//2]
-            late = recent[len(recent)//2:]
+            early = recent[: len(recent) // 2]
+            late = recent[len(recent) // 2 :]
 
             early_formality = sum(a.formality_score for a in early) / len(early)
             late_formality = sum(a.formality_score for a in late) / len(late)

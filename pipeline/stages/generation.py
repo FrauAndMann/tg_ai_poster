@@ -30,7 +30,9 @@ class GenerationStage(BaseStage):
         source_context = None
         if topic_meta and topic_meta.get("source_article"):
             article = topic_meta["source_article"]
-            source_context = f"Source: {article.get('source', '')}\n{article.get('summary', '')}"
+            source_context = (
+                f"Source: {article.get('source', '')}\n{article.get('summary', '')}"
+            )
 
         # Generate post
         post = await self.generator.generate_with_retry(

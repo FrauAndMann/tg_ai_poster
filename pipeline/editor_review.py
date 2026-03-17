@@ -40,7 +40,6 @@ AI_PHRASES = [
     "в настоящее время",
     "на сегодняшний день",
     "в наши дни",
-
     # English AI cliches
     "in today's world",
     "it's important to note",
@@ -104,6 +103,7 @@ class EditorResult:
         remaining_concerns: Issues that couldn't be fixed
         needs_regeneration: Whether the post should be regenerated
     """
+
     approved: bool
     score: float
     improved_content: str
@@ -190,7 +190,7 @@ class EditorReviewer:
         for i, para in enumerate(paragraphs):
             sentences = len([s for s in para.split(".") if s.strip()])
             if sentences > 5:
-                issues.append(f"Paragraph {i+1} has {sentences} sentences (max 5)")
+                issues.append(f"Paragraph {i + 1} has {sentences} sentences (max 5)")
 
         return issues
 
@@ -350,7 +350,9 @@ Review this post and provide an improved version. Respond in JSON:
 
             # Handle empty response
             if not response_text:
-                logger.warning("AI editorial review returned empty response, using base result")
+                logger.warning(
+                    "AI editorial review returned empty response, using base result"
+                )
                 return base_result
 
             # Parse JSON
@@ -358,9 +360,11 @@ Review this post and provide an improved version. Respond in JSON:
                 response_text = response_text.split("```json")[1].split("```")[0]
 
             # Find JSON object in response
-            json_match = re.search(r'\{[\s\S]*\}', response_text)
+            json_match = re.search(r"\{[\s\S]*\}", response_text)
             if not json_match:
-                logger.warning("AI editorial review returned no valid JSON, using base result")
+                logger.warning(
+                    "AI editorial review returned no valid JSON, using base result"
+                )
                 return base_result
 
             response_text = json_match.group(0)
@@ -371,25 +375,45 @@ Review this post and provide an improved version. Respond in JSON:
                 return EditorResult(
                     approved=ai_result.get("approved", base_result.approved),
                     score=ai_result.get("score", base_result.score),
-                    improved_content=ai_result.get("improved_content", base_result.improved_content),
-                    changes_made=ai_result.get("changes_made", base_result.changes_made),
-                    issues_found=ai_result.get("issues_found", base_result.issues_found),
-                    remaining_concerns=ai_result.get("remaining_concerns", base_result.remaining_concerns),
-                    needs_regeneration=ai_result.get("needs_regeneration", base_result.needs_regeneration),
+                    improved_content=ai_result.get(
+                        "improved_content", base_result.improved_content
+                    ),
+                    changes_made=ai_result.get(
+                        "changes_made", base_result.changes_made
+                    ),
+                    issues_found=ai_result.get(
+                        "issues_found", base_result.issues_found
+                    ),
+                    remaining_concerns=ai_result.get(
+                        "remaining_concerns", base_result.remaining_concerns
+                    ),
+                    needs_regeneration=ai_result.get(
+                        "needs_regeneration", base_result.needs_regeneration
+                    ),
                 )
 
             # Combine results
-            combined_changes = base_result.changes_made + ai_result.get("changes_made", [])
-            combined_issues = base_result.issues_found + ai_result.get("issues_found", [])
+            combined_changes = base_result.changes_made + ai_result.get(
+                "changes_made", []
+            )
+            combined_issues = base_result.issues_found + ai_result.get(
+                "issues_found", []
+            )
 
             return EditorResult(
                 approved=base_result.approved and ai_result.get("approved", True),
-                score=(base_result.score + ai_result.get("score", base_result.score)) / 2,
-                improved_content=ai_result.get("improved_content", base_result.improved_content),
+                score=(base_result.score + ai_result.get("score", base_result.score))
+                / 2,
+                improved_content=ai_result.get(
+                    "improved_content", base_result.improved_content
+                ),
                 changes_made=combined_changes,
                 issues_found=combined_issues,
-                remaining_concerns=ai_result.get("remaining_concerns", base_result.remaining_concerns),
-                needs_regeneration=base_result.needs_regeneration or ai_result.get("needs_regeneration", False),
+                remaining_concerns=ai_result.get(
+                    "remaining_concerns", base_result.remaining_concerns
+                ),
+                needs_regeneration=base_result.needs_regeneration
+                or ai_result.get("needs_regeneration", False),
             )
 
         except Exception as e:

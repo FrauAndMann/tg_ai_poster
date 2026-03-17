@@ -20,6 +20,7 @@ logger = get_logger(__name__)
 @dataclass
 class FormattedPost:
     """A post formatted for Telegram publishing."""
+
     telegram_text: str
     character_count: int
     has_all_blocks: bool
@@ -71,8 +72,25 @@ class TelegramFormatter:
 
     # MarkdownV2 special characters that need escaping
     MARKDOWN_V2_SPECIAL = [
-        "_", "*", "[", "]", "(", ")", "~", "`", ">", "#", "+", "-", "=", "|",
-        "{", "}", ".", "!", "!"
+        "_",
+        "*",
+        "[",
+        "]",
+        "(",
+        ")",
+        "~",
+        "`",
+        ">",
+        "#",
+        "+",
+        "-",
+        "=",
+        "|",
+        "{",
+        "}",
+        ".",
+        "!",
+        "!",
     ]
 
     MAX_POST_LENGTH = 4096
@@ -131,7 +149,16 @@ class TelegramFormatter:
         validation_errors = []
         missing_blocks = []
 
-        required_fields = ["title", "hook", "body", "key_facts", "analysis", "sources", "tldr", "hashtags"]
+        required_fields = [
+            "title",
+            "hook",
+            "body",
+            "key_facts",
+            "analysis",
+            "sources",
+            "tldr",
+            "hashtags",
+        ]
         for field_name in required_fields:
             if field_name not in post_data or not post_data.get(field_name):
                 validation_errors.append(f"Missing required field: {field_name}")
@@ -153,9 +180,13 @@ class TelegramFormatter:
         body = post_data.get("body", "")
         # Check body length
         if len(body) < self.min_body_length:
-            validation_errors.append(f"Body too short: {len(body)} < {self.min_body_length}")
+            validation_errors.append(
+                f"Body too short: {len(body)} < {self.min_body_length}"
+            )
         elif len(body) > self.max_body_length:
-            validation_errors.append(f"Body too long: {len(body)} > {self.max_body_length}")
+            validation_errors.append(
+                f"Body too long: {len(body)} > {self.max_body_length}"
+            )
             # Truncate at paragraph boundary
             body = self._truncate_body(body)
         lines.append(body)
@@ -228,7 +259,7 @@ class TelegramFormatter:
         # Check total length
         if len(text) > self.max_length:
             validation_errors.append(f"Post too long: {len(text)} > {self.max_length}")
-            text = text[:self.max_length]
+            text = text[: self.max_length]
 
         # Media prompt (not included in Telegram text)
         media_prompt = post_data.get("media_prompt")
@@ -260,6 +291,7 @@ class TelegramFormatter:
                 break
 
         return "\n\n".join(result)
+
     def _escape_markdown_v2(self, text: str) -> str:
         """
         Escape special characters for Telegram MarkdownV2.
@@ -292,7 +324,7 @@ class TelegramFormatter:
                                     break
                                 # Valid pair found - protect it
                                 result.append(placeholder)
-                                result.append(text[i + 1:j])
+                                result.append(text[i + 1 : j])
                                 result.append(placeholder)
                                 i = j + 1
                                 break
@@ -325,11 +357,11 @@ class TelegramFormatter:
     def _convert_to_html(self, text: str) -> str:
         """Convert markdown to HTML format."""
         # Convert bold
-        text = re.sub(r'\*([^*]+)\*', r'<b>\1</b>', text)
+        text = re.sub(r"\*([^*]+)\*", r"<b>\1</b>", text)
         # Convert italic
-        text = re.sub(r'_([^_]+)_', r'<i>\1</i>', text)
+        text = re.sub(r"_([^_]+)_", r"<i>\1</i>", text)
         # Convert links
-        text = re.sub(r'\[([^\]]+)\]\(([^\)]+)\)', r'<a href="\2">\1</a>', text)
+        text = re.sub(r"\[([^\]]+)\]\(([^\)]+)\)", r'<a href="\2">\1</a>', text)
 
         return text
 

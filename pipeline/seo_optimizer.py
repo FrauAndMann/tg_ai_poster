@@ -45,16 +45,35 @@ class SEOOptimizer:
 
     # High-value AI/tech keywords
     HIGH_VALUE_KEYWORDS = [
-        "AI", "ИИ", "ML", "machine learning", "GPT", "neural network",
-        "deep learning", "LLM", "ChatGPT", "Claude", "transformer",
-        "автоматизация", "нейросеть", "генеративный", "AI agents",
-        "computer vision", "NLP", "reinforcement learning",
+        "AI",
+        "ИИ",
+        "ML",
+        "machine learning",
+        "GPT",
+        "neural network",
+        "deep learning",
+        "LLM",
+        "ChatGPT",
+        "Claude",
+        "transformer",
+        "автоматизация",
+        "нейросеть",
+        "генеративный",
+        "AI agents",
+        "computer vision",
+        "NLP",
+        "reinforcement learning",
     ]
 
     # Related AI/tech channels (for mention strategy)
     RELATED_CHANNELS = [
-        "@ai_news", "@ml_daily", "@techcrunch", "@theverge",
-        "@wired", "@deeplearning", "@openai",
+        "@ai_news",
+        "@ml_daily",
+        "@techcrunch",
+        "@theverge",
+        "@wired",
+        "@deeplearning",
+        "@openai",
     ]
 
     def __init__(
@@ -90,6 +109,7 @@ class SEOOptimizer:
         if len(title) + len(primary_kw) + 2 < 120:
             return f"{primary_kw}: {title}"
         return title
+
     def extract_keywords(self, content: str, topic: str) -> list[str]:
         """Extract relevant keywords from content."""
         keywords = []
@@ -105,6 +125,7 @@ class SEOOptimizer:
             if cap.lower() not in [kw.lower() for kw in keywords]:
                 keywords.append(cap)
         return list(set(keywords))[:5]  # Unique, top 5
+
     def find_related_channels(self, content: str, topic: str) -> list[str]:
         """Find channels related to the content."""
         related = []
@@ -113,11 +134,11 @@ class SEOOptimizer:
             # Simple relevance check
             channel_topic = channel.lstrip("@").lower()
             if channel_topic in content_lower or any(
-                word in content_lower
-                for word in channel_topic.split("_")
+                word in content_lower for word in channel_topic.split("_")
             ):
                 related.append(channel)
         return related[:2]  # Max 2 channels
+
     def score_seo(
         self,
         title: str,

@@ -30,8 +30,10 @@ class TgPosterException(Exception):
 # LLM Exceptions
 # =============================================================================
 
+
 class LLMException(TgPosterException):
     """Base exception for LLM-related errors."""
+
     pass
 
 
@@ -42,6 +44,7 @@ class LLMRateLimitError(LLMException):
     Triggered when API returns 429 or similar rate limiting response.
     Should trigger circuit breaker after multiple occurrences.
     """
+
     pass
 
 
@@ -52,6 +55,7 @@ class LLMServiceUnavailableError(LLMException):
     Triggered by 503, timeouts, or connection errors.
     Transient error - should retry with backoff.
     """
+
     pass
 
 
@@ -62,6 +66,7 @@ class LLMAuthenticationError(LLMException):
     Triggered by 401 or 403 responses.
     Permanent error - should NOT retry.
     """
+
     pass
 
 
@@ -72,6 +77,7 @@ class LLMContentFilterError(LLMException):
     Triggered when request is blocked by content safety filters.
     Should NOT retry with same content.
     """
+
     pass
 
 
@@ -82,6 +88,7 @@ class LLMQuotaExceededError(LLMException):
     Triggered when account quota/balance is depleted.
     Should fallback to alternative provider.
     """
+
     pass
 
 
@@ -89,8 +96,10 @@ class LLMQuotaExceededError(LLMException):
 # Telegram Exceptions
 # =============================================================================
 
+
 class TelegramException(TgPosterException):
     """Base exception for Telegram-related errors."""
+
     pass
 
 
@@ -101,6 +110,7 @@ class TelegramRateLimitError(TelegramException):
     Triggered by FloodWait or similar rate limiting.
     Should wait and retry.
     """
+
     pass
 
 
@@ -110,6 +120,7 @@ class TelegramServiceUnavailableError(TelegramException):
 
     Transient error - should retry with backoff.
     """
+
     pass
 
 
@@ -119,6 +130,7 @@ class TelegramChatNotFoundError(TelegramException):
 
     Permanent error - check channel_id configuration.
     """
+
     pass
 
 
@@ -128,6 +140,7 @@ class TelegramForbiddenError(TelegramException):
 
     Permanent error - check bot permissions in channel.
     """
+
     pass
 
 
@@ -135,8 +148,10 @@ class TelegramForbiddenError(TelegramException):
 # Source Collection Exceptions
 # =============================================================================
 
+
 class SourceException(TgPosterException):
     """Base exception for source collection errors."""
+
     pass
 
 
@@ -146,6 +161,7 @@ class SourceRateLimitError(SourceException):
 
     Should back off and retry later.
     """
+
     pass
 
 
@@ -155,6 +171,7 @@ class SourceUnavailableError(SourceException):
 
     Transient error - should retry.
     """
+
     pass
 
 
@@ -164,6 +181,7 @@ class SourceParseError(SourceException):
 
     May indicate changed format or corrupt data.
     """
+
     pass
 
 
@@ -244,7 +262,9 @@ def should_trigger_circuit_breaker(error: Exception) -> bool:
     return isinstance(error, CIRCUIT_BREAKER_EXCEPTIONS)
 
 
-def classify_http_error(status_code: int, service: str = "unknown") -> TgPosterException:
+def classify_http_error(
+    status_code: int, service: str = "unknown"
+) -> TgPosterException:
     """
     Classify HTTP error by status code.
 

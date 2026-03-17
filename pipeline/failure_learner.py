@@ -32,7 +32,6 @@ class FailurePattern:
     first_seen: datetime = field(default_factory=datetime.now)
     last_seen: datetime = field(default_factory=datetime.now)
 
-
     @property
     def is_systematic(self) -> bool:
         """Check if this is a systematic pattern (3+ failures)."""
@@ -127,8 +126,10 @@ class FailureLearner:
     async def run_analysis(self) -> None:
         """Run analysis on failure patterns."""
         if not self.llm:
-                return
-        logger.info("Running failure pattern analysis on %d patterns", len(self._patterns))
+            return
+        logger.info(
+            "Running failure pattern analysis on %d patterns", len(self._patterns)
+        )
         # Prepare failure data
         patterns_data = {}
         for name, pattern in self._patterns.items():
@@ -144,15 +145,18 @@ class FailureLearner:
         analysis = self._parse_analysis(response.content)
         if analysis:
             await self.apply_patches(analysis)
+
     def _parse_analysis(self, content: str) -> Optional[dict]:
         """Parse analysis response."""
         import json
+
         try:
             if "```json" in content:
                 content = content.split("```json")[1].split("```")[0]
             return json.loads(content.strip())
         except (json.JSONDecodeError, KeyError):
             return None
+
     async def apply_patches(self, analysis: dict) -> None:
         """Apply patches from analysis."""
         issues = analysis.get("systematic_issues", [])
@@ -165,14 +169,18 @@ class FailureLearner:
             )
             self._patches.append(patch)
             logger.info("Created patch for issue: %s", patch.issue)
+
     def get_patches(self) -> list[PromptPatch]:
         """Get all generated patches."""
         return self._patches
+
     def get_failure_report(self) -> dict[str, Any]:
         """Get failure analysis report."""
         return {
             "total_patterns": len(self._patterns),
-            "systematic_issues": len([p for p in self._patterns.values() if p.is_systematic]),
+            "systematic_issues": len(
+                [p for p in self._patterns.values() if p.is_systematic]
+            ),
             "patches_created": len(self._patches),
             "patterns": {
                 name: {

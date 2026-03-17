@@ -100,7 +100,9 @@ class StyleSignature:
             },
             "metadata": {
                 "posts_analyzed": self.posts_analyzed,
-                "last_updated": self.last_updated.isoformat() if self.last_updated else None,
+                "last_updated": self.last_updated.isoformat()
+                if self.last_updated
+                else None,
                 "confidence": self.confidence,
             },
         }
@@ -172,23 +174,24 @@ class StyleDNA:
         len(all_text.split())
 
         # Sentence analysis
-        sentences = re.split(r'[.!?]+', all_text)
+        sentences = re.split(r"[.!?]+", all_text)
         sentences = [s.strip() for s in sentences if s.strip()]
 
         sentence_lengths = [len(s.split()) for s in sentences]
-        avg_length = sum(sentence_lengths) / len(sentence_lengths) if sentence_lengths else 15
+        avg_length = (
+            sum(sentence_lengths) / len(sentence_lengths) if sentence_lengths else 15
+        )
         variance = (
-            sum((length - avg_length) ** 2 for length in sentence_lengths) / len(sentence_lengths)
-            if sentence_lengths else 5
+            sum((length - avg_length) ** 2 for length in sentence_lengths)
+            / len(sentence_lengths)
+            if sentence_lengths
+            else 5
         )
 
         # Paragraph analysis
         paragraphs = all_text.split("\n\n")
         paragraphs = [p.strip() for p in paragraphs if p.strip()]
-        para_sentences = [
-            len(re.split(r'[.!?]+', p))
-            for p in paragraphs
-        ]
+        para_sentences = [len(re.split(r"[.!?]+", p)) for p in paragraphs]
 
         # Punctuation
         exc_count = all_text.count("!")
@@ -198,10 +201,10 @@ class StyleDNA:
         # Emoji detection
         emoji_pattern = re.compile(
             "["
-            "\U0001F600-\U0001F64F"
-            "\U0001F300-\U0001F5FF"
-            "\U0001F680-\U0001F6FF"
-            "\U0001F1E0-\U0001F1FF"
+            "\U0001f600-\U0001f64f"
+            "\U0001f300-\U0001f5ff"
+            "\U0001f680-\U0001f6ff"
+            "\U0001f1e0-\U0001f1ff"
             "]+",
             flags=re.UNICODE,
         )
@@ -214,12 +217,12 @@ class StyleDNA:
         first_person = len(re.findall(r"\b(мы|нам|наш|я|мне|мой)\b", all_text, re.I))
         second_person = len(re.findall(r"\b(вы|вам|ваш|ты|тебе)\b", all_text, re.I))
         rhetorical = sum(
-            1 for s in sentences
+            1
+            for s in sentences
             if any(s.lower().startswith(st) for st in self.RHETORICAL_STARTERS)
         )
         passive_count = sum(
-            len(re.findall(p, all_text, re.I))
-            for p in self.PASSIVE_PATTERNS
+            len(re.findall(p, all_text, re.I)) for p in self.PASSIVE_PATTERNS
         )
 
         # Numbers and links
@@ -235,7 +238,9 @@ class StyleDNA:
             avg_sentence_length=avg_length,
             sentence_length_variance=variance,
             max_sentence_length=int(max(sentence_lengths)) if sentence_lengths else 30,
-            avg_paragraph_sentences=sum(para_sentences) / len(para_sentences) if para_sentences else 3,
+            avg_paragraph_sentences=sum(para_sentences) / len(para_sentences)
+            if para_sentences
+            else 3,
             max_paragraph_length=int(max(para_sentences)) if para_sentences else 4,
             exclamation_frequency=exc_count / total_chars if total_chars else 0,
             question_frequency=q_count / total_chars if total_chars else 0,
@@ -243,12 +248,22 @@ class StyleDNA:
             emoji_frequency=len(emojis) / total_chars if total_chars else 0,
             emoji_in_title=True,  # Default
             common_emojis=[
-                e for e, _ in sorted(emoji_counter.items(), key=lambda x: x[1], reverse=True)[:5]
-            ] or ["🚀", "💡"],
+                e
+                for e, _ in sorted(
+                    emoji_counter.items(), key=lambda x: x[1], reverse=True
+                )[:5]
+            ]
+            or ["🚀", "💡"],
             first_person_ratio=first_person / total_sentences if total_sentences else 0,
-            second_person_ratio=second_person / total_sentences if total_sentences else 0,
-            rhetorical_questions=rhetorical / total_paragraphs if total_paragraphs else 0,
-            passive_voice_ratio=passive_count / total_sentences if total_sentences else 0,
+            second_person_ratio=second_person / total_sentences
+            if total_sentences
+            else 0,
+            rhetorical_questions=rhetorical / total_paragraphs
+            if total_paragraphs
+            else 0,
+            passive_voice_ratio=passive_count / total_sentences
+            if total_sentences
+            else 0,
             numbers_frequency=numbers / total_chars if total_chars else 0,
             link_frequency=links / total_chars if total_chars else 0,
             hashtag_frequency=hashtags / total_chars if total_chars else 0,
@@ -262,7 +277,9 @@ class StyleDNA:
             confidence=min(1.0, len(posts) / self.min_posts),
         )
 
-        logger.info("Analyzed %d posts, confidence: %.2f", len(posts), self.signature.confidence)
+        logger.info(
+            "Analyzed %d posts, confidence: %.2f", len(posts), self.signature.confidence
+        )
         return self.signature
 
     async def analyze_top_posts(self, limit: int = 20) -> StyleSignature:
@@ -286,7 +303,8 @@ class StyleDNA:
             if len(top_posts) < self.min_posts:
                 logger.warning(
                     "Not enough posts for reliable analysis: %d < %d",
-                    len(top_posts), self.min_posts
+                    len(top_posts),
+                    self.min_posts,
                 )
 
             posts_content = [p.content for p in top_posts if p.content]

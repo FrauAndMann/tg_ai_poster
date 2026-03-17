@@ -34,8 +34,25 @@ class TelegramFormatter(PostFormatter):
 
     # MarkdownV2 special characters that need escaping
     MARKDOWN_V2_SPECIAL = [
-        "_", "*", "[", "]", "(", ")", "~", "`", ">", "#", "+", "-", "=", "|",
-        "{", "}", ".", "!", "!"
+        "_",
+        "*",
+        "[",
+        "]",
+        "(",
+        ")",
+        "~",
+        "`",
+        ">",
+        "#",
+        "+",
+        "-",
+        "=",
+        "|",
+        "{",
+        "}",
+        ".",
+        "!",
+        "!",
     ]
 
     # Telegram limits
@@ -169,7 +186,7 @@ class TelegramFormatter(PostFormatter):
         # Check total length
         if len(text) > self.max_length:
             validation_errors.append(f"Post too long: {len(text)} > {self.max_length}")
-            text = text[:self.max_length]
+            text = text[: self.max_length]
 
         is_valid = len(validation_errors) == 0 and len(missing_blocks) == 0
 
@@ -205,9 +222,13 @@ class TelegramFormatter(PostFormatter):
         body = post_data.get("body", "")
         body_len = len(body)
         if body_len < self.DEFAULT_MIN_BODY:
-            validation_errors.append(f"Body too short: {body_len} < {self.DEFAULT_MIN_BODY}")
+            validation_errors.append(
+                f"Body too short: {body_len} < {self.DEFAULT_MIN_BODY}"
+            )
         elif body_len > self.DEFAULT_MAX_BODY:
-            validation_errors.append(f"Body too long: {body_len} > {self.DEFAULT_MAX_BODY}")
+            validation_errors.append(
+                f"Body too long: {body_len} > {self.DEFAULT_MAX_BODY}"
+            )
             body = self._truncate_body(body, self.DEFAULT_MAX_BODY)
         lines.append(body)
         lines.append("")
@@ -281,7 +302,7 @@ class TelegramFormatter(PostFormatter):
         # Check total length
         if len(text) > self.max_length:
             validation_errors.append(f"Post too long: {len(text)} > {self.max_length}")
-            text = text[:self.max_length]
+            text = text[: self.max_length]
 
         # Media prompt (not included in Telegram text)
         media_prompt = post_data.get("media_prompt")
@@ -359,7 +380,7 @@ class TelegramFormatter(PostFormatter):
     def _escape_markdown_v2(self, text: str) -> str:
         """Escape special characters for MarkdownV2, preserving links."""
         # Step 1: Extract and preserve URLs first (before any escaping)
-        url_pattern = r'(https?://[^\s\)\]\>]+)'
+        url_pattern = r"(https?://[^\s\)\]\>]+)"
         urls = []
         url_counter = [0]
 
@@ -372,7 +393,7 @@ class TelegramFormatter(PostFormatter):
         text = re.sub(url_pattern, save_url, text)
 
         # Step 2: Preserve link structure [text](url_placeholder)
-        link_pattern = r'\[([^\]]+)\]\(([^)]+)\)'
+        link_pattern = r"\[([^\]]+)\]\(([^)]+)\)"
         links = []
         link_counter = [0]
 
@@ -398,8 +419,12 @@ class TelegramFormatter(PostFormatter):
                 escaped_text = escaped_text.replace(char, f"\\{char}")
 
             # Find the actual URL from saved URLs
-            if url_placeholder.startswith("\x00URL") and url_placeholder.endswith("\x00"):
-                url_idx = int(url_placeholder.replace("\x00URL", "").replace("\x00", ""))
+            if url_placeholder.startswith("\x00URL") and url_placeholder.endswith(
+                "\x00"
+            ):
+                url_idx = int(
+                    url_placeholder.replace("\x00URL", "").replace("\x00", "")
+                )
                 actual_url = urls[url_idx]
             else:
                 actual_url = url_placeholder
@@ -420,10 +445,10 @@ class TelegramFormatter(PostFormatter):
     def _convert_to_html(self, text: str) -> str:
         """Convert markdown to HTML format."""
         # Convert bold
-        text = re.sub(r'\*([^*]+)\*', r'<b>\1</b>', text)
+        text = re.sub(r"\*([^*]+)\*", r"<b>\1</b>", text)
         # Convert italic
-        text = re.sub(r'_([^_]+)_', r'<i>\1</i>', text)
+        text = re.sub(r"_([^_]+)_", r"<i>\1</i>", text)
         # Convert links
-        text = re.sub(r'\[([^\]]+)\]\(([^\)]+)\)', r'<a href="\2">\1</a>', text)
+        text = re.sub(r"\[([^\]]+)\]\(([^\)]+)\)", r'<a href="\2">\1</a>', text)
 
         return text

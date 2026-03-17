@@ -109,14 +109,14 @@ class ReadabilityOptimizer:
     def _calculate_metrics(self, text: str) -> ReadabilityMetrics:
         """Calculate all readability metrics."""
         # Split into sentences
-        sentences = re.split(r'[.!?]+', text)
+        sentences = re.split(r"[.!?]+", text)
         sentences = [s.strip() for s in sentences if s.strip()]
 
         # Split into paragraphs
-        paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
+        paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
 
         # Split into words
-        words = re.findall(r'\b[а-яёa-z]+\b', text.lower())
+        words = re.findall(r"\b[а-яёa-z]+\b", text.lower())
 
         if not sentences or not words:
             return ReadabilityMetrics()
@@ -172,7 +172,7 @@ class ReadabilityOptimizer:
             # English syllable estimation
             count = sum(1 for c in word if c.lower() in self.VOWELS_EN)
             # Adjust for silent e
-            if word.endswith('e'):
+            if word.endswith("e"):
                 count = max(1, count - 1)
 
         return max(1, count)
@@ -180,12 +180,12 @@ class ReadabilityOptimizer:
     def _count_passive_constructions(self, text: str) -> int:
         """Count passive voice constructions."""
         passive_patterns = [
-            r'\bбыл[аи]?\s+\w+ен[а-я]*\b',  # Russian passive
-            r'\bбыло\s+\w+ен[оа]\b',
-            r'\bwas\s+\w+ed\b',  # English passive
-            r'\bwere\s+\w+ed\b',
-            r'\bis\s+being\s+\w+ed\b',
-            r'\bhas\s+been\s+\w+ed\b',
+            r"\bбыл[аи]?\s+\w+ен[а-я]*\b",  # Russian passive
+            r"\bбыло\s+\w+ен[оа]\b",
+            r"\bwas\s+\w+ed\b",  # English passive
+            r"\bwere\s+\w+ed\b",
+            r"\bis\s+being\s+\w+ed\b",
+            r"\bhas\s+been\s+\w+ed\b",
         ]
 
         count = 0
@@ -231,14 +231,10 @@ class ReadabilityOptimizer:
             )
 
         if metrics.passive_voice_ratio > 0.3:
-            issues.append(
-                f"Too much passive voice ({metrics.passive_voice_ratio:.0%})"
-            )
+            issues.append(f"Too much passive voice ({metrics.passive_voice_ratio:.0%})")
 
         if metrics.complex_word_ratio > 0.2:
-            issues.append(
-                f"Too many complex words ({metrics.complex_word_ratio:.0%})"
-            )
+            issues.append(f"Too many complex words ({metrics.complex_word_ratio:.0%})")
 
         if metrics.avg_word_length > 6:
             issues.append(
@@ -246,7 +242,7 @@ class ReadabilityOptimizer:
             )
 
         # Check for wall of text
-        sentences = re.split(r'[.!?]+', text)
+        sentences = re.split(r"[.!?]+", text)
         long_runs = 0
         current_run = 0
 
@@ -293,9 +289,7 @@ class ReadabilityOptimizer:
                     "or explain them on first use."
                 )
             elif "Words too long" in issue:
-                suggestions.append(
-                    "Use shorter, simpler words where possible."
-                )
+                suggestions.append("Use shorter, simpler words where possible.")
             elif "consecutive long" in issue:
                 suggestions.append(
                     "Vary sentence length. Follow long sentences with short ones."
@@ -344,13 +338,13 @@ class ReadabilityOptimizer:
         """Optimize a single sentence for readability."""
         # Remove redundant words
         optimizations = [
-            (r'\bдля того чтобы\b', 'чтобы'),
-            (r'\bдля того, чтобы\b', 'чтобы'),
-            (r'\bпо причине того, что\b', 'потому что'),
-            (r'\bin order to\b', 'to'),
-            (r'\bdue to the fact that\b', 'because'),
-            (r'\bat this point in time\b', 'now'),
-            (r'\bin the event that\b', 'if'),
+            (r"\bдля того чтобы\b", "чтобы"),
+            (r"\bдля того, чтобы\b", "чтобы"),
+            (r"\bпо причине того, что\b", "потому что"),
+            (r"\bin order to\b", "to"),
+            (r"\bdue to the fact that\b", "because"),
+            (r"\bat this point in time\b", "now"),
+            (r"\bin the event that\b", "if"),
         ]
 
         optimized = sentence

@@ -4,6 +4,7 @@ Interactive Poll Generator v2 - LLM-powered poll generation.
 Generates interesting, non-obvious polls that feed back
 as data for persona engine.
 """
+
 from __future__ import annotations
 
 import random
@@ -25,7 +26,6 @@ class PollOption:
 
     text: str
     is_correct: bool = False
-
 
     votes: int = 0
 
@@ -121,20 +121,23 @@ class PollGeneratorV2:
         except Exception as e:
             logger.error("Poll generation failed: %s", e)
             return self._generate_fallback_poll(post_content)
+
     def _parse_response(self, content: str) -> Optional[dict]:
         """Parse LLM response."""
         import json
+
         try:
             if "```json" in content:
                 content = content.split("```json")[1].split("```")[0]
             return json.loads(content.strip())
         except (json.JSONDecodeError, KeyError):
             return None
+
     def _create_poll_from_data(self, data: dict) -> GeneratedPoll:
         """Create poll from parsed data."""
         options = []
         for i in range(4):
-            opt_text = data.get("options", [{}])[i].get("text", f"Вариант {i+1}")
+            opt_text = data.get("options", [{}])[i].get("text", f"Вариант {i + 1}")
             options.append(PollOption(text=opt_text))
         poll = GeneratedPoll(
             question=data.get("question", ""),
@@ -142,6 +145,7 @@ class PollGeneratorV2:
             trick_answer_index=data.get("trick_index", 0),
         )
         return poll
+
     def _generate_fallback_poll(self, post_content: str) -> GeneratedPoll:
         """Generate a fallback poll without LLM."""
         # Extract key terms from content (used for context)
@@ -170,6 +174,7 @@ class PollGeneratorV2:
                 ],
                 trick_answer_index=random.randint(0, 3),
             )
+
     def record_votes(
         self,
         poll_id: int,
@@ -188,6 +193,7 @@ class PollGeneratorV2:
             self._option_performance[option_text].append(
                 vote_count / poll.total_votes if poll.total_votes > 0 else 0.0
             )
+
     def get_best_poll_format(self) -> dict[str, Any]:
         """Analyze which poll formats perform best."""
         return {

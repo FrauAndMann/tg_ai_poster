@@ -24,8 +24,24 @@ class PostFormatter:
 
     # Characters that need escaping in MarkdownV2 (outside of URLs)
     MARKDOWN_V2_ESCAPE_CHARS = [
-        "_", "*", "[", "]", "(", ")", "~", "`", ">", "#", "+", "-", "=", "|",
-        "{", "}", ".", "!"
+        "_",
+        "*",
+        "[",
+        "]",
+        "(",
+        ")",
+        "~",
+        "`",
+        ">",
+        "#",
+        "+",
+        "-",
+        "=",
+        "|",
+        "{",
+        "}",
+        ".",
+        "!",
     ]
 
     # Required blocks for the new format (optional - used for best practices)
@@ -90,7 +106,7 @@ class PostFormatter:
         import re
 
         # Step 1: Extract and preserve URLs first (before any escaping)
-        url_pattern = re.compile(r'(https?://[^\s\)\]\>]+)')
+        url_pattern = re.compile(r"(https?://[^\s\)\]\>]+)")
         urls = []
         url_counter = [0]
 
@@ -103,7 +119,7 @@ class PostFormatter:
         text = url_pattern.sub(save_url, text)
 
         # Step 2: Extract links [text](url_placeholder)
-        link_pattern = re.compile(r'\[([^\]]*)\]\(([^)]+)\)')
+        link_pattern = re.compile(r"\[([^\]]*)\]\(([^)]+)\)")
         links = []
         placeholder_idx = [0]
 
@@ -226,33 +242,33 @@ class PostFormatter:
         # For simplicity, escape all standalone _ and * that might cause issues
         # This is safer than trying to balance them
 
-        lines = content.split('\n')
+        lines = content.split("\n")
         fixed_lines = []
 
         for line in lines:
             # Skip lines that look like they have intentional markdown
             # (pairs of * or _ around text)
-            if '*' in line:
+            if "*" in line:
                 # Count unescaped asterisks
-                count = line.count('*')
+                count = line.count("*")
                 if count % 2 != 0:
                     # Odd number - escape one to make it even
                     # Find the last unescaped * and escape it
-                    parts = line.rsplit('*', 1)
+                    parts = line.rsplit("*", 1)
                     if len(parts) == 2:
-                        line = parts[0] + '\\*' + parts[1]
+                        line = parts[0] + "\\*" + parts[1]
 
-            if '_' in line:
+            if "_" in line:
                 # Count underscores (but not in URLs)
                 # Simple approach: escape all _ that aren't part of __word__
-                count = line.count('_')
+                count = line.count("_")
                 if count % 2 != 0:
                     # Escape all underscores to be safe
-                    line = line.replace('_', '\\_')
+                    line = line.replace("_", "\\_")
 
             fixed_lines.append(line)
 
-        return '\n'.join(fixed_lines)
+        return "\n".join(fixed_lines)
 
     def truncate(self, content: str, max_length: Optional[int] = None) -> str:
         """
@@ -292,7 +308,7 @@ class PostFormatter:
             truncated.rfind("? "),
         )
         if last_sentence > available * 0.7:
-            return truncated[:last_sentence + 1].strip() + "..."
+            return truncated[: last_sentence + 1].strip() + "..."
 
         # Word boundary
         last_space = truncated.rfind(" ")
@@ -441,7 +457,9 @@ class PostFormatter:
         """
         # Check length - just warn, don't fail (will be truncated)
         if len(content) > self.max_length:
-            logger.warning(f"Content will be truncated: {len(content)} > {self.max_length}")
+            logger.warning(
+                f"Content will be truncated: {len(content)} > {self.max_length}"
+            )
 
         # Check structure - only warn, don't fail
         if self.ensure_structure:
@@ -498,7 +516,9 @@ class PostFormatter:
         sources = []
 
         # Find sources block
-        sources_match = re.search(r'🔗.*?Источники:?\s*\n(.*?)(?=\n\n[⚡💡#]|$)', content, re.DOTALL)
+        sources_match = re.search(
+            r"🔗.*?Источники:?\s*\n(.*?)(?=\n\n[⚡💡#]|$)", content, re.DOTALL
+        )
         if sources_match:
             sources_text = sources_match.group(1)
             # Extract links
@@ -506,7 +526,7 @@ class PostFormatter:
                 line = line.strip()
                 if line.startswith("•") or line.startswith("-"):
                     # Parse "Name — URL" or "Name: URL" format
-                    link_match = re.search(r'([^—\-:]+)[—\-:]\s*(https?://\S+)', line)
+                    link_match = re.search(r"([^—\-:]+)[—\-:]\s*(https?://\S+)", line)
                     if link_match:
                         name = link_match.group(1).strip()
                         url = link_match.group(2).strip()

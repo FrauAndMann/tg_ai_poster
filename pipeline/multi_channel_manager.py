@@ -30,7 +30,9 @@ class ChannelConfig:
     topic: str
     language: str = "ru"
     schedule_type: str = "fixed"
-    schedule_times: list[str] = field(default_factory=lambda: ["09:30", "14:00", "20:00"])
+    schedule_times: list[str] = field(
+        default_factory=lambda: ["09:30", "14:00", "20:00"]
+    )
     llm_provider: Optional[str] = None
     llm_model: Optional[str] = None
     llm_temperature: float = 0.2
@@ -253,7 +255,9 @@ class MultiChannelManager:
 
         # Log summary
         successful = sum(1 for v in results.values() if v)
-        logger.info("Pipeline run complete: %d/%d channels successful", successful, len(results))
+        logger.info(
+            "Pipeline run complete: %d/%d channels successful", successful, len(results)
+        )
 
         return results
 
@@ -268,14 +272,18 @@ class MultiChannelManager:
                     "enabled": ch.enabled,
                     "status": {
                         "is_active": self.statuses[ch_id].is_active,
-                        "last_post": self.statuses[ch_id].last_post_at.isoformat() if self.statuses[ch_id].last_post_at else None,
+                        "last_post": self.statuses[ch_id].last_post_at.isoformat()
+                        if self.statuses[ch_id].last_post_at
+                        else None,
                         "posts_today": self.statuses[ch_id].posts_today,
                         "total_posts": self.statuses[ch_id].total_posts,
-                        "consecutive_failures": self.statuses[ch_id].consecutive_failures,
-                    }
+                        "consecutive_failures": self.statuses[
+                            ch_id
+                        ].consecutive_failures,
+                    },
                 }
                 for ch_id, ch in self.channels.items()
-            }
+            },
         }
 
     def pause_channel(self, channel_id: str) -> bool:
@@ -314,12 +322,15 @@ MULTI_CHANNEL_CONFIG_SCHEMA = {
                 "topic": {"type": "str", "required": True},
                 "language": {"type": "str", "default": "ru"},
                 "schedule_type": {"type": "str", "default": "fixed"},
-                "schedule_times": {"type": "list", "default": ["09:30", "14:00", "20:00"]},
+                "schedule_times": {
+                    "type": "list",
+                    "default": ["09:30", "14:00", "20:00"],
+                },
                 "llm_provider": {"type": "str", "optional": True},
                 "llm_model": {"type": "str", "optional": True},
                 "llm_temperature": {"type": "float", "default": 0.2},
                 "enabled": {"type": "bool", "default": True},
-            }
-        }
+            },
+        },
     }
 }

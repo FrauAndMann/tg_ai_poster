@@ -22,6 +22,7 @@ logger = get_logger(__name__)
 @dataclass
 class PostMetrics:
     """Metrics for a single published post."""
+
     post_id: int
     telegram_message_id: int
     published_at: datetime
@@ -44,10 +45,10 @@ class PostMetrics:
     def calculate_engagement_score(self) -> float:
         """Calculate weighted engagement score."""
         self.engagement_score = (
-            self.views * 0.01 +
-            self.reactions * 1.0 +
-            self.forwards * 2.0 +
-            self.replies * 1.5
+            self.views * 0.01
+            + self.reactions * 1.0
+            + self.forwards * 2.0
+            + self.replies * 1.5
         )
         return self.engagement_score
 
@@ -66,13 +67,16 @@ class PostMetrics:
             "forwards": self.forwards,
             "replies": self.replies,
             "engagement_score": self.engagement_score,
-            "engagement_collected_at": self.engagement_collected_at.isoformat() if self.engagement_collected_at else None,
+            "engagement_collected_at": self.engagement_collected_at.isoformat()
+            if self.engagement_collected_at
+            else None,
         }
 
 
 @dataclass
 class AnalyticsReport:
     """Weekly analytics report."""
+
     period_start: datetime
     period_end: datetime
     total_posts: int
@@ -242,10 +246,7 @@ class AnalyticsEngine:
         cutoff = datetime.utcnow() - timedelta(days=days)
 
         # Filter metrics in period
-        period_metrics = [
-            m for m in self._metrics.values()
-            if m.published_at >= cutoff
-        ]
+        period_metrics = [m for m in self._metrics.values() if m.published_at >= cutoff]
 
         if not period_metrics:
             return AnalyticsReport(
@@ -267,20 +268,30 @@ class AnalyticsEngine:
             posts_by_type[m.post_type] += 1
 
         avg_views = sum(m.views for m in period_metrics) / len(period_metrics)
-        avg_engagement = sum(m.engagement_score for m in period_metrics) / len(period_metrics)
-        avg_confidence = sum(m.confidence_avg for m in period_metrics) / len(period_metrics)
+        avg_engagement = sum(m.engagement_score for m in period_metrics) / len(
+            period_metrics
+        )
+        avg_confidence = sum(m.confidence_avg for m in period_metrics) / len(
+            period_metrics
+        )
 
         # Top 5 posts by engagement
-        top_posts = sorted(period_metrics, key=lambda m: m.engagement_score, reverse=True)[:5]
+        top_posts = sorted(
+            period_metrics, key=lambda m: m.engagement_score, reverse=True
+        )[:5]
 
         # Best performing post type
         type_engagement = {}
         for post_type in posts_by_type:
             type_posts = [m for m in period_metrics if m.post_type == post_type]
             if type_posts:
-                type_engagement[post_type] = sum(m.engagement_score for m in type_posts) / len(type_posts)
+                type_engagement[post_type] = sum(
+                    m.engagement_score for m in type_posts
+                ) / len(type_posts)
 
-        best_post_type = max(type_engagement, key=type_engagement.get) if type_engagement else ""
+        best_post_type = (
+            max(type_engagement, key=type_engagement.get) if type_engagement else ""
+        )
 
         # Generate recommendations
         recommendations = self._generate_recommendations(
@@ -353,7 +364,9 @@ class AnalyticsEngine:
         # Check last post type
         last_type = self._post_type_history[-1] if self._post_type_history else None
         if last_type == proposed_type:
-            logger.warning(f"Post type rotation violation: {proposed_type} same as last post")
+            logger.warning(
+                f"Post type rotation violation: {proposed_type} same as last post"
+            )
             return False
 
         return True
@@ -368,7 +381,7 @@ class AnalyticsEngine:
         Returns:
             bool: True if no duplicates in 3 consecutive posts
         """
-        proposed_set = set(h.lower().lstrip('#') for h in proposed_hashtags)
+        proposed_set = set(h.lower().lstrip("#") for h in proposed_hashtags)
 
         for recent_set in self._hashtag_cache[-3:] if self._hashtag_cache else []:
             overlap = proposed_set & recent_set
@@ -415,9 +428,7 @@ class AnalyticsEngine:
         """Save metrics to storage."""
         try:
             data_file = self.metrics_storage_path / "metrics.json"
-            data = {
-                str(k): v.to_dict() for k, v in self._metrics.items()
-            }
+            data = {str(k): v.to_dict() for k, v in self._metrics.items()}
             with open(data_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
         except Exception as e:
@@ -433,7 +444,9 @@ class AnalyticsEngine:
                 for k, v in data.items():
                     v["published_at"] = datetime.fromisoformat(v["published_at"])
                     if v.get("engagement_collected_at"):
-                        v["engagement_collected_at"] = datetime.fromisoformat(v["engagement_collected_at"])
+                        v["engagement_collected_at"] = datetime.fromisoformat(
+                            v["engagement_collected_at"]
+                        )
                     self._metrics[int(k)] = PostMetrics(**v)
         except Exception as e:
             logger.warning(f"Failed to load metrics: {e}")
@@ -466,9 +479,7 @@ class WeeklyReporter:
         return self.engine.generate_weekly_report(days)
 
     async def send_report_to_admin(
-        self,
-        report: AnalyticsReport,
-        admin_user_id: int
+        self, report: AnalyticsReport, admin_user_id: int
     ) -> bool:
         """
         Send report to admin via Telegram.
@@ -496,7 +507,9 @@ class WeeklyReporter:
         ]
 
         for i, post in enumerate(report.top_posts[:5], 1):
-            lines.append(f"  {i}. ID {post.post_id}: {post.engagement_score:.1f} engagement")
+            lines.append(
+                f"  {i}. ID {post.post_id}: {post.engagement_score:.1f} engagement"
+            )
 
         if report.recommendations:
             lines.append("")
@@ -516,5 +529,5 @@ class WeeklyReporter:
         return sorted(
             self.engine._metrics.values(),
             key=lambda m: m.engagement_score,
-            reverse=True
+            reverse=True,
         )[:limit]

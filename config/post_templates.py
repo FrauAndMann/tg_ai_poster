@@ -3,6 +3,7 @@ Post templates configuration loader.
 
 Loads post templates from YAML configuration file.
 """
+
 from __future__ import annotations
 
 from pathlib import Path

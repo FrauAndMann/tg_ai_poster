@@ -139,12 +139,12 @@ class QualityChecker:
         """Count emojis in text."""
         emoji_pattern = re.compile(
             "["
-            "\U0001F600-\U0001F64F"  # emoticons
-            "\U0001F300-\U0001F5FF"  # symbols & pictographs
-            "\U0001F680-\U0001F6FF"  # transport & map symbols
-            "\U0001F1E0-\U0001F1FF"  # flags
-            "\U00002702-\U000027B0"
-            "\U000024C2-\U0001F251"
+            "\U0001f600-\U0001f64f"  # emoticons
+            "\U0001f300-\U0001f5ff"  # symbols & pictographs
+            "\U0001f680-\U0001f6ff"  # transport & map symbols
+            "\U0001f1e0-\U0001f1ff"  # flags
+            "\U00002702-\U000027b0"
+            "\U000024c2-\U0001f251"
             "]+",
             flags=re.UNICODE,
         )
@@ -164,7 +164,9 @@ class QualityChecker:
 
         # Warn but don't fail for long content (Telegram handles up to 4096)
         if length > self.max_length:
-            logger.warning(f"Post is long: {length} chars, but will be truncated if needed")
+            logger.warning(
+                f"Post is long: {length} chars, but will be truncated if needed"
+            )
 
         return True, None
 
@@ -185,7 +187,9 @@ class QualityChecker:
 
         # Don't fail on missing hashtags - they may be added during formatting
         if count < self.min_hashtags:
-            logger.info(f"Hashtags will be auto-added during formatting (current: {count})")
+            logger.info(
+                f"Hashtags will be auto-added during formatting (current: {count})"
+            )
 
         return True, None
 
@@ -212,7 +216,9 @@ class QualityChecker:
 
     def _check_generic_opening(self, content: str) -> tuple[bool, Optional[str]]:
         """Check for generic opening."""
-        first_sentence = content.split(".")[0].lower() if "." in content else content.lower()
+        first_sentence = (
+            content.split(".")[0].lower() if "." in content else content.lower()
+        )
 
         for opening in self.GENERIC_OPENINGS:
             if opening in first_sentence:
@@ -297,7 +303,10 @@ class QualityChecker:
                     similarity = intersection / union
 
                     if similarity > self.similarity_threshold:
-                        return False, f"Too similar to recent post #{i + 1} ({similarity:.0%})"
+                        return (
+                            False,
+                            f"Too similar to recent post #{i + 1} ({similarity:.0%})",
+                        )
 
             return True, None
 
@@ -457,14 +466,19 @@ Respond with JSON only:
             # Combine results (use lower score)
             combined_score = min(base_result.score, ai_result.get("score", 100))
             combined_issues = base_result.issues + ai_result.get("issues", [])
-            combined_suggestions = base_result.suggestions + ai_result.get("suggestions", [])
+            combined_suggestions = base_result.suggestions + ai_result.get(
+                "suggestions", []
+            )
 
             return QualityResult(
-                approved=ai_result.get("approved", base_result.approved) and base_result.approved,
+                approved=ai_result.get("approved", base_result.approved)
+                and base_result.approved,
                 score=combined_score,
                 issues=combined_issues,
                 suggestions=combined_suggestions,
-                needs_regeneration=ai_result.get("needs_regeneration", base_result.needs_regeneration),
+                needs_regeneration=ai_result.get(
+                    "needs_regeneration", base_result.needs_regeneration
+                ),
             )
 
         except Exception as e:

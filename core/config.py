@@ -23,6 +23,7 @@ load_dotenv()
 
 class ConfigValidationError(Exception):
     """Raised when configuration validation fails."""
+
     pass
 
 
@@ -35,11 +36,11 @@ class TelegramConfig(BaseSettings):
     channel_id: str = Field(default="", description="Target channel ID or username")
     posting_mode: Literal["bot", "telethon"] = Field(
         default="bot",
-        description="Publishing mode: 'bot' for Bot API, 'telethon' for user account"
+        description="Publishing mode: 'bot' for Bot API, 'telethon' for user account",
     )
     proxy: str = Field(
         default="",
-        description="Proxy URL for Telegram API (e.g., http://127.0.0.1:7890 or socks5://127.0.0.1:1080)"
+        description="Proxy URL for Telegram API (e.g., http://127.0.0.1:7890 or socks5://127.0.0.1:1080)",
     )
 
     @model_validator(mode="after")
@@ -50,9 +51,11 @@ class TelegramConfig(BaseSettings):
             pass
         if self.posting_mode == "telethon" and self.channel_id:
             # Telethon needs numeric channel ID or username
-            if not (self.channel_id.startswith("@") or
-                    self.channel_id.startswith("-") or
-                    self.channel_id.isdigit()):
+            if not (
+                self.channel_id.startswith("@")
+                or self.channel_id.startswith("-")
+                or self.channel_id.isdigit()
+            ):
                 pass  # Will be validated at runtime
         return self
 
@@ -63,11 +66,13 @@ class TelethonConfig(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="TELETHON_")
 
     api_id: int = Field(default=0, description="Telegram API ID from my.telegram.org")
-    api_hash: str = Field(default="", description="Telegram API Hash from my.telegram.org")
+    api_hash: str = Field(
+        default="", description="Telegram API Hash from my.telegram.org"
+    )
     phone: str = Field(default="", description="Phone number for user account")
     session_path: str = Field(
         default="sessions/user.session",
-        description="Path to store Telethon session file"
+        description="Path to store Telethon session file",
     )
 
 
@@ -78,38 +83,33 @@ class LLMConfig(BaseSettings):
 
     provider: Literal["openai", "claude", "deepseek", "glm", "claude-cli"] = Field(
         default="claude-cli",
-        description="LLM provider to use (claude-cli uses GLM Coding Plan)"
+        description="LLM provider to use (claude-cli uses GLM Coding Plan)",
     )
     model: str = Field(default="glm-5", description="Model name")
     api_key: str = Field(default="", description="API key for the LLM provider")
     base_url: str = Field(
         default="https://api.z.ai/api/paas/v4",
-        description="API base URL (for OpenAI-compatible APIs)"
+        description="API base URL (for OpenAI-compatible APIs)",
     )
-    max_tokens: int = Field(default=2000, ge=100, le=4000, description="Max tokens in response")
+    max_tokens: int = Field(
+        default=2000, ge=100, le=4000, description="Max tokens in response"
+    )
     temperature: float = Field(
-        default=0.9,
-        ge=0.0,
-        le=2.0,
-        description="Sampling temperature for generation"
+        default=0.9, ge=0.0, le=2.0, description="Sampling temperature for generation"
     )
 
     # Provider-specific API URLs (fallbacks)
     glm_base_url: str = Field(
-        default="https://api.z.ai/api/paas/v4",
-        description="GLM-5 API base URL"
+        default="https://api.z.ai/api/paas/v4", description="GLM-5 API base URL"
     )
     openai_base_url: str = Field(
-        default="https://api.openai.com/v1",
-        description="OpenAI API base URL"
+        default="https://api.openai.com/v1", description="OpenAI API base URL"
     )
     claude_base_url: str = Field(
-        default="https://api.anthropic.com/v1",
-        description="Claude API base URL"
+        default="https://api.anthropic.com/v1", description="Claude API base URL"
     )
     deepseek_base_url: str = Field(
-        default="https://api.deepseek.com/v1",
-        description="DeepSeek API base URL"
+        default="https://api.deepseek.com/v1", description="DeepSeek API base URL"
     )
 
     def get_base_url(self) -> str:
@@ -132,17 +132,23 @@ class ChannelConfig(BaseSettings):
 
     topic: str = Field(
         default="AI technologies and future of automation",
-        description="Main topic/niche of the channel"
+        description="Main topic/niche of the channel",
     )
     style: str = Field(
         default="Expert but accessible. Think pieces. No hype.",
-        description="Writing style instructions"
+        description="Writing style instructions",
     )
     language: str = Field(default="ru", description="Content language")
     post_length_min: int = Field(default=200, ge=50, description="Minimum post length")
-    post_length_max: int = Field(default=900, le=4096, description="Maximum post length")
-    emojis_per_post: int = Field(default=3, ge=0, le=10, description="Target emoji count")
-    hashtags_count: int = Field(default=2, ge=0, le=5, description="Target hashtag count")
+    post_length_max: int = Field(
+        default=900, le=4096, description="Maximum post length"
+    )
+    emojis_per_post: int = Field(
+        default=3, ge=0, le=10, description="Target emoji count"
+    )
+    hashtags_count: int = Field(
+        default=2, ge=0, le=5, description="Target hashtag count"
+    )
 
 
 class ScheduleConfig(BaseSettings):
@@ -151,22 +157,23 @@ class ScheduleConfig(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="SCHEDULE_", extra="ignore")
 
     type: Literal["interval", "fixed", "random"] = Field(
-        default="fixed",
-        description="Schedule type: interval, fixed times, or random"
+        default="fixed", description="Schedule type: interval, fixed times, or random"
     )
-    interval_hours: int = Field(default=4, ge=1, le=24, description="Hours between posts")
+    interval_hours: int = Field(
+        default=4, ge=1, le=24, description="Hours between posts"
+    )
     fixed_times: list[str] = Field(
         default=["09:30", "14:00", "20:00"],
-        description="Fixed posting times in HH:MM format"
+        description="Fixed posting times in HH:MM format",
     )
-    timezone: str = Field(default="Europe/Moscow", description="Timezone for scheduling")
+    timezone: str = Field(
+        default="Europe/Moscow", description="Timezone for scheduling"
+    )
     random_window_start: str = Field(
-        default="10:00",
-        description="Random window start time"
+        default="10:00", description="Random window start time"
     )
     random_window_end: str = Field(
-        default="22:00",
-        description="Random window end time"
+        default="22:00", description="Random window end time"
     )
 
     @field_validator("fixed_times")
@@ -174,6 +181,7 @@ class ScheduleConfig(BaseSettings):
     def validate_fixed_times(cls, v: list[str]) -> list[str]:
         """Validate time format in fixed_times."""
         import re
+
         time_pattern = re.compile(r"^([01]?[0-9]|2[0-3]):([0-5][0-9])$")
         for time in v:
             if not time_pattern.match(time):
@@ -191,13 +199,11 @@ class SourcesConfig(BaseSettings):
             "https://feeds.feedburner.com/oreilly/radar",
             "https://rss.cnn.com/rss/edition_technology.rss",
         ],
-        description="List of RSS feed URLs"
+        description="List of RSS feed URLs",
     )
     enable_rss: bool = Field(default=True, description="Enable RSS feed collection")
     rss_fetch_interval_hours: int = Field(
-        default=6,
-        ge=1,
-        description="Hours between RSS fetches"
+        default=6, ge=1, description="Hours between RSS fetches"
     )
 
 
@@ -207,30 +213,25 @@ class SafetyConfig(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="SAFETY_")
 
     manual_approval: bool = Field(
-        default=False,
-        description="Require manual approval before posting"
+        default=False, description="Require manual approval before posting"
     )
-    max_daily_posts: int = Field(default=6, ge=1, le=50, description="Maximum posts per day")
+    max_daily_posts: int = Field(
+        default=6, ge=1, le=50, description="Maximum posts per day"
+    )
     min_interval_minutes: int = Field(
-        default=60,
-        ge=1,
-        description="Minimum minutes between posts"
+        default=60, ge=1, description="Minimum minutes between posts"
     )
     forbidden_words: list[str] = Field(
-        default_factory=list,
-        description="Words that should not appear in posts"
+        default_factory=list, description="Words that should not appear in posts"
     )
     similarity_threshold: float = Field(
         default=0.85,
         ge=0.0,
         le=1.0,
-        description="Similarity threshold for duplicate detection"
+        description="Similarity threshold for duplicate detection",
     )
     max_regeneration_attempts: int = Field(
-        default=3,
-        ge=1,
-        le=5,
-        description="Max attempts to regenerate failed posts"
+        default=3, ge=1, le=5, description="Max attempts to regenerate failed posts"
     )
 
 
@@ -240,8 +241,7 @@ class DatabaseConfig(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="DATABASE_")
 
     url: str = Field(
-        default="sqlite:///./data/tg_poster.db",
-        description="Database connection URL"
+        default="sqlite:///./data/tg_poster.db", description="Database connection URL"
     )
     echo: bool = Field(default=False, description="Echo SQL queries for debugging")
 
@@ -266,7 +266,9 @@ class RedisConfig(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="REDIS_")
 
     enabled: bool = Field(default=False, description="Enable Redis queue")
-    url: str = Field(default="redis://localhost:6379/0", description="Redis connection URL")
+    url: str = Field(
+        default="redis://localhost:6379/0", description="Redis connection URL"
+    )
 
 
 class AdminConfig(BaseSettings):
@@ -275,13 +277,13 @@ class AdminConfig(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="ADMIN_", extra="ignore")
 
     telegram_id: int = Field(
-        default=0,
-        description="Admin Telegram ID for notifications"
+        default=0, description="Admin Telegram ID for notifications"
     )
-    notify_on_error: bool = Field(default=True, description="Send notifications on errors")
+    notify_on_error: bool = Field(
+        default=True, description="Send notifications on errors"
+    )
     notify_on_post: bool = Field(
-        default=False,
-        description="Send notifications after each post"
+        default=False, description="Send notifications after each post"
     )
 
 
@@ -293,8 +295,7 @@ class AdminBotConfig(BaseSettings):
     enabled: bool = Field(default=False, description="Enable admin bot")
     bot_token: str = Field(default="", description="Admin bot token")
     authorized_users: list[int] = Field(
-        default_factory=list,
-        description="List of authorized Telegram user IDs"
+        default_factory=list, description="List of authorized Telegram user IDs"
     )
 
 
@@ -303,13 +304,24 @@ class CircuitBreakerConfig(BaseSettings):
 
     model_config = SettingsConfigDict(env_prefix="CIRCUIT_BREAKER_", extra="ignore")
 
-
-    llm_failure_threshold: int = Field(default=5, description="LLM failures before circuit opens")
-    llm_recovery_timeout: float = Field(default=60.0, description="LLM recovery timeout in seconds")
-    telegram_failure_threshold: int = Field(default=10, description="Telegram failures before circuit opens")
-    telegram_recovery_timeout: float = Field(default=30.0, description="Telegram recovery timeout in seconds")
-    sources_failure_threshold: int = Field(default=3, description="Source failures before circuit opens")
-    sources_recovery_timeout: float = Field(default=120.0, description="Sources recovery timeout in seconds")
+    llm_failure_threshold: int = Field(
+        default=5, description="LLM failures before circuit opens"
+    )
+    llm_recovery_timeout: float = Field(
+        default=60.0, description="LLM recovery timeout in seconds"
+    )
+    telegram_failure_threshold: int = Field(
+        default=10, description="Telegram failures before circuit opens"
+    )
+    telegram_recovery_timeout: float = Field(
+        default=30.0, description="Telegram recovery timeout in seconds"
+    )
+    sources_failure_threshold: int = Field(
+        default=3, description="Source failures before circuit opens"
+    )
+    sources_recovery_timeout: float = Field(
+        default=120.0, description="Sources recovery timeout in seconds"
+    )
 
 
 class BackupConfig(BaseSettings):
@@ -319,7 +331,9 @@ class BackupConfig(BaseSettings):
 
     enabled: bool = Field(default=True, description="Enable automatic backups")
     backup_dir: str = Field(default="./backups", description="Backup directory path")
-    include_chroma: bool = Field(default=True, description="Include ChromaDB in backups")
+    include_chroma: bool = Field(
+        default=True, description="Include ChromaDB in backups"
+    )
 
 
 class MediaConfig(BaseSettings):
@@ -351,8 +365,7 @@ class Settings(BaseSettings):
     app_name: str = Field(default="TG AI Poster", description="Application name")
     debug: bool = Field(default=False, description="Debug mode")
     dry_run: bool = Field(
-        default=False,
-        description="Dry run mode - don't actually post"
+        default=False, description="Dry run mode - don't actually post"
     )
 
     # Nested configurations
@@ -420,7 +433,21 @@ class Settings(BaseSettings):
         # Map of yaml keys to Settings field names
 
         # Process nested config from YAML (primary source)
-        for section in ["telegram", "telethon", "llm", "channel", "schedule", "sources", "safety", "database", "redis", "admin", "admin_bot", "circuit_breaker", "backup"]:
+        for section in [
+            "telegram",
+            "telethon",
+            "llm",
+            "channel",
+            "schedule",
+            "sources",
+            "safety",
+            "database",
+            "redis",
+            "admin",
+            "admin_bot",
+            "circuit_breaker",
+            "backup",
+        ]:
             if section in yaml_config:
                 if section not in kwargs:
                     kwargs[section] = {}
@@ -478,15 +505,21 @@ def validate_startup_config(settings: Settings, dry_run: bool = False) -> list[s
     # Check LLM configuration
     if settings.llm.provider != "claude-cli":
         if not settings.llm.api_key and not dry_run:
-            issues.append(f"LLM_API_KEY is not set (required for {settings.llm.provider} provider)")
+            issues.append(
+                f"LLM_API_KEY is not set (required for {settings.llm.provider} provider)"
+            )
 
     # Check admin configuration
     if settings.admin.notify_on_error and not settings.admin.telegram_id:
-        issues.append("ADMIN_TELEGRAM_ID is not set but error notifications are enabled")
+        issues.append(
+            "ADMIN_TELEGRAM_ID is not set but error notifications are enabled"
+        )
 
     # Check database path
     if settings.database.url.startswith("sqlite"):
-        db_path = settings.database.url.replace("sqlite+aiosqlite:///", "").replace("sqlite:///", "")
+        db_path = settings.database.url.replace("sqlite+aiosqlite:///", "").replace(
+            "sqlite:///", ""
+        )
         if not os.path.isabs(db_path):
             db_path = os.path.abspath(db_path)
         db_dir = os.path.dirname(db_path)
@@ -501,7 +534,9 @@ def validate_startup_config(settings: Settings, dry_run: bool = False) -> list[s
 
     # Check safety limits
     if settings.safety.max_daily_posts > 24:
-        issues.append(f"max_daily_posts={settings.safety.max_daily_posts} seems too high for Telegram")
+        issues.append(
+            f"max_daily_posts={settings.safety.max_daily_posts} seems too high for Telegram"
+        )
 
     return issues
 

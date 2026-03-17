@@ -67,7 +67,9 @@ class TrendDetector:
     """
 
     # Google Trends RSS feed URL
-    GOOGLE_TRENDS_RSS = "https://trends.google.com/trends/trendingsearches/daily/rss?geo=US"
+    GOOGLE_TRENDS_RSS = (
+        "https://trends.google.com/trends/trendingsearches/daily/rss?geo=US"
+    )
 
     # GitHub Trending API (unofficial but works)
     GITHUB_TRENDING_URL = "https://api.gitterapp.com/repositories"
@@ -160,13 +162,15 @@ class TrendDetector:
                 # Normalize score (top result = 1.0, decreasing)
                 score = max(0.1, 1.0 - (i * 0.05))
 
-                signals.append(TrendSignal(
-                    source="google_trends",
-                    topic=title.strip(),
-                    score=score,
-                    velocity=traffic_num / 1_000_000,  # Normalize to millions
-                    metadata={"traffic": traffic, "rank": i + 1},
-                ))
+                signals.append(
+                    TrendSignal(
+                        source="google_trends",
+                        topic=title.strip(),
+                        score=score,
+                        velocity=traffic_num / 1_000_000,  # Normalize to millions
+                        metadata={"traffic": traffic, "rank": i + 1},
+                    )
+                )
 
             self._cache["google_trends"] = (datetime.now(), signals)
             logger.info("Fetched %d Google Trends signals", len(signals))
@@ -208,8 +212,21 @@ class TrendDetector:
                 topics = repo.get("topics", [])
 
                 # Check if AI-related
-                ai_keywords = ["ai", "ml", "machine-learning", "llm", "gpt", "neural", "deep-learning", "nlp", "transformer"]
-                is_ai_related = any(kw in " ".join(topics).lower() or kw in description.lower() for kw in ai_keywords)
+                ai_keywords = [
+                    "ai",
+                    "ml",
+                    "machine-learning",
+                    "llm",
+                    "gpt",
+                    "neural",
+                    "deep-learning",
+                    "nlp",
+                    "transformer",
+                ]
+                is_ai_related = any(
+                    kw in " ".join(topics).lower() or kw in description.lower()
+                    for kw in ai_keywords
+                )
 
                 if not is_ai_related:
                     continue
@@ -217,14 +234,20 @@ class TrendDetector:
                 score = max(0.1, 0.9 - (i * 0.04))
                 stars = repo.get("stargazers_count", 0)
 
-                signals.append(TrendSignal(
-                    source="github",
-                    topic=f"{name}: {description[:50]}",
-                    score=score,
-                    velocity=stars / 1000,  # Normalize stars
-                    url=repo.get("html_url"),
-                    metadata={"stars": stars, "language": repo.get("language"), "topics": topics},
-                ))
+                signals.append(
+                    TrendSignal(
+                        source="github",
+                        topic=f"{name}: {description[:50]}",
+                        score=score,
+                        velocity=stars / 1000,  # Normalize stars
+                        url=repo.get("html_url"),
+                        metadata={
+                            "stars": stars,
+                            "language": repo.get("language"),
+                            "topics": topics,
+                        },
+                    )
+                )
 
             self._cache["github_trending"] = (datetime.now(), signals)
             logger.info("Fetched %d GitHub Trending signals", len(signals))
@@ -267,19 +290,38 @@ class TrendDetector:
                     url_link = story.get("url", "")
 
                     # Check if tech/AI related
-                    tech_keywords = ["ai", "ml", "llm", "gpt", "neural", "algorithm", "model", "openai", "anthropic"]
+                    tech_keywords = [
+                        "ai",
+                        "ml",
+                        "llm",
+                        "gpt",
+                        "neural",
+                        "algorithm",
+                        "model",
+                        "openai",
+                        "anthropic",
+                    ]
                     is_tech = any(kw in title.lower() for kw in tech_keywords)
 
-                    trend_score = max(0.1, 0.85 - (i * 0.04)) if is_tech else max(0.05, 0.5 - (i * 0.025))
+                    trend_score = (
+                        max(0.1, 0.85 - (i * 0.04))
+                        if is_tech
+                        else max(0.05, 0.5 - (i * 0.025))
+                    )
 
-                    signals.append(TrendSignal(
-                        source="hackernews",
-                        topic=title,
-                        score=trend_score,
-                        velocity=score / 100,  # Normalize score
-                        url=url_link,
-                        metadata={"hn_score": score, "comments": story.get("descendants", 0)},
-                    ))
+                    signals.append(
+                        TrendSignal(
+                            source="hackernews",
+                            topic=title,
+                            score=trend_score,
+                            velocity=score / 100,  # Normalize score
+                            url=url_link,
+                            metadata={
+                                "hn_score": score,
+                                "comments": story.get("descendants", 0),
+                            },
+                        )
+                    )
 
                 except Exception as e:
                     logger.debug("Failed to fetch HN story %d: %s", story_id, e)
@@ -378,7 +420,7 @@ class TrendDetector:
             if isinstance(data, list):
                 for signal in data:
                     if isinstance(signal, TrendSignal) and signal.score >= min_score:
-                                hot_topics.append(signal.topic)
+                        hot_topics.append(signal.topic)
         return list(set(hot_topics))[:10]
 
 

@@ -88,9 +88,7 @@ class TopicStore:
             Topic | None: Topic instance or None
         """
         async with self.db.session() as session:
-            result = await session.execute(
-                select(Topic).where(Topic.id == topic_id)
-            )
+            result = await session.execute(select(Topic).where(Topic.id == topic_id))
             return result.scalar_one_or_none()
 
     async def get_by_name(self, name: str) -> Topic | None:
@@ -104,9 +102,7 @@ class TopicStore:
             Topic | None: Topic instance or None
         """
         async with self.db.session() as session:
-            result = await session.execute(
-                select(Topic).where(Topic.name == name)
-            )
+            result = await session.execute(select(Topic).where(Topic.name == name))
             return result.scalar_one_or_none()
 
     async def update(
@@ -125,9 +121,7 @@ class TopicStore:
             Topic | None: Updated topic or None
         """
         async with self.db.session() as session:
-            result = await session.execute(
-                select(Topic).where(Topic.id == topic_id)
-            )
+            result = await session.execute(select(Topic).where(Topic.id == topic_id))
             topic = result.scalar_one_or_none()
 
             if topic is None:
@@ -153,9 +147,7 @@ class TopicStore:
             bool: True if deleted
         """
         async with self.db.session() as session:
-            result = await session.execute(
-                select(Topic).where(Topic.id == topic_id)
-            )
+            result = await session.execute(select(Topic).where(Topic.id == topic_id))
             topic = result.scalar_one_or_none()
 
             if topic is None:
@@ -176,9 +168,7 @@ class TopicStore:
             Topic | None: Updated topic
         """
         async with self.db.session() as session:
-            result = await session.execute(
-                select(Topic).where(Topic.id == topic_id)
-            )
+            result = await session.execute(select(Topic).where(Topic.id == topic_id))
             topic = result.scalar_one_or_none()
 
             if topic is None:
@@ -494,22 +484,19 @@ class TopicStore:
         """
         async with self.db.session() as session:
             # Total topics
-            total_result = await session.execute(
-                select(func.count(Topic.id))
-            )
+            total_result = await session.execute(select(func.count(Topic.id)))
             total = total_result.scalar() or 0
 
             # Topics by source type
             by_type_result = await session.execute(
-                select(Topic.source_type, func.count(Topic.id))
-                .group_by(Topic.source_type)
+                select(Topic.source_type, func.count(Topic.id)).group_by(
+                    Topic.source_type
+                )
             )
             by_type = dict(by_type_result.all())
 
             # Average use count
-            avg_result = await session.execute(
-                select(func.avg(Topic.use_count))
-            )
+            avg_result = await session.execute(select(func.avg(Topic.use_count)))
             avg_use = avg_result.scalar() or 0.0
 
             # Unused topics

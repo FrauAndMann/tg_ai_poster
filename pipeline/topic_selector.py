@@ -80,17 +80,96 @@ class TopicSelector:
         words2 = set(text2.lower().split())
 
         # Remove common stop words
-        stop_words = {"the", "a", "an", "is", "are", "was", "were", "be", "been",
-                      "being", "have", "has", "had", "do", "does", "did", "will",
-                      "would", "could", "should", "may", "might", "must", "shall",
-                      "can", "need", "dare", "ought", "used", "to", "of", "in",
-                      "for", "on", "with", "at", "by", "from", "as", "into",
-                      "through", "during", "before", "after", "above", "below",
-                      "between", "under", "again", "further", "then", "once",
-                      "и", "в", "во", "не", "что", "он", "на", "я", "с", "со",
-                      "как", "а", "то", "все", "она", "так", "его", "но", "да",
-                      "ты", "к", "у", "же", "вы", "за", "бы", "по", "только",
-                      "ее", "мне", "было", "вот", "от", "меня", "еще", "нет"}
+        stop_words = {
+            "the",
+            "a",
+            "an",
+            "is",
+            "are",
+            "was",
+            "were",
+            "be",
+            "been",
+            "being",
+            "have",
+            "has",
+            "had",
+            "do",
+            "does",
+            "did",
+            "will",
+            "would",
+            "could",
+            "should",
+            "may",
+            "might",
+            "must",
+            "shall",
+            "can",
+            "need",
+            "dare",
+            "ought",
+            "used",
+            "to",
+            "of",
+            "in",
+            "for",
+            "on",
+            "with",
+            "at",
+            "by",
+            "from",
+            "as",
+            "into",
+            "through",
+            "during",
+            "before",
+            "after",
+            "above",
+            "below",
+            "between",
+            "under",
+            "again",
+            "further",
+            "then",
+            "once",
+            "и",
+            "в",
+            "во",
+            "не",
+            "что",
+            "он",
+            "на",
+            "я",
+            "с",
+            "со",
+            "как",
+            "а",
+            "то",
+            "все",
+            "она",
+            "так",
+            "его",
+            "но",
+            "да",
+            "ты",
+            "к",
+            "у",
+            "же",
+            "вы",
+            "за",
+            "бы",
+            "по",
+            "только",
+            "ее",
+            "мне",
+            "было",
+            "вот",
+            "от",
+            "меня",
+            "еще",
+            "нет",
+        }
 
         words1 = words1 - stop_words
         words2 = words2 - stop_words
@@ -160,8 +239,10 @@ class TopicSelector:
                 article.title, forbidden_topics
             )
             if is_similar:
-                logger.debug(f"Skipping similar topic: '{article.title[:50]}...' "
-                           f"(similar to: '{similar_to[:50]}...')")
+                logger.debug(
+                    f"Skipping similar topic: '{article.title[:50]}...' "
+                    f"(similar to: '{similar_to[:50]}...')"
+                )
             else:
                 filtered_articles.append(article)
 
@@ -171,7 +252,11 @@ class TopicSelector:
 
         # Format topics for prompt
         topics_str = self._format_topics(filtered_articles[:5])
-        forbidden_str = "\n".join(f"- {t}" for t in forbidden_topics[:10]) if forbidden_topics else "None"
+        forbidden_str = (
+            "\n".join(f"- {t}" for t in forbidden_topics[:10])
+            if forbidden_topics
+            else "None"
+        )
 
         prompt = f"""Select the best topic for a Telegram post about AI and technology.
 
@@ -209,8 +294,10 @@ Reply with ONLY this JSON:
                 selected_topic, forbidden_topics
             )
             if is_similar:
-                logger.warning(f"LLM selected similar topic: '{selected_topic[:50]}...' "
-                             f"(similar to: '{similar_to[:50]}...')")
+                logger.warning(
+                    f"LLM selected similar topic: '{selected_topic[:50]}...' "
+                    f"(similar to: '{similar_to[:50]}...')"
+                )
                 # Try next best article
                 for article in filtered_articles:
                     if article.title != selected_topic:
@@ -220,7 +307,9 @@ Reply with ONLY this JSON:
                         if not is_similar2:
                             selected_topic = article.title
                             result["selected_topic"] = selected_topic
-                            result["reason"] = "Alternative selection to avoid duplicate"
+                            result["reason"] = (
+                                "Alternative selection to avoid duplicate"
+                            )
                             break
 
             # Find matching article
@@ -239,7 +328,9 @@ Reply with ONLY this JSON:
                 "selected_topic": selected_topic,
                 "reason": result.get("reason", ""),
                 "angle": result.get("angle", ""),
-                "source_article": matching_article.to_dict() if matching_article else None,
+                "source_article": matching_article.to_dict()
+                if matching_article
+                else None,
             }
 
         except json.JSONDecodeError as e:
@@ -287,7 +378,11 @@ Reply with ONLY this JSON:
         """
         # Get forbidden topics
         forbidden_topics = await self.topic_store.get_forbidden_names(days=7)
-        forbidden_str = "\n".join(f"- {t}" for t in forbidden_topics[:10]) if forbidden_topics else "None"
+        forbidden_str = (
+            "\n".join(f"- {t}" for t in forbidden_topics[:10])
+            if forbidden_topics
+            else "None"
+        )
 
         prompt = f"""Generate a topic idea for a Telegram post about {self.channel_topic}.
 

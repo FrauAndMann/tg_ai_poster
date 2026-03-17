@@ -81,6 +81,7 @@ class TestEventBus:
     def test_event_bus_exists(self):
         """Test that event bus singleton exists."""
         from pyee.asyncio import AsyncIOEventEmitter
+
         assert isinstance(event_bus, AsyncIOEventEmitter)
 
     @pytest.mark.asyncio

@@ -27,6 +27,7 @@ logger = get_logger(__name__)
 
 class ImageStyle(str, Enum):
     """Image style variants."""
+
     PHOTOREALISTIC = "photorealistic"
     ABSTRACT = "abstract"
     INFOGRAPHIC = "infographic"
@@ -124,7 +125,9 @@ class MediaPipelineV2:
         self.replicate_api_key = replicate_api_key
         self.stability_api_key = stability_api_key
         self.image_output_dir = Path(image_output_dir)
-        self.generate_images = generate_images and (bool(replicate_api_key) or bool(stability_api_key))
+        self.generate_images = generate_images and (
+            bool(replicate_api_key) or bool(stability_api_key)
+        )
         self.image_output_dir.mkdir(parents=True, exist_ok=True)
 
     async def generate_variants(
@@ -155,10 +158,12 @@ class MediaPipelineV2:
         for style in selected_styles:
             prompt = await self._generate_style_prompt(content, topic, style)
             if prompt:
-                variants.append(ImagePromptVariant(
-                    style=style,
-                    prompt=prompt[:MAX_IMAGE_PROMPT_LENGTH],
-                ))
+                variants.append(
+                    ImagePromptVariant(
+                        style=style,
+                        prompt=prompt[:MAX_IMAGE_PROMPT_LENGTH],
+                    )
+                )
 
         logger.info("Generated %d image prompt variants", len(variants))
         return variants
@@ -169,28 +174,44 @@ class MediaPipelineV2:
         styles = []
 
         # Photorealistic for news and announcements
-        if any(word in content_lower for word in ["announce", "release", "launch", "event"]):
+        if any(
+            word in content_lower for word in ["announce", "release", "launch", "event"]
+        ):
             styles.append(ImageStyle.PHOREALISTIC)
 
         # Abstract for concepts and theories
-        if any(word in content_lower for word in ["concept", "theory", "framework", "architecture"]):
+        if any(
+            word in content_lower
+            for word in ["concept", "theory", "framework", "architecture"]
+        ):
             styles.append(ImageStyle.ABSTRACT)
 
         # Infographic for data and statistics
-        if any(word in content_lower for word in ["data", "statistics", "report", "benchmark"]):
+        if any(
+            word in content_lower
+            for word in ["data", "statistics", "report", "benchmark"]
+        ):
             styles.append(ImageStyle.INFOGRAPHIC)
 
         # Minimal for tools and products
-        if any(word in content_lower for word in ["tool", "product", "app", "software"]):
+        if any(
+            word in content_lower for word in ["tool", "product", "app", "software"]
+        ):
             styles.append(ImageStyle.MINIMAL)
 
         # Cyberpunk for security and hacking
-        if any(word in content_lower for word in ["security", "hack", "breach", "cyber"]):
+        if any(
+            word in content_lower for word in ["security", "hack", "breach", "cyber"]
+        ):
             styles.append(ImageStyle.CYBERPUNK)
 
         # Default to photorealistic + abstract
         if not styles:
-            styles = [ImageStyle.PHOTOREALISTIC, ImageStyle.ABSTRACT, ImageStyle.MINIMAL]
+            styles = [
+                ImageStyle.PHOTOREALISTIC,
+                ImageStyle.ABSTRACT,
+                ImageStyle.MINIMAL,
+            ]
 
         return styles
 
@@ -203,7 +224,9 @@ class MediaPipelineV2:
         """Generate prompt for a specific style."""
         # Extract key concept from content
         concept = self._extract_concept(content, topic)
-        template = self.STYLE_TEMPLATES.get(style, self.STYLE_TEMPLATES[ImageStyle.PHOTOREALISTIC])
+        template = self.STYLE_TEMPLATES.get(
+            style, self.STYLE_TEMPLATES[ImageStyle.PHOTOREALISTIC]
+        )
         return template.format(concept=concept)
 
     def _extract_concept(self, content: str, topic: str) -> str:
@@ -239,7 +262,9 @@ class MediaPipelineV2:
                     variant.generated_url = image_url
                     variant.quality_score = await self._check_image_quality(image_url)
             except Exception as e:
-                logger.error("Failed to generate image for %s style: %s", variant.style, e)
+                logger.error(
+                    "Failed to generate image for %s style: %s", variant.style, e
+                )
 
         return variants
 
@@ -254,6 +279,7 @@ class MediaPipelineV2:
     async def _call_replicate(self, prompt: str) -> Optional[str]:
         """Call Replicate API for image generation."""
         import aiohttp
+
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.post(
@@ -270,7 +296,9 @@ class MediaPipelineV2:
                     if response.status == 201:
                         result = await response.json()
                         # Poll for completion
-                        return await self._poll_replicate(result.get("urls", {}).get("get"))
+                        return await self._poll_replicate(
+                            result.get("urls", {}).get("get")
+                        )
         except Exception as e:
             logger.error("Replicate API error: %s", e)
         return None
@@ -278,6 +306,7 @@ class MediaPipelineV2:
     async def _poll_replicate(self, poll_url: str) -> Optional[str]:
         """Poll Replicate for result."""
         import aiohttp
+
         for _ in range(30):  # 30 attempts, ~30 seconds
             try:
                 async with aiohttp.ClientSession() as session:
@@ -306,6 +335,7 @@ class MediaPipelineV2:
             import aiohttp
             from PIL import Image
             import io
+
             async with aiohttp.ClientSession() as session:
                 async with session.get(image_url) as response:
                     if response.status != 200:

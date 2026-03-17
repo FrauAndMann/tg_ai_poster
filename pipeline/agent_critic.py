@@ -24,6 +24,7 @@ class CritiqueScores:
 
     All scores are on a scale of 1-10.
     """
+
     hook_strength: int = 0
     clarity: int = 0
     emoji_naturalness: int = 0
@@ -79,6 +80,7 @@ class CritiqueResult:
         improved_post: Improved version (if rewritten)
         original_post: Original post content
     """
+
     scores: CritiqueScores
     needs_rewrite: bool
     critique: str
@@ -88,7 +90,11 @@ class CritiqueResult:
     @property
     def final_post(self) -> str:
         """Get the final post (improved or original)."""
-        return self.improved_post if self.needs_rewrite and self.improved_post else self.original_post
+        return (
+            self.improved_post
+            if self.needs_rewrite and self.improved_post
+            else self.original_post
+        )
 
     def to_dict(self) -> dict:
         """Convert to dictionary."""
@@ -290,7 +296,9 @@ Return JSON only:
             scores = CritiqueScores(
                 hook_strength=result_data.get("scores", {}).get("hook_strength", 0),
                 clarity=result_data.get("scores", {}).get("clarity", 0),
-                emoji_naturalness=result_data.get("scores", {}).get("emoji_naturalness", 0),
+                emoji_naturalness=result_data.get("scores", {}).get(
+                    "emoji_naturalness", 0
+                ),
                 audience_value=result_data.get("scores", {}).get("audience_value", 0),
                 human_feel=result_data.get("scores", {}).get("human_feel", 0),
             )

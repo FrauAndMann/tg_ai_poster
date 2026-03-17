@@ -263,8 +263,7 @@ class AIClicheDetector:
         for category, data in all_patterns.items():
             patterns = data.get("patterns", [])
             self._compiled_patterns[category] = [
-                re.compile(p, re.IGNORECASE | re.MULTILINE)
-                for p in patterns
+                re.compile(p, re.IGNORECASE | re.MULTILINE) for p in patterns
             ]
 
     def detect(self, text: str) -> ClicheReport:
@@ -335,18 +334,30 @@ class AIClicheDetector:
         score += report.medium_severity_count * 0.05
 
         # Check for AI indicators
-        score += self._check_perfect_grammar(text) * self.AI_INDICATORS["perfect_grammar"]
-        score += self._check_balanced_structure(text) * self.AI_INDICATORS["balanced_structure"]
+        score += (
+            self._check_perfect_grammar(text) * self.AI_INDICATORS["perfect_grammar"]
+        )
+        score += (
+            self._check_balanced_structure(text)
+            * self.AI_INDICATORS["balanced_structure"]
+        )
         score += self._check_neutral_tone(text) * self.AI_INDICATORS["neutral_tone"]
-        score += self._check_no_contractions(text) * self.AI_INDICATORS["no_contractions"]
-        score += self._check_sentence_consistency(text) * self.AI_INDICATORS["consistent_sentence_length"]
+        score += (
+            self._check_no_contractions(text) * self.AI_INDICATORS["no_contractions"]
+        )
+        score += (
+            self._check_sentence_consistency(text)
+            * self.AI_INDICATORS["consistent_sentence_length"]
+        )
 
         return min(1.0, score)
 
     def _check_perfect_grammar(self, text: str) -> float:
         """Check for suspiciously perfect grammar."""
         # AI often produces text without any typos or informal elements
-        has_informal = bool(re.search(r"[а-яё]с[а-яё]|[а-яё]ць|що\b|\bdon't\b|\bwon't\b", text.lower()))
+        has_informal = bool(
+            re.search(r"[а-яё]с[а-яё]|[а-яё]ць|що\b|\bdon't\b|\bwon't\b", text.lower())
+        )
         return 0.0 if has_informal else 1.0
 
     def _check_balanced_structure(self, text: str) -> float:
@@ -360,14 +371,21 @@ class AIClicheDetector:
         variance = sum((length - avg_len) ** 2 for length in lengths) / len(lengths)
 
         # Low variance suggests AI generation
-        normalized_variance = variance / (avg_len ** 2) if avg_len > 0 else 0
+        normalized_variance = variance / (avg_len**2) if avg_len > 0 else 0
         return 1.0 if normalized_variance < 0.1 else 0.0
 
     def _check_neutral_tone(self, text: str) -> float:
         """Check for overly neutral tone."""
         emotional_words = [
-            "ужасно", "великолепно", "потрясающе", "отвратительно",
-            "amazing", "terrible", "awful", "fantastic", "horrible",
+            "ужасно",
+            "великолепно",
+            "потрясающе",
+            "отвратительно",
+            "amazing",
+            "terrible",
+            "awful",
+            "fantastic",
+            "horrible",
             "!",  # Exclamation marks indicate emotion
         ]
         has_emotion = any(w in text.lower() for w in emotional_words)
@@ -382,7 +400,9 @@ class AIClicheDetector:
             return 0.0
 
         contraction_candidates = ["is not", "do not", "will not", "cannot", "would not"]
-        has_contractions = any(c in text.lower() for c in ["n't", "'s", "'re", "'ve", "'ll"])
+        has_contractions = any(
+            c in text.lower() for c in ["n't", "'s", "'re", "'ve", "'ll"]
+        )
         has_full_forms = any(c in text.lower() for c in contraction_candidates)
 
         if has_contractions and not has_full_forms:
@@ -403,7 +423,9 @@ class AIClicheDetector:
         avg_len = sum(lengths) / len(lengths)
 
         # Count sentences within 20% of average
-        near_avg = sum(1 for length in lengths if abs(length - avg_len) <= avg_len * 0.2)
+        near_avg = sum(
+            1 for length in lengths if abs(length - avg_len) <= avg_len * 0.2
+        )
         ratio = near_avg / len(lengths)
 
         # High ratio suggests AI generation
@@ -430,19 +452,13 @@ class AIClicheDetector:
             )
 
         if "transition_cliches" in report.categories:
-            suggestions.append(
-                "Используйте более естественные переходы между абзацами"
-            )
+            suggestions.append("Используйте более естественные переходы между абзацами")
 
         if "hollow_intensifiers" in report.categories:
-            suggestions.append(
-                "Замените усилители на конкретные данные или примеры"
-            )
+            suggestions.append("Замените усилители на конкретные данные или примеры")
 
         if "passive_voice_ru" in report.categories:
-            suggestions.append(
-                "Перепишите в активном залоге для большей энергии"
-            )
+            suggestions.append("Перепишите в активном залоге для большей энергии")
 
         if report.ai_probability_score > 0.7:
             suggestions.append(
@@ -456,7 +472,11 @@ class AIClicheDetector:
         """Get suggested replacement for a cliche."""
         # Check for specific replacements in banned words
         if self._banned_words:
-            replacements = self._banned_words.get("banned_words", {}).get("hype_words", {}).get("replacements", {})
+            replacements = (
+                self._banned_words.get("banned_words", {})
+                .get("hype_words", {})
+                .get("replacements", {})
+            )
             for original, replacement in replacements.items():
                 if original.lower() in cliche.text.lower():
                     return cliche.text.replace(original, replacement)

@@ -59,7 +59,9 @@ class Article:
             "title": self.title,
             "summary": self.summary,
             "url": self.url,
-            "published_at": self.published_at.isoformat() if self.published_at else None,
+            "published_at": self.published_at.isoformat()
+            if self.published_at
+            else None,
             "source": self.source,
             "content_hash": self.content_hash,
             "tags": self.tags,
@@ -154,6 +156,7 @@ class SourceCollector:
 
         # Remove HTML tags (simple approach)
         import re
+
         text = re.sub(r"<[^>]+>", "", text)
 
         # Normalize whitespace
@@ -178,7 +181,9 @@ class SourceCollector:
         import re
 
         try:
-            async with ClientSession(timeout=ClientTimeout(total=self.fetch_timeout)) as session:
+            async with ClientSession(
+                timeout=ClientTimeout(total=self.fetch_timeout)
+            ) as session:
                 headers = {"User-Agent": self.user_agent}
                 async with session.get(url, headers=headers) as response:
                     if response.status != 200:
@@ -189,25 +194,29 @@ class SourceCollector:
 
             # Clean common XML issues
             # Remove invalid XML characters (control chars except \t, \n, \r)
-            content = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', content)
+            content = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", content)
 
             # Fix common entity issues
-            content = content.replace('&nbsp;', ' ')
-            content = content.replace('&mdash;', '—')
-            content = content.replace('&ndash;', '–')
-            content = content.replace('&rsquo;', "'")
-            content = content.replace('&lsquo;', "'")
-            content = content.replace('&rdquo;', '"')
-            content = content.replace('&ldquo;', '"')
+            content = content.replace("&nbsp;", " ")
+            content = content.replace("&mdash;", "—")
+            content = content.replace("&ndash;", "–")
+            content = content.replace("&rsquo;", "'")
+            content = content.replace("&lsquo;", "'")
+            content = content.replace("&rdquo;", '"')
+            content = content.replace("&ldquo;", '"')
 
             # Fix unescaped ampersands in URLs
-            content = re.sub(r'&(?!amp;|lt;|gt;|quot;|apos;|#\d+;|#x[0-9a-fA-F]+;)', '&amp;', content)
+            content = re.sub(
+                r"&(?!amp;|lt;|gt;|quot;|apos;|#\d+;|#x[0-9a-fA-F]+;)", "&amp;", content
+            )
 
             # Try parsing cleaned content
             feed = feedparser.parse(content)
 
             if len(feed.entries) > 0:
-                logger.info(f"Fallback parsing succeeded for {url}: {len(feed.entries)} entries")
+                logger.info(
+                    f"Fallback parsing succeeded for {url}: {len(feed.entries)} entries"
+                )
 
             return feed
 
@@ -271,7 +280,9 @@ class SourceCollector:
 
                     article = Article(
                         title=title,
-                        summary=summary[:500] if summary else "",  # Limit summary length
+                        summary=summary[:500]
+                        if summary
+                        else "",  # Limit summary length
                         url=article_url,
                         published_at=published_at,
                         source=feed_title,
@@ -363,9 +374,9 @@ class SourceCollector:
             story_ids = story_ids[:limit]
 
             import asyncio
+
             fetch_tasks = [
-                self._fetch_hn_item(session, story_id)
-                for story_id in story_ids
+                self._fetch_hn_item(session, story_id) for story_id in story_ids
             ]
 
             results = await asyncio.gather(*fetch_tasks, return_exceptions=True)
@@ -525,12 +536,12 @@ class SourceCollector:
                 if any(kw in text for kw in keywords_lower):
                     filtered.append(article)
 
-        logger.info(
-            f"Keyword filter: {len(articles)} -> {len(filtered)} articles"
-        )
+        logger.info(f"Keyword filter: {len(articles)} -> {len(filtered)} articles")
         return filtered
 
-    def sort_by_date(self, articles: list[Article], descending: bool = True) -> list[Article]:
+    def sort_by_date(
+        self, articles: list[Article], descending: bool = True
+    ) -> list[Article]:
         """
         Sort articles by publication date.
 

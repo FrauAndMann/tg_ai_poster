@@ -48,7 +48,9 @@ class ClaudeCLIAdapter(BaseLLMAdapter):
         if not shutil.which("claude"):
             logger.warning("Claude CLI not found in PATH.")
 
-    def _build_full_prompt(self, prompt: str, system_prompt: Optional[str] = None) -> str:
+    def _build_full_prompt(
+        self, prompt: str, system_prompt: Optional[str] = None
+    ) -> str:
         parts = []
         if system_prompt:
             parts.append(f"[SYSTEM]\n{system_prompt}\n[/SYSTEM]\n")
@@ -56,11 +58,11 @@ class ClaudeCLIAdapter(BaseLLMAdapter):
         return "\n".join(parts)
 
     def _clean_response(self, content: str) -> str:
-        ansi_escape = re.compile(r'\x1B(?:[@-Z\-_]|\[[0-?]*[ -/]*[@-~])')
-        content = ansi_escape.sub('', content)
+        ansi_escape = re.compile(r"\x1B(?:[@-Z\-_]|\[[0-?]*[ -/]*[@-~])")
+        content = ansi_escape.sub("", content)
         for prefix in ["Here's the response:", "Response:", "Output:", "Result:"]:
             if content.startswith(prefix):
-                content = content[len(prefix):].strip()
+                content = content[len(prefix) :].strip()
         return content.strip()
 
     async def generate(
@@ -74,14 +76,17 @@ class ClaudeCLIAdapter(BaseLLMAdapter):
         # Get temperature from kwargs or use default
         temperature = kwargs.get("temperature", self.temperature)
 
-        logger.debug(f"Calling Claude CLI, prompt length: {len(full_prompt)}, temp={temperature}")
+        logger.debug(
+            f"Calling Claude CLI, prompt length: {len(full_prompt)}, temp={temperature}"
+        )
 
         try:
             # Build CLI arguments
             cli_args = [
                 self.claude_path,
                 "--print",
-                "--tools", "",
+                "--tools",
+                "",
                 "--no-session-persistence",
             ]
 

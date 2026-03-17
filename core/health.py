@@ -23,6 +23,7 @@ from loguru import logger
 
 class HealthStatus(str, Enum):
     """Health check status for individual components."""
+
     HEALTHY = "healthy"
     DEGRADED = "degraded"
     UNHEALTHY = "unhealthy"
@@ -31,6 +32,7 @@ class HealthStatus(str, Enum):
 @dataclass
 class ComponentHealth:
     """Health status for a single component."""
+
     component: str
     healthy: bool
     message: str
@@ -53,6 +55,7 @@ class ComponentHealth:
 @dataclass
 class SystemHealth:
     """Overall system health status."""
+
     overall_healthy: bool
     components: list[ComponentHealth]
     checked_at: datetime
@@ -128,7 +131,7 @@ class HealthChecker:
         start = datetime.utcnow()
         try:
             # Simple query to check connection
-            if hasattr(self.db, 'execute'):
+            if hasattr(self.db, "execute"):
                 await self.db.execute("SELECT 1")
             else:
                 # Fallback for different DB interfaces
@@ -229,7 +232,7 @@ class HealthChecker:
         """Check available disk space."""
         try:
             usage = shutil.disk_usage(".")
-            free_gb = usage.free / (1024** 3)  # Convert to GB
+            free_gb = usage.free / (1024**3)  # Convert to GB
 
             if free_gb > 1.0:
                 return ComponentHealth(
@@ -254,6 +257,7 @@ class HealthChecker:
         """Check memory usage."""
         try:
             import psutil
+
             memory = psutil.virtual_memory()
             healthy = memory.percent < 90
 

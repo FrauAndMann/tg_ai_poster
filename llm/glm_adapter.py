@@ -73,7 +73,7 @@ class GLMAdapter(BaseLLMAdapter):
                 headers={
                     "Authorization": f"Bearer {self.api_key}",
                     "Content-Type": "application/json",
-                }
+                },
             )
         return self._client
 
@@ -121,17 +121,23 @@ class GLMAdapter(BaseLLMAdapter):
                 if response.status_code == 429:
                     # Rate limit - wait and retry
                     wait_time = 2 ** (attempt + 1)  # Exponential backoff
-                    logger.warning(f"Rate limited, waiting {wait_time}s before retry {attempt + 1}/{self.max_retries}")
+                    logger.warning(
+                        f"Rate limited, waiting {wait_time}s before retry {attempt + 1}/{self.max_retries}"
+                    )
                     await asyncio.sleep(wait_time)
                     continue
 
                 if response.status_code != 200:
-                    logger.error(f"GLM API error: {response.status_code} - {response.text}")
+                    logger.error(
+                        f"GLM API error: {response.status_code} - {response.text}"
+                    )
 
                 response.raise_for_status()
                 break
             else:
-                raise httpx.HTTPStatusError("Max retries exceeded", request=None, response=response)
+                raise httpx.HTTPStatusError(
+                    "Max retries exceeded", request=None, response=response
+                )
 
             data = response.json()
 

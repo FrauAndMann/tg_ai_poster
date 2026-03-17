@@ -32,6 +32,12 @@ exclude_lines = [
 select = ["E", "F", "W"]
 ignore = ["E501"]
 
+[tool.ruff.format]
+doc-width = 88
+line-length = 100
+indent-width = 4
+tab-width = 4
+
 [tool.black]
 line-length = 100
 target-version = ["py311"]

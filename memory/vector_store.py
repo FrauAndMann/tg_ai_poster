@@ -18,6 +18,7 @@ from loguru import logger
 try:
     import chromadb
     from chromadb.config import Settings as ChromaSettings
+
     CHROMADB_AVAILABLE = True
 except ImportError:
     CHROMADB_AVAILABLE = False
@@ -35,6 +36,7 @@ class SimilarPost:
         similarity: Similarity score (0.0 to 1.0, higher = more similar)
         metadata: Additional metadata about the post
     """
+
     post_id: int
     content: str
     similarity: float
@@ -117,13 +119,12 @@ class VectorStore:
             settings=ChromaSettings(
                 anonymized_telemetry=False,
                 allow_reset=True,
-            )
+            ),
         )
 
         # Get or create collection
         self._collection = self._client.get_or_create_collection(
-            name=self.collection_name,
-            metadata={"hnsw:space": "cosine"}
+            name=self.collection_name, metadata={"hnsw:space": "cosine"}
         )
 
     async def add_post(
@@ -156,21 +157,17 @@ class VectorStore:
 
             # Prepare metadata
             meta = metadata or {}
-            meta.update({
-                "post_id": post_id,
-                "added_at": datetime.now().isoformat(),
-                "content_length": len(content),
-            })
+            meta.update(
+                {
+                    "post_id": post_id,
+                    "added_at": datetime.now().isoformat(),
+                    "content_length": len(content),
+                }
+            )
 
             # Run in thread pool
             loop = asyncio.get_event_loop()
-            await loop.run_in_executor(
-                None,
-                self._add_sync,
-                doc_id,
-                content,
-                meta
-            )
+            await loop.run_in_executor(None, self._add_sync, doc_id, content, meta)
 
             logger.debug(f"Added post {post_id} to vector store")
             return doc_id
@@ -214,11 +211,7 @@ class VectorStore:
             # Run in thread pool
             loop = asyncio.get_event_loop()
             results = await loop.run_in_executor(
-                None,
-                self._query_sync,
-                content,
-                n_results,
-                where_filter
+                None, self._query_sync, content, n_results, where_filter
             )
 
             similar_posts = []
@@ -242,12 +235,14 @@ class VectorStore:
                         except (ValueError, IndexError):
                             pass
 
-                    similar_posts.append(SimilarPost(
-                        post_id=post_id,
-                        content=documents[i] if i < len(documents) else "",
-                        similarity=round(similarity, 4),
-                        metadata=metadatas[i] if i < len(metadatas) else {},
-                    ))
+                    similar_posts.append(
+                        SimilarPost(
+                            post_id=post_id,
+                            content=documents[i] if i < len(documents) else "",
+                            similarity=round(similarity, 4),
+                            metadata=metadatas[i] if i < len(metadatas) else {},
+                        )
+                    )
 
             return similar_posts
 
@@ -256,17 +251,14 @@ class VectorStore:
             return []
 
     def _query_sync(
-        self,
-        query_text: str,
-        n_results: int,
-        where_filter: Optional[dict]
+        self, query_text: str, n_results: int, where_filter: Optional[dict]
     ) -> dict:
         """Synchronous query operation."""
         return self._collection.query(
             query_texts=[query_text],
             n_results=n_results,
             where=where_filter,
-            include=["documents", "distances", "metadatas"]
+            include=["documents", "distances", "metadatas"],
         )
 
     async def check_similarity(
@@ -319,11 +311,7 @@ class VectorStore:
             doc_id = f"post_{post_id}"
 
             loop = asyncio.get_event_loop()
-            await loop.run_in_executor(
-                None,
-                self._delete_sync,
-                doc_id
-            )
+            await loop.run_in_executor(None, self._delete_sync, doc_id)
 
             logger.debug(f"Deleted post {post_id} from vector store")
             return True
@@ -376,8 +364,7 @@ class VectorStore:
         """Synchronous clear operation."""
         self._client.delete_collection(self.collection_name)
         self._collection = self._client.get_or_create_collection(
-            name=self.collection_name,
-            metadata={"hnsw:space": "cosine"}
+            name=self.collection_name, metadata={"hnsw:space": "cosine"}
         )
 
 

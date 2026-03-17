@@ -36,7 +36,6 @@ class CompetitorPost:
     media_type: str = ""  # text, image, video
     detected_at: datetime = field(default_factory=datetime.now)
 
-
     analyzed_at: Optional[datetime] = None
 
 
@@ -69,7 +68,7 @@ class CompetitiveMonitor:
         self,
         channels: Optional[list[str]] = None,
         analysis_interval_days: int = 7,
-    min_posts_for_gap: int = 5,
+        min_posts_for_gap: int = 5,
     ) -> None:
         """
         Initialize competitive monitor.
@@ -147,7 +146,9 @@ class CompetitiveMonitor:
         # Generate insight
         insight = CompetitiveInsight(
             category="content_analysis",
-            topic=max(topic_counts.keys(), key=lambda k: topic_counts[k]) if topic_counts else "various",
+            topic=max(topic_counts.keys(), key=lambda k: topic_counts[k])
+            if topic_counts
+            else "various",
             frequency=len(posts),
             engagement_avg=avg_engagement,
             format_types=primary_format,
@@ -182,6 +183,7 @@ class CompetitiveMonitor:
             formats.append("long")
 
         return formats if formats else ["text_only"]
+
     def identify_content_gaps(
         self,
         our_topics: list[str],
@@ -219,6 +221,7 @@ class CompetitiveMonitor:
                 gaps.append(gap)
 
         return gaps
+
     def generate_weekly_report(self) -> dict[str, Any]:
         """Generate weekly competitive landscape report."""
         report = {
@@ -243,6 +246,7 @@ class CompetitiveMonitor:
             ],
         }
         return report
+
     def _get_top_hashtags(self) -> list[str]:
         """Get most used hashtags."""
         hashtag_counts = {}
@@ -256,6 +260,7 @@ class CompetitiveMonitor:
             reverse=True,
         )
         return [tag for tag, _ in sorted_hashtags[:10]]
+
     def get_opportunities(self) -> list[str]:
         """Get list of content opportunities."""
         opportunities = []

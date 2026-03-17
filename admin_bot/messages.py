@@ -93,7 +93,9 @@ class Messages:
 
         cb_text = "\n".join(cb_lines) if cb_lines else "  Нет активных"
 
-        last_post = last_post_time.strftime("%d.%m %H:%M") if last_post_time else "Нет данных"
+        last_post = (
+            last_post_time.strftime("%d.%m %H:%M") if last_post_time else "Нет данных"
+        )
 
         return f"""📊 <b>Статус системы</b>
 

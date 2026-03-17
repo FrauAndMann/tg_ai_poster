@@ -4,7 +4,6 @@ Tests for configuration module.
 Tests settings loading, YAML parsing, and environment variables.
 """
 
-
 import pytest
 
 from core.config import (

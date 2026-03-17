@@ -57,8 +57,18 @@ class TestSourceCollector:
 
         now = datetime.utcnow()
         articles = [
-            Article(title="Old", summary="", url="url1", published_at=now - timedelta(days=10)),
-            Article(title="New", summary="", url="url2", published_at=now - timedelta(days=1)),
+            Article(
+                title="Old",
+                summary="",
+                url="url1",
+                published_at=now - timedelta(days=10),
+            ),
+            Article(
+                title="New",
+                summary="",
+                url="url2",
+                published_at=now - timedelta(days=1),
+            ),
         ]
 
         filtered = collector.filter_by_date(articles, max_age_days=7)
@@ -70,7 +80,9 @@ class TestSourceCollector:
         collector = SourceCollector(rss_feeds=[])
 
         articles = [
-            Article(title="AI News", summary="About artificial intelligence", url="url1"),
+            Article(
+                title="AI News", summary="About artificial intelligence", url="url1"
+            ),
             Article(title="Sports", summary="Football results", url="url2"),
             Article(title="Tech AI", summary="Machine learning update", url="url3"),
         ]
@@ -84,9 +96,19 @@ class TestSourceCollector:
 
         now = datetime.utcnow()
         articles = [
-            Article(title="Old", summary="", url="url1", published_at=now - timedelta(days=2)),
+            Article(
+                title="Old",
+                summary="",
+                url="url1",
+                published_at=now - timedelta(days=2),
+            ),
             Article(title="New", summary="", url="url2", published_at=now),
-            Article(title="Middle", summary="", url="url3", published_at=now - timedelta(days=1)),
+            Article(
+                title="Middle",
+                summary="",
+                url="url3",
+                published_at=now - timedelta(days=1),
+            ),
         ]
 
         sorted_articles = collector.sort_by_date(articles, descending=True)
@@ -131,7 +153,9 @@ class TestContentFilter:
         )
 
         articles = [
-            Article(title="AI News", summary="Good summary about AI technology", url="url1"),
+            Article(
+                title="AI News", summary="Good summary about AI technology", url="url1"
+            ),
             Article(title="Sports", summary="Short", url="url2"),  # Too short summary
         ]
 

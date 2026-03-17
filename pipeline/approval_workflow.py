@@ -3,6 +3,7 @@ Approval Workflow Module.
 
 Handles post status transitions and automated approval based on quality metrics.
 """
+
 from __future__ import annotations
 
 
@@ -21,7 +22,7 @@ TRANSITIONS: dict[PostStatus, list[PostStatus]] = {
     PostStatus.PENDING_REVIEW: [
         PostStatus.APPROVED,
         PostStatus.NEEDS_REVISION,
-        PostStatus.REJECTED
+        PostStatus.REJECTED,
     ],
     PostStatus.NEEDS_REVISION: [PostStatus.PENDING_REVIEW],
     PostStatus.APPROVED: [PostStatus.SCHEDULED],
@@ -142,10 +143,7 @@ class ApprovalWorkflow:
         return current_status
 
     async def transition_status(
-        self,
-        post: Post,
-        target_status: PostStatus,
-        reason: str | None = None
+        self, post: Post, target_status: PostStatus, reason: str | None = None
     ) -> bool:
         """
         Transition post to new status.
@@ -173,9 +171,7 @@ class ApprovalWorkflow:
 
         async with get_database().session() as session:
             # Get fresh post from DB
-            result = await session.execute(
-                select(Post).where(Post.id == post.id)
-            )
+            result = await session.execute(select(Post).where(Post.id == post.id))
             db_post = result.scalar_one_or_none()
             if not db_post:
                 return False
@@ -225,9 +221,7 @@ class ApprovalWorkflow:
         return TRANSITIONS.get(current, [])
 
     async def get_posts_by_status(
-        self,
-        status: PostStatus,
-        limit: int = 100
+        self, status: PostStatus, limit: int = 100
     ) -> list[Post]:
         """
         Get all posts with a specific status.

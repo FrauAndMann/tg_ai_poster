@@ -140,7 +140,9 @@ class PromptEvolver:
             return None
         return prompt_file.read_text(encoding="utf-8")
 
-    def save_prompt(self, name: str, content: str, variant_id: Optional[str] = None) -> bool:
+    def save_prompt(
+        self, name: str, content: str, variant_id: Optional[str] = None
+    ) -> bool:
         """Save a prompt variant to file."""
         if variant_id:
             filename = f"{name}_v{variant_id}.txt"
@@ -151,6 +153,7 @@ class PromptEvolver:
         path.write_text(content, encoding="utf-8")
         logger.info("Saved prompt variant: %s", filename)
         return True
+
     def record_performance(
         self,
         prompt_id: str,
@@ -166,8 +169,11 @@ class PromptEvolver:
         n = variant.posts_generated
         variant.avg_engagement = (current_avg * (n - 1) + engagement_score) / n
         # Update performance score
-        variant.performance_score = variant.avg_engagement * (1 + variant.posts_generated / 100)
+        variant.performance_score = variant.avg_engagement * (
+            1 + variant.posts_generated / 100
+        )
         self._posts_since_analysis += 1
+
     def should_analyze(self) -> bool:
         """Check if it's time for analysis."""
         if self._posts_since_analysis < self.analysis_interval:
@@ -176,6 +182,7 @@ class PromptEvolver:
             return True
         days_since = (datetime.now() - self._last_analysis).days
         return days_since >= 1  # Analyze daily
+
     async def run_analysis(self) -> None:
         """Run prompt performance analysis and generate improvements."""
         if not self.llm:
@@ -184,12 +191,10 @@ class PromptEvolver:
         logger.info("Running prompt evolution analysis")
         # Get high and low performing prompts
         high_performers = [
-            v for v in self._variants.values()
-            if v.performance_score >= 0.7
+            v for v in self._variants.values() if v.performance_score >= 0.7
         ]
         low_performers = [
-            v for v in self._variants.values()
-            if v.performance_score < 0.3
+            v for v in self._variants.values() if v.performance_score < 0.3
         ]
         if not high_performers or not low_performers:
             return
@@ -202,8 +207,12 @@ class PromptEvolver:
             }
         # Run analysis
         prompt = self.ANALYSIS_PROMPT.format(
-            high_performing_prompts="\n".join(v.prompt_text[:500] for v in high_performers[:3]),
-            low_performing_prompts="\n".join(v.prompt_text[:500] for v in low_performers[:3]),
+            high_performing_prompts="\n".join(
+                v.prompt_text[:500] for v in high_performers[:3]
+            ),
+            low_performing_prompts="\n".join(
+                v.prompt_text[:500] for v in low_performers[:3]
+            ),
             usage_stats=json.dumps(usage_stats),
         )
         response = await self.llm.generate(prompt)
@@ -212,6 +221,7 @@ class PromptEvolver:
             await self._apply_improvements(analysis)
         self._last_analysis = datetime.now()
         self._posts_since_analysis = 0
+
     def _parse_analysis(self, content: str) -> Optional[dict]:
         """Parse analysis response."""
         try:
@@ -220,6 +230,7 @@ class PromptEvolver:
             return json.loads(content.strip())
         except (json.JSONDecodeError, KeyError):
             return None
+
     async def _apply_improvements(self, analysis: dict) -> None:
         """Apply improvements from analysis."""
         improvements = analysis.get("improvements", [])
@@ -228,6 +239,7 @@ class PromptEvolver:
             return
         # Create new variant
         import uuid
+
         variant_id = str(uuid.uuid4())[:8]
         current_version = max(v.version for v in self._variants.values()) + 1
         new_variant = PromptVariant(
@@ -237,8 +249,7 @@ class PromptEvolver:
             version=current_version + 1,
             parent_id=self._current_best,
             improvement_reason="; ".join(
-                f"{i['area']}: {i['suggestion']}"
-                for i in improvements[:3]
+                f"{i['area']}: {i['suggestion']}" for i in improvements[:3]
             ),
         )
         self._variants[variant_id] = new_variant
@@ -254,12 +265,14 @@ class PromptEvolver:
                 },
             )
         logger.info("Created evolved prompt variant: %s", variant_id)
+
     def get_best_prompt(self) -> Optional[str]:
         """Get current best performing prompt."""
         if not self._variants:
             return None
         best = max(self._variants.values(), key=lambda v: v.performance_score)
         return best.prompt_text if best else None
+
     def get_prompt_for_post(self, post_type: str = "analysis") -> str:
         """Get appropriate prompt for post type."""
         # Check for evolved variant

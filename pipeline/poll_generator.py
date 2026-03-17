@@ -3,6 +3,7 @@ Poll generation for interactive posts.
 
 Generates polls for topics that suit them (opinions, preferences, quizzes).
 """
+
 from __future__ import annotations
 
 import json
@@ -19,6 +20,7 @@ logger = get_logger(__name__)
 
 class PollType(str, Enum):
     """Types of polls."""
+
     OPINION = "opinion"
     QUIZ = "quiz"
     PREFERENCE = "preference"
@@ -27,6 +29,7 @@ class PollType(str, Enum):
 @dataclass
 class PollData:
     """Generated poll data."""
+
     question: str
     options: list[str]
     allows_multiple_answers: bool
@@ -49,8 +52,17 @@ class PollGenerator:
     def should_generate_poll(self, article: Article) -> bool:
         """Determine if article is suitable for poll generation."""
         poll_keywords = [
-            "opinion", "prefer", "survey", "quiz", "vote", "think",
-            "best", "worst", "top", "favorite", "choose"
+            "opinion",
+            "prefer",
+            "survey",
+            "quiz",
+            "vote",
+            "think",
+            "best",
+            "worst",
+            "top",
+            "favorite",
+            "choose",
         ]
 
         # Check if content suggests poll-worthy content
@@ -58,10 +70,7 @@ class PollGenerator:
         return any(kw in text_lower for kw in poll_keywords)
 
     def _build_prompt(
-        self,
-        topic: str,
-        context_summary: str,
-        poll_type: PollType
+        self, topic: str, context_summary: str, poll_type: PollType
     ) -> str:
         """Build prompt for poll generation."""
         return f"""You are an expert content writer for a Telegram channel about {self.channel_topic}.
@@ -89,9 +98,7 @@ Return JSON only:
 """
 
     async def generate(
-        self,
-        article: Article,
-        poll_type: PollType = PollType.OPINION
+        self, article: Article, poll_type: PollType = PollType.OPINION
     ) -> Optional[PollData]:
         """Generate a poll from an article."""
         if not self.should_generate_poll(article):
@@ -100,15 +107,12 @@ Return JSON only:
 
         context_summary = f"{article.title}\n\n{article.summary}"
         prompt = self._build_prompt(
-            topic=article.title,
-            context_summary=context_summary,
-            poll_type=poll_type
+            topic=article.title, context_summary=context_summary, poll_type=poll_type
         )
 
         try:
             response = await self.llm.generate(
-                prompt=prompt,
-                response_format={"type": "json"}
+                prompt=prompt, response_format={"type": "json"}
             )
             data = json.loads(response)
 

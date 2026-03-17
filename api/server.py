@@ -31,7 +31,6 @@ class HealthResponse(BaseModel):
     last_post: Optional[datetime] = None
     uptime_seconds: float = 0.0
 
-
     version: str = "1.0.0"
 
 
@@ -45,7 +44,6 @@ class PostResponse(BaseModel):
     views: int = 0
     engagement_score: float = 0.0
     status: str = "published"
-
 
     quality_score: float = 0.0
 
@@ -109,6 +107,7 @@ class APIServer:
         self._jobs: dict[str, JobResponse] = {}
         self._app: Optional[FastAPI] = None
         self._start_time: Optional[datetime] = None
+
     def create_app(self) -> FastAPI:
         """Create FastAPI application."""
         app = FastAPI(
@@ -119,27 +118,39 @@ class APIServer:
         # Add routes
         app.add_api_route("/health", methods=["GET"])(self.health_endpoint)
         app.add_api_route("/posts", methods=["GET"])(self.list_posts_endpoint)
-        app.add_api_route("/posts/generate", methods=["POST"])(self.generate_post_endpoint)
+        app.add_api_route("/posts/generate", methods=["POST"])(
+            self.generate_post_endpoint
+        )
         app.add_api_route("/jobs/{job_id}", methods=["GET"])(self.job_status_endpoint)
-        app.add_api_route("/approve/{post_id}", methods=["POST"])(self.approve_post_endpoint)
-        app.add_api_route("/analytics/summary", methods=["GET"])(self.analytics_summary_endpoint)
-        app.add_api_route("/channels/{channel_id}/pause", methods=["POST"])(self.pause_channel_endpoint)
+        app.add_api_route("/approve/{post_id}", methods=["POST"])(
+            self.approve_post_endpoint
+        )
+        app.add_api_route("/analytics/summary", methods=["GET"])(
+            self.analytics_summary_endpoint
+        )
+        app.add_api_route("/channels/{channel_id}/pause", methods=["POST"])(
+            self.pause_channel_endpoint
+        )
         # Add middleware
         app.middleware("http")(self.verify_api_key)
         return app
+
     async def start(self, host: str = "0.0.0.0", port: int = 8080) -> None:
         """Start the API server."""
         import uvicorn
+
         self._app = self.create_app()
         self._start_time = datetime.now()
         config = uvicorn.Config(app=self._app, host=host, port=port)
         await config.setup()
         logger.info("API server started on %s:%d", host, port)
+
     async def stop(self) -> None:
         """Stop the API server."""
         if self._app:
             await self._app.shutdown()
         logger.info("API server stopped")
+
     # Authentication dependency
     def verify_api_key(
         self,
@@ -153,6 +164,7 @@ class APIServer:
         if credentials.credentials != expected_key:
             raise HTTPException(status_code=401, detail="Invalid API key")
         return credentials.credentials
+
     # Endpoints
     async def health_endpoint(self) -> HealthResponse:
         """Health check endpoint."""
@@ -174,6 +186,7 @@ class APIServer:
             scheduler_running=True,
             uptime_seconds=uptime,
         )
+
     async def list_posts_endpoint(
         self,
         page: int = 1,
@@ -203,11 +216,15 @@ class APIServer:
                 page_size=page_size,
             )
         return PostsListResponse(posts=[], total=0, page=page, page_size=page_size)
-    async def generate_post_endpoint(self, background_tasks: bool = False) -> JobResponse:
+
+    async def generate_post_endpoint(
+        self, background_tasks: bool = False
+    ) -> JobResponse:
         """Generate post endpoint."""
         if not self.orchestrator:
             raise HTTPException(status_code=503, detail="Orchestrator not configured")
         import uuid
+
         job_id = str(uuid.uuid4())
         # Create job
         job = JobResponse(
@@ -220,6 +237,7 @@ class APIServer:
         if background_tasks:
             asyncio.create_task(self._run_generation(job_id))
         return job
+
     async def _run_generation(self, job_id: str) -> None:
         """Run post generation."""
         job = self._jobs[job_id]
@@ -233,11 +251,13 @@ class APIServer:
             job.status = "failed"
             job.error = str(e)
             logger.error("Generation job %s failed: %s", job_id, e)
+
     async def job_status_endpoint(self, job_id: str) -> JobResponse:
         """Get job status endpoint."""
         if job_id not in self._jobs:
             raise HTTPException(status_code=404, detail="Job not found")
         return self._jobs[job_id]
+
     async def approve_post_endpoint(self, post_id: int) -> dict:
         """Approve post endpoint."""
         if not self.post_store:
@@ -249,6 +269,7 @@ class APIServer:
         post.status = "approved"
         await self.post_store.update(post)
         return {"status": "approved", "post_id": post_id}
+
     async def analytics_summary_endpoint(self) -> AnalyticsSummary:
         """Analytics summary endpoint."""
         if not self.post_store:
@@ -263,10 +284,13 @@ class APIServer:
         # Get analytics for last 7 days
         posts = await self.post_store.list(limit=100)
         recent = [
-            p for p in posts
+            p
+            for p in posts
             if p.published_at and (datetime.now() - p.published_at).days <= 7
         ]
-        avg_engagement = sum(p.engagement_score for p in recent) / len(recent) if recent else 0
+        avg_engagement = (
+            sum(p.engagement_score for p in recent) / len(recent) if recent else 0
+        )
         # Topic distribution
         topics = {}
         for p in recent:
@@ -282,10 +306,13 @@ class APIServer:
             period="7d",
             total_posts=len(recent),
             avg_engagement=avg_engagement,
-            top_performing_topics=sorted(topics.keys(), key=lambda x: x[1], reverse=True)[:5],
+            top_performing_topics=sorted(
+                topics.keys(), key=lambda x: x[1], reverse=True
+            )[:5],
             quality_distribution=quality_dist,
             cost_summary={},  # Would integrate with actual cost tracking
         )
+
     async def pause_channel_endpoint(self, channel_id: str) -> dict:
         """Pause channel endpoint."""
         # This would integrate with multi-channel manager

@@ -80,9 +80,7 @@ class Scheduler:
     def _notify_admin_of_failure(self, exception: Optional[Exception]) -> None:
         """Notify admin about job failures (placeholder for actual notification)."""
         # This will be implemented to send Telegram message to admin
-        logger.warning(
-            f"Admin notification: Job failed. Exception: {exception}"
-        )
+        logger.warning(f"Admin notification: Job failed. Exception: {exception}")
 
     def _setup_interval_trigger(self) -> None:
         """Set up interval-based scheduling."""
@@ -283,7 +281,9 @@ class Scheduler:
             {
                 "id": job.id,
                 "name": job.name,
-                "next_run": job.next_run_time.isoformat() if job.next_run_time else None,
+                "next_run": job.next_run_time.isoformat()
+                if job.next_run_time
+                else None,
             }
             for job in jobs
             if job.next_run_time

@@ -17,6 +17,7 @@ logger = get_logger(__name__)
 
 class SourceTier(Enum):
     """Source trust tiers."""
+
     TIER_1 = 1.0  # Official docs, major outlets
     TIER_2 = 0.7  # Reputable tech blogs
     TIER_3 = 0.4  # Aggregators, news sites
@@ -25,6 +26,7 @@ class SourceTier(Enum):
 
 class CredibilityLevel(Enum):
     """Credibility assessment levels."""
+
     HIGH = "high"
     MEDIUM = "medium"
     LOW = "low"
@@ -78,7 +80,6 @@ class SourceQualityScorer:
         "arxiv.org": SourceTier.TIER_1,
         "nature.com": SourceTier.TIER_1,
         "science.org": SourceTier.TIER_1,
-
         # Tier 2: Reputable tech blogs
         "techcrunch.com": SourceTier.TIER_2,
         "wired.com": SourceTier.TIER_2,
@@ -86,7 +87,6 @@ class SourceQualityScorer:
         "huggingface.co": SourceTier.TIER_2,
         "platform.openai.org": SourceTier.TIER_2,
         "github.blog": SourceTier.TIER_2,
-
         # Tier 3: Aggregators, news sites
         "reddit.com": SourceTier.TIER_3,
         "medium.com": SourceTier.TIER_3,
@@ -181,6 +181,7 @@ class SourceQualityScorer:
         """Extract domain from URL."""
         try:
             from urllib.parse import urlparse
+
             parsed = urlparse(url)
             domain = parsed.netloc.lower()
             domain = domain.replace("www.", "")
@@ -213,9 +214,14 @@ class SourceQualityScorer:
 
         # Sensational language patterns
         sensational_patterns = [
-            r"shocking", r"incredible", r"unbelievable",
-            r"mind-blowing", r"revolutionary",
-            r"потрясающе", r"невероятно", r"прорывной",
+            r"shocking",
+            r"incredible",
+            r"unbelievable",
+            r"mind-blowing",
+            r"revolutionary",
+            r"потрясающе",
+            r"невероятно",
+            r"прорывной",
         ]
 
         content_lower = content.lower()
@@ -226,8 +232,11 @@ class SourceQualityScorer:
 
         # Vague sourcing
         vague_patterns = [
-            "experts say", r"studies show", r"research indicates",
-            r"people are saying", r"эксперты говорят",
+            "experts say",
+            r"studies show",
+            r"research indicates",
+            r"people are saying",
+            r"эксперты говорят",
         ]
 
         for pattern in vague_patterns:

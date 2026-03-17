@@ -77,11 +77,7 @@ def check_duplicate(
         recent_lower = recent.lower().strip()
 
         # Calculate similarity ratio
-        similarity = SequenceMatcher(
-            None,
-            content_lower,
-            recent_lower
-        ).ratio()
+        similarity = SequenceMatcher(None, content_lower, recent_lower).ratio()
 
         if similarity >= threshold:
             return False, f"Similar to post #{i + 1} ({similarity:.0%})"
@@ -226,15 +222,15 @@ def check_emoji_count(
     # Note: Using character class without + quantifier to count individual emojis
     emoji_pattern = re.compile(
         "["
-        "\U0001F600-\U0001F64F"  # Emoticons
-        "\U0001F300-\U0001F5FF"  # Misc Symbols and Pictographs
-        "\U0001F680-\U0001F6FF"  # Transport and Map
-        "\U0001F1E0-\U0001F1FF"  # Flags (regional)
-        "\U00002702-\U000027B0"  # Dingbats
-        "\U000024C2-\U0001F251"  # Enclosed characters
-        "\U0001F900-\U0001F9FF"  # Supplemental Symbols A
-        "\U00002600-\U000026FF"  # Misc Symbols
-        "\U00002B50-\U00002B55"  # Stars and circles
+        "\U0001f600-\U0001f64f"  # Emoticons
+        "\U0001f300-\U0001f5ff"  # Misc Symbols and Pictographs
+        "\U0001f680-\U0001f6ff"  # Transport and Map
+        "\U0001f1e0-\U0001f1ff"  # Flags (regional)
+        "\U00002702-\U000027b0"  # Dingbats
+        "\U000024c2-\U0001f251"  # Enclosed characters
+        "\U0001f900-\U0001f9ff"  # Supplemental Symbols A
+        "\U00002600-\U000026ff"  # Misc Symbols
+        "\U00002b50-\U00002b55"  # Stars and circles
         "]",
         flags=re.UNICODE,
     )
@@ -294,7 +290,9 @@ def check_hooks(content: str) -> Tuple[bool, Optional[str]]:
         return True, None
 
     # Check for shocking statement (contains numbers/stats)
-    if re.search(r"\d+%|\d+\s*(million|billion|thousand|млн|млрд|тыс)", first_sentence, re.I):
+    if re.search(
+        r"\d+%|\d+\s*(million|billion|thousand|млн|млрд|тыс)", first_sentence, re.I
+    ):
         return True, None
 
     # Check for "how to" or "why" openings
@@ -371,7 +369,9 @@ def validate_post(
         score -= 5
 
     # Hashtag check
-    hashtag_valid, hashtag_error = check_hashtag_count(content, min_hashtags, max_hashtags)
+    hashtag_valid, hashtag_error = check_hashtag_count(
+        content, min_hashtags, max_hashtags
+    )
     if not hashtag_valid:
         warnings.append(hashtag_error)
         score -= 5
@@ -385,7 +385,9 @@ def validate_post(
 
     # Duplicate check
     if recent_contents:
-        unique, dup_info = check_duplicate(content, recent_contents, similarity_threshold)
+        unique, dup_info = check_duplicate(
+            content, recent_contents, similarity_threshold
+        )
         if not unique:
             issues.append(dup_info)
             score -= 25
@@ -434,9 +436,6 @@ def sanitize_content(content: str) -> str:
     content = "\n".join(line.rstrip() for line in content.split("\n"))
 
     # Remove control characters except newlines and tabs
-    content = "".join(
-        char for char in content
-        if char.isprintable() or char in "\n\t"
-    )
+    content = "".join(char for char in content if char.isprintable() or char in "\n\t")
 
     return content.strip()

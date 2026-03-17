@@ -97,10 +97,12 @@ class ClaudeAdapter(BaseLLMAdapter):
         claude_messages = []
         for msg in messages:
             if msg.role != "system":
-                claude_messages.append({
-                    "role": msg.role,
-                    "content": msg.content,
-                })
+                claude_messages.append(
+                    {
+                        "role": msg.role,
+                        "content": msg.content,
+                    }
+                )
 
         # Build request options
         request_options: dict[str, Any] = {
@@ -139,7 +141,8 @@ class ClaudeAdapter(BaseLLMAdapter):
             usage = {
                 "prompt_tokens": response.usage.input_tokens,
                 "completion_tokens": response.usage.output_tokens,
-                "total_tokens": response.usage.input_tokens + response.usage.output_tokens,
+                "total_tokens": response.usage.input_tokens
+                + response.usage.output_tokens,
             }
 
             logger.debug(

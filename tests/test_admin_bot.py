@@ -53,6 +53,7 @@ class TestKeyboards:
     def test_main_menu_keyboard(self):
         """Main menu has all expected buttons."""
         from telegram import InlineKeyboardMarkup
+
         keyboard = Keyboards.main_menu()
         assert isinstance(keyboard, InlineKeyboardMarkup)
         # Verify buttons exist

@@ -42,10 +42,7 @@ class TokenBucket:
         elapsed = now - self.last_refill
 
         # Add tokens for elapsed time
-        self.tokens = min(
-            self.capacity,
-            self.tokens + elapsed * self.refill_rate
-        )
+        self.tokens = min(self.capacity, self.tokens + elapsed * self.refill_rate)
         self.last_refill = now
 
     async def consume(self, tokens: float = 1.0) -> bool:
@@ -307,10 +304,7 @@ class MultiServiceRateLimiter:
                 return self._services[service].get_status()
             return {}
 
-        return {
-            name: limiter.get_status()
-            for name, limiter in self._services.items()
-        }
+        return {name: limiter.get_status() for name, limiter in self._services.items()}
 
 
 # Pre-configured limiters for common use cases

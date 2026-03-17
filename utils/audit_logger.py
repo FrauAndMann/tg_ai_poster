@@ -6,6 +6,7 @@ Provides comprehensive audit logging for all system actions with:
 - Error logging with context
 - Query logging with performance metrics
 """
+
 from __future__ import annotations
 
 import functools
@@ -19,6 +20,7 @@ from loguru import logger
 
 class AuditEventType(str, Enum):
     """Types of audit events."""
+
     CREATE = "create"
     UPDATE = "update"
     DELETE = "delete"
@@ -32,6 +34,7 @@ class AuditEventType(str, Enum):
 @dataclass
 class AuditLog:
     """Audit log entry."""
+
     event_type: AuditEventType
     action: str
     resource_type: str
@@ -93,7 +96,7 @@ class _AuditLogger:
         self._logs.append(entry)
         logger.info(
             f"AUDIT: {event_type.value} - {action} - {resource_type}/{resource_id}",
-            extra={"details": details, "user_id": user_id}
+            extra={"details": details, "user_id": user_id},
         )
 
         # Call custom handlers
@@ -130,12 +133,9 @@ class _AuditLogger:
         return cleared
 
 
-def audit_action(
-    event_type: AuditEventType,
-    action: str,
-    resource_type: str
-):
+def audit_action(event_type: AuditEventType, action: str, resource_type: str):
     """Decorator to audit async function calls."""
+
     def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
@@ -174,6 +174,7 @@ def audit_action(
                 raise
 
         return wrapper
+
     return decorator
 
 

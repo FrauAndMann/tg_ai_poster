@@ -24,6 +24,7 @@ logger = get_logger(__name__)
 
 class ArcStatus(str, Enum):
     """Status of a narrative arc."""
+
     PLANNING = "planning"
     ACTIVE = "active"
     PAUSED = "paused"
@@ -163,10 +164,13 @@ class NarrativeArcManager:
             NarrativeArc: Created arc or None if failed
         """
         if chapters > self.max_arc_length:
-            logger.warning("Chapter count %d exceeds max %d", chapters, self.max_arc_length)
+            logger.warning(
+                "Chapter count %d exceeds max %d", chapters, self.max_arc_length
+            )
             chapters = self.max_arc_length
 
         import uuid
+
         arc_id = str(uuid.uuid4())[:8]
 
         arc = NarrativeArc(
@@ -208,18 +212,21 @@ class NarrativeArcManager:
 
         chapters = []
         for ch_data in data.get("chapters", []):
-            chapters.append(ArcChapter(
-                chapter_number=ch_data.get("number", len(chapters) + 1),
-                title=ch_data.get("title", f"Chapter {len(chapters) + 1}"),
-                topic=arc.title,
-                key_points=ch_data.get("key_points", []),
-            ))
+            chapters.append(
+                ArcChapter(
+                    chapter_number=ch_data.get("number", len(chapters) + 1),
+                    title=ch_data.get("title", f"Chapter {len(chapters) + 1}"),
+                    topic=arc.title,
+                    key_points=ch_data.get("key_points", []),
+                )
+            )
 
         return chapters
 
     def _parse_chapter_plan(self, content: str) -> dict:
         """Parse chapter plan from LLM response."""
         import json
+
         try:
             # Extract JSON from response
             if "```json" in content:

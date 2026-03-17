@@ -62,7 +62,9 @@ class CommandHandler:
             reply_markup=Keyboards.main_menu(),
         )
 
-    async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    async def help_command(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+    ) -> None:
         """Handle /help command."""
         if not update.effective_user:
             return
@@ -288,7 +290,9 @@ class CommandHandler:
                 reply_markup=Keyboards.back_only(),
             )
 
-    async def circuit_status(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    async def circuit_status(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+    ) -> None:
         """Handle circuit breaker status."""
         if not update.effective_user:
             return
@@ -315,7 +319,9 @@ class CommandHandler:
                 reply_markup=Keyboards.circuit_menu(has_open_circuits=has_open),
             )
 
-    async def circuit_reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    async def circuit_reset(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+    ) -> None:
         """Reset all circuit breakers."""
         if not update.effective_user:
             return
@@ -328,7 +334,9 @@ class CommandHandler:
         if update.callback_query:
             await self.circuit_status(update, context)
 
-    async def callback_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    async def callback_handler(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+    ) -> None:
         """Handle callback queries from inline keyboards."""
         if not update.callback_query or not update.effective_user:
             return
@@ -360,7 +368,9 @@ class CommandHandler:
         if handler:
             await handler(update, context)
 
-    async def _show_main_menu(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    async def _show_main_menu(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+    ) -> None:
         """Show main menu."""
         if update.callback_query:
             await update.callback_query.edit_message_text(
@@ -392,7 +402,9 @@ class CommandHandler:
                     if last_post:
                         last_post_time = last_post.created_at
 
-                    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+                    today = datetime.now().replace(
+                        hour=0, minute=0, second=0, microsecond=0
+                    )
                     result = await session.execute(
                         select(func.count(Post.id))
                         .where(Post.status == "published")

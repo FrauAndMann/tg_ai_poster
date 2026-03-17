@@ -22,6 +22,7 @@ logger = get_logger(__name__)
 @dataclass
 class QualityCheckResult:
     """Result of a quality rule check."""
+
     rule_name: str
     passed: bool
     score: float  # 0.0 to 1.0
@@ -41,6 +42,7 @@ class QualityCheckResult:
 @dataclass
 class FullQualityReport:
     """Complete quality report for a post."""
+
     total_score: float
     passed: bool
     checks: list[QualityCheckResult]
@@ -136,7 +138,7 @@ class QualityRulesEngine:
 
     def check_max_sentence_length(self, body: str) -> QualityCheckResult:
         """Rule 3: No sentence longer than 25 words."""
-        sentences = re.split(r'[.!?]+', body)
+        sentences = re.split(r"[.!?]+", body)
         long_sentences = []
         for i, sent in enumerate(sentences):
             words = len(sent.split())
@@ -156,12 +158,12 @@ class QualityRulesEngine:
     def check_passive_voice(self, body: str) -> QualityCheckResult:
         """Rule 4: Detect passive voice constructions."""
         passive_patterns = [
-            r'\bбыл[аи]?\s+\w+',
-            r'\bбыла[аи]?\s+\w+',
-            r'\bбыли[аи]?\s+\w+',
-            r'\bявляется\b',
-            r'\bостается\b',
-            r'\bпредставляет собой\b',
+            r"\bбыл[аи]?\s+\w+",
+            r"\bбыла[аи]?\s+\w+",
+            r"\bбыли[аи]?\s+\w+",
+            r"\bявляется\b",
+            r"\bостается\b",
+            r"\bпредставляет собой\b",
         ]
         found = []
         for pattern in passive_patterns:
@@ -184,8 +186,16 @@ class QualityRulesEngine:
         text_lower = text.lower()
         found_words = []
 
-        banned = self._banned_config.get("banned_words", {}).get("hype_words", {}).get("words", [])
-        filler = self._banned_config.get("banned_words", {}).get("filler_phrases", {}).get("phrases", [])
+        banned = (
+            self._banned_config.get("banned_words", {})
+            .get("hype_words", {})
+            .get("words", [])
+        )
+        filler = (
+            self._banned_config.get("banned_words", {})
+            .get("filler_phrases", {})
+            .get("phrases", [])
+        )
 
         for word in banned:
             if word.lower() in text_lower:
@@ -207,7 +217,7 @@ class QualityRulesEngine:
 
     def check_readability(self, body: str) -> QualityCheckResult:
         """Rule 6: Average sentence length should be <= 18 words."""
-        sentences = [s.strip() for s in re.split(r'[.!?]+', body) if s.strip()]
+        sentences = [s.strip() for s in re.split(r"[.!?]+", body) if s.strip()]
         if not sentences:
             return QualityCheckResult(
                 rule_name="readability",
@@ -231,11 +241,11 @@ class QualityRulesEngine:
 
     def check_repetition(self, body: str) -> QualityCheckResult:
         """Rule 7: Flag words repeated more than 3x in 100-word windows."""
-        words = re.findall(r'\b\w+\b', body.lower())
+        words = re.findall(r"\b\w+\b", body.lower())
         found_repetitions = []
 
         for i in range(len(words) - 100):
-            window = words[i:i+100]
+            window = words[i : i + 100]
             counter = Counter(window)
             for word, count in counter.items():
                 if count > 3 and len(word) > 3:
@@ -254,7 +264,7 @@ class QualityRulesEngine:
     def check_jargon_balance(self, body: str) -> QualityCheckResult:
         """Rule 8: Technical terms should be balanced with accessible explanations."""
         # Simple heuristic: technical terms often have acronyms or specific suffixes
-        tech_terms = re.findall(r'\b[A-Z]{2,}\b|\w+(?:ация|ирование|ность|изм)\b', body)
+        tech_terms = re.findall(r"\b[A-Z]{2,}\b|\w+(?:ация|ирование|ность|изм)\b", body)
         passed = True  # Complex to check automatically, default to pass
         score = 1.0
         return QualityCheckResult(
@@ -267,7 +277,11 @@ class QualityRulesEngine:
 
     def check_filler_phrases(self, text: str) -> QualityCheckResult:
         """Rule 9: Remove filler phrases."""
-        filler = self._banned_config.get("banned_words", {}).get("filler_phrases", {}).get("phrases", [])
+        filler = (
+            self._banned_config.get("banned_words", {})
+            .get("filler_phrases", {})
+            .get("phrases", [])
+        )
         found = [f for f in filler if f.lower() in text.lower()]
 
         passed = len(found) == 0
@@ -282,7 +296,7 @@ class QualityRulesEngine:
 
     def check_active_voice_ratio(self, body: str) -> QualityCheckResult:
         """Rule 10: At least 70% active voice constructions."""
-        sentences = [s.strip() for s in re.split(r'[.!?]+', body) if s.strip()]
+        sentences = [s.strip() for s in re.split(r"[.!?]+", body) if s.strip()]
         if not sentences:
             return QualityCheckResult(
                 rule_name="active_voice_ratio",
@@ -292,7 +306,13 @@ class QualityRulesEngine:
             )
 
         # Simple heuristic: passive constructions lower the ratio
-        passive_patterns = [r'\bбыл\b', r'\bбыла\b', r'\bбыли\b', r'\bбыло\b', r'\bявляется\b']
+        passive_patterns = [
+            r"\bбыл\b",
+            r"\bбыла\b",
+            r"\bбыли\b",
+            r"\bбыло\b",
+            r"\bявляется\b",
+        ]
         active_count = 0
 
         for sent in sentences:
@@ -308,7 +328,11 @@ class QualityRulesEngine:
             passed=passed,
             score=score,
             message=f"Active voice ratio: {ratio:.0%} (min: {self.min_active_voice_ratio:.0%})",
-            details={"ratio": ratio, "active_count": active_count, "total": len(sentences)},
+            details={
+                "ratio": ratio,
+                "active_count": active_count,
+                "total": len(sentences),
+            },
         )
 
     # ==================== BLOCK B — POST STRUCTURE ====================
@@ -316,9 +340,14 @@ class QualityRulesEngine:
     def check_title_concrete_subject(self, title: str) -> QualityCheckResult:
         """Rule 11: Title must contain concrete subject (company/model/technology)."""
         # Look for capitalized words, acronyms, or specific tech terms
-        has_company = bool(re.search(r'\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b', title))
-        has_acronym = bool(re.search(r'\b[A-Z]{2,}\b', title))
-        has_model = bool(re.search(r'\b(?:GPT|Claude|Gemini|LLaMA|Mistral|v?\d+(?:\.\d+)?(?:\s|$))\b', title))
+        has_company = bool(re.search(r"\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b", title))
+        has_acronym = bool(re.search(r"\b[A-Z]{2,}\b", title))
+        has_model = bool(
+            re.search(
+                r"\b(?:GPT|Claude|Gemini|LLaMA|Mistral|v?\d+(?:\.\d+)?(?:\s|$))\b",
+                title,
+            )
+        )
 
         passed = has_company or has_acronym or has_model
         score = 1.0 if passed else 0.0
@@ -326,7 +355,9 @@ class QualityRulesEngine:
             rule_name="title_concrete_subject",
             passed=passed,
             score=score,
-            message="Title contains concrete subject" if passed else "Title lacks concrete subject",
+            message="Title contains concrete subject"
+            if passed
+            else "Title lacks concrete subject",
             details={},
         )
 
@@ -341,7 +372,7 @@ class QualityRulesEngine:
                 details={},
             )
 
-        sentences = re.split(r'[.!?]+', hook)
+        sentences = re.split(r"[.!?]+", hook)
         passed = len(sentences) >= 1 and len(sentences) <= 2
         score = 1.0 if passed else 0.5
         return QualityCheckResult(
@@ -355,8 +386,12 @@ class QualityRulesEngine:
     def check_body_contains_metric(self, body: str) -> QualityCheckResult:
         """Rule 13: Body must contain at least one number/metric/benchmark."""
         # Look for numbers, percentages, monetary values, etc.
-        has_number = bool(re.search(r'\d+(?:[.,]\d+)?(?:%|\$|€|млн|миллиард|тыс)?', body))
-        has_metric = bool(re.search(r'\d+(?:\s*(?:тыс|млн|млрд|B|GB|TB|ms|сек|%|x|раз))', body))
+        has_number = bool(
+            re.search(r"\d+(?:[.,]\d+)?(?:%|\$|€|млн|миллиард|тыс)?", body)
+        )
+        has_metric = bool(
+            re.search(r"\d+(?:\s*(?:тыс|млн|млрд|B|GB|TB|ms|сек|%|x|раз))", body)
+        )
 
         passed = has_number or has_metric
         score = 1.0 if passed else 0.0
@@ -364,7 +399,9 @@ class QualityRulesEngine:
             rule_name="body_contains_metric",
             passed=passed,
             score=score,
-            message="Body contains metric/number" if passed else "Body lacks specific metrics",
+            message="Body contains metric/number"
+            if passed
+            else "Body lacks specific metrics",
             details={},
         )
 
@@ -383,10 +420,10 @@ class QualityRulesEngine:
         for i, fact in enumerate(key_facts[:4]):
             # Check if fact is too long (> 150 chars suggests it's not standalone)
             if len(fact) > 150:
-                issues.append(f"Fact {i+1} too long ({len(fact)} chars)")
+                issues.append(f"Fact {i + 1} too long ({len(fact)} chars)")
             # Check if fact contains multiple claims (multiple sentences)
-            if fact.count('.') > 1:
-                issues.append(f"Fact {i+1} contains multiple sentences")
+            if fact.count(".") > 1:
+                issues.append(f"Fact {i + 1} contains multiple sentences")
 
         passed = len(issues) == 0
         score = 1.0 if passed else max(0.5, 1 - len(issues) * 0.2)
@@ -394,7 +431,9 @@ class QualityRulesEngine:
             rule_name="key_facts_standalone",
             passed=passed,
             score=score,
-            message="Key facts are standalone" if passed else f"Issues: {'; '.join(issues)}",
+            message="Key facts are standalone"
+            if passed
+            else f"Issues: {'; '.join(issues)}",
             details={"issues": issues},
         )
 
@@ -411,8 +450,16 @@ class QualityRulesEngine:
 
         # Look for trend-related keywords
         trend_keywords = [
-            "тренд", "тенденци", "рынок", "индустри", "конкурент",
-            "сектор", "отрасль", "направлен", "эволюц", "трансформ",
+            "тренд",
+            "тенденци",
+            "рынок",
+            "индустри",
+            "конкурент",
+            "сектор",
+            "отрасль",
+            "направлен",
+            "эволюц",
+            "трансформ",
         ]
         has_trend = any(kw in analysis.lower() for kw in trend_keywords)
 
@@ -422,7 +469,9 @@ class QualityRulesEngine:
             rule_name="analysis_industry_trend",
             passed=passed,
             score=score,
-            message="Analysis connects to industry trends" if passed else "Analysis lacks industry context",
+            message="Analysis connects to industry trends"
+            if passed
+            else "Analysis lacks industry context",
             details={},
         )
 
@@ -436,7 +485,9 @@ class QualityRulesEngine:
             rule_name="post_type_label",
             passed=passed,
             score=score,
-            message=f"Post type: {post_type}" if passed else f"Invalid or missing post_type: {post_type}",
+            message=f"Post type: {post_type}"
+            if passed
+            else f"Invalid or missing post_type: {post_type}",
             details={"post_type": post_type},
         )
 
@@ -452,7 +503,7 @@ class QualityRulesEngine:
             )
 
         # Check if TLDR is a complete sentence
-        is_complete = tldr.strip().endswith(('.', '!', '?'))
+        is_complete = tldr.strip().endswith((".", "!", "?"))
         # Check reasonable length (20-200 chars)
         reasonable_length = 20 <= len(tldr) <= 200
 
@@ -477,11 +528,19 @@ class QualityRulesEngine:
                 details={},
             )
 
-        hashtags_lower = [h.lower().lstrip('#') for h in hashtags]
+        hashtags_lower = [h.lower().lstrip("#") for h in hashtags]
 
         # Check for AI-related tags
-        ai_tags = ['ai', 'ии', 'ml', 'machinelearning', 'artificialintelligence', 'llm', 'нейросет']
-        has_ai = any(tag in ' '.join(hashtags_lower) for tag in ai_tags)
+        ai_tags = [
+            "ai",
+            "ии",
+            "ml",
+            "machinelearning",
+            "artificialintelligence",
+            "llm",
+            "нейросет",
+        ]
+        has_ai = any(tag in " ".join(hashtags_lower) for tag in ai_tags)
 
         passed = has_ai and len(hashtags) >= 3
         score = 1.0 if passed else 0.5
@@ -549,7 +608,11 @@ class QualityRulesEngine:
         total_score = sum(c.score for c in checks) / len(checks)
         passed = all(c.passed for c in checks[:10])  # First 10 are critical
         failed_rules = [c.rule_name for c in checks if not c.passed]
-        warnings = [c.message for c in checks if not c.passed and c.rule_name not in failed_rules[:10]]
+        warnings = [
+            c.message
+            for c in checks
+            if not c.passed and c.rule_name not in failed_rules[:10]
+        ]
 
         return FullQualityReport(
             total_score=total_score,

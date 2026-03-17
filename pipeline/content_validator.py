@@ -30,7 +30,6 @@ LLM_META_PATTERNS = [
     r"пост\s+(о\s+том|про\s+то)\s*,?\s*как",
     r"ссылка\s+на\s+источник",
     r"вот\s+что\s+(я|мы)\s+(узнал|нашёл| discovered)",
-
     # English meta-text
     r"here'?s?\s+(the|a|my|your)\s+post",
     r"i\s+(have\s+)?(created|written|prepared|made)\s+(a\s+)?post",
@@ -43,7 +42,6 @@ LLM_META_PATTERNS = [
     r"here\s+is\s+(what|the)",
     r"as\s+(an\s+)?ai",
     r"as\s+a\s+(language\s+)?model",
-
     # Thinking/reasoning indicators
     r"^(thinking|думаю|размышляю)\s*:",
     r"^\*\*?(thinking|думаю|размышления)\*\*?",
@@ -103,6 +101,7 @@ class ValidationResult:
         needs_regeneration: Whether the content should be regenerated
         sanitized_content: Content with meta-text removed (if possible)
     """
+
     is_valid: bool
     is_ready: bool
     score: float
@@ -152,9 +151,15 @@ class ContentValidator:
         self.min_body_sentences = min_body_sentences
 
         # Compile regex patterns for performance
-        self._meta_patterns = [re.compile(p, re.IGNORECASE | re.MULTILINE) for p in LLM_META_PATTERNS]
-        self._question_patterns = [re.compile(p, re.IGNORECASE) for p in QUESTION_PATTERNS]
-        self._incomplete_patterns = [re.compile(p, re.IGNORECASE) for p in INCOMPLETE_PATTERNS]
+        self._meta_patterns = [
+            re.compile(p, re.IGNORECASE | re.MULTILINE) for p in LLM_META_PATTERNS
+        ]
+        self._question_patterns = [
+            re.compile(p, re.IGNORECASE) for p in QUESTION_PATTERNS
+        ]
+        self._incomplete_patterns = [
+            re.compile(p, re.IGNORECASE) for p in INCOMPLETE_PATTERNS
+        ]
 
     def _check_meta_text(self, content: str) -> list[str]:
         """
@@ -173,7 +178,11 @@ class ContentValidator:
             matches = pattern.findall(content)
             if matches:
                 # Get first match as example
-                match_example = matches[0][:50] if isinstance(matches[0], str) else str(matches[0])[:50]
+                match_example = (
+                    matches[0][:50]
+                    if isinstance(matches[0], str)
+                    else str(matches[0])[:50]
+                )
                 issues.append(f"LLM meta-text detected: '{match_example}...'")
                 logger.warning(f"Meta-text pattern matched: {pattern.pattern}")
 
@@ -233,10 +242,10 @@ class ContentValidator:
 
         # Check for required block markers
         required_markers = [
-            ("\U0001F50D", "Key Facts block"),  # 🔍
-            ("\U0001F9E0", "Analysis block"),    # 🧠
-            ("\U0001F517", "Sources block"),     # 🔔
-            ("\U0001F4A1", "TLDR block"),        # 💡
+            ("\U0001f50d", "Key Facts block"),  # 🔍
+            ("\U0001f9e0", "Analysis block"),  # 🧠
+            ("\U0001f517", "Sources block"),  # 🔔
+            ("\U0001f4a1", "TLDR block"),  # 💡
         ]
 
         missing_blocks = []
@@ -248,7 +257,9 @@ class ContentValidator:
             if self.strict_mode:
                 critical.append(f"Missing required blocks: {', '.join(missing_blocks)}")
             else:
-                warnings.append(f"Missing recommended blocks: {', '.join(missing_blocks)}")
+                warnings.append(
+                    f"Missing recommended blocks: {', '.join(missing_blocks)}"
+                )
 
         return critical, warnings
 
@@ -271,15 +282,23 @@ class ContentValidator:
 
         # Length check
         if len(body) < self.min_body_length:
-            critical.append(f"Body too short: {len(body)} chars (min: {self.min_body_length})")
+            critical.append(
+                f"Body too short: {len(body)} chars (min: {self.min_body_length})"
+            )
 
         # Sentence count
-        sentences = [s.strip() for s in body.replace('!', '.').replace('?', '.').split('.') if s.strip()]
+        sentences = [
+            s.strip()
+            for s in body.replace("!", ".").replace("?", ".").split(".")
+            if s.strip()
+        ]
         if len(sentences) < self.min_body_sentences:
-            critical.append(f"Too few sentences: {len(sentences)} (min: {self.min_body_sentences})")
+            critical.append(
+                f"Too few sentences: {len(sentences)} (min: {self.min_body_sentences})"
+            )
 
         # Check for numbers/metrics (content should have concrete data)
-        has_numbers = bool(re.search(r'\d+[.,]?\d*%?', body))
+        has_numbers = bool(re.search(r"\d+[.,]?\d*%?", body))
         if not has_numbers:
             warnings.append("No numbers or metrics found in body")
 
@@ -311,7 +330,9 @@ class ContentValidator:
         # Check key_facts count
         key_facts = data.get("key_facts", [])
         if isinstance(key_facts, list) and len(key_facts) < MIN_KEY_FACTS:
-            warnings.append(f"Too few key_facts: {len(key_facts)} (recommended: {MIN_KEY_FACTS}+)")
+            warnings.append(
+                f"Too few key_facts: {len(key_facts)} (recommended: {MIN_KEY_FACTS}+)"
+            )
 
         return critical, warnings
 
@@ -481,8 +502,14 @@ class ContentValidator:
             score -= 30
 
         # Check for question-only content
-        question_count = len(re.findall(r'[?]', content))
-        sentence_count = len([s for s in content.replace('!', '.').replace('?', '.').split('.') if s.strip()])
+        question_count = len(re.findall(r"[?]", content))
+        sentence_count = len(
+            [
+                s
+                for s in content.replace("!", ".").replace("?", ".").split(".")
+                if s.strip()
+            ]
+        )
         if sentence_count > 0 and question_count / sentence_count > 0.5:
             warnings.append("Post contains too many questions")
             score -= 10
@@ -520,8 +547,13 @@ class ContentValidator:
 
         if not result.is_ready:
             if result.critical_issues:
-                return False, f"Critical issues: {'; '.join(result.critical_issues[:3])}"
+                return (
+                    False,
+                    f"Critical issues: {'; '.join(result.critical_issues[:3])}",
+                )
             return False, f"Quality score too low: {result.score}"
 
         return True, "Content is publication ready"
+
+
 # Validation update

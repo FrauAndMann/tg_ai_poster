@@ -110,9 +110,9 @@ class LLMGenerator:
             if post_type in ("breaking", "tool_roundup"):
                 temperature = 0.15  # Factual news
             elif post_type in ("deep_dive", "analysis"):
-                temperature = 0.4   # More creative/analytical
+                temperature = 0.4  # More creative/analytical
             else:
-                temperature = 0.2   # Default
+                temperature = 0.2  # Default
 
         # Build prompts
         system_prompt, user_prompt = await self.prompt_builder.build_full_prompt(
@@ -124,9 +124,13 @@ class LLMGenerator:
 
         # Add extra instructions if provided
         if extra_instructions:
-            user_prompt = f"{user_prompt}\n\nAdditional instructions: {extra_instructions}"
+            user_prompt = (
+                f"{user_prompt}\n\nAdditional instructions: {extra_instructions}"
+            )
 
-        logger.info(f"Generating {post_type} post for topic: {topic[:50]}... (temp={temperature})")
+        logger.info(
+            f"Generating {post_type} post for topic: {topic[:50]}... (temp={temperature})"
+        )
 
         try:
             response = await self.llm.generate(

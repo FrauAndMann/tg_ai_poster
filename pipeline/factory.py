@@ -60,14 +60,14 @@ class PipelineFactory:
         media_providers = []
         if settings.media and settings.media.enabled:
             if settings.media.unsplash_access_key:
-                media_providers.append(UnsplashProvider(
-                    access_key=settings.media.unsplash_access_key
-                ))
+                media_providers.append(
+                    UnsplashProvider(access_key=settings.media.unsplash_access_key)
+                )
                 logger.info("Unsplash provider configured")
             if settings.media.pexels_api_key:
-                media_providers.append(PexelsProvider(
-                    api_key=settings.media.pexels_api_key
-                ))
+                media_providers.append(
+                    PexelsProvider(api_key=settings.media.pexels_api_key)
+                )
                 logger.info("Pexels provider configured (fallback)")
 
         # Create formatter
@@ -103,10 +103,7 @@ class PipelineFactory:
             llm_kwargs["api_key"] = settings.llm.api_key
             llm_kwargs["base_url"] = settings.llm.get_base_url()
 
-        llm = get_llm_adapter(
-            provider=settings.llm.provider,
-            **llm_kwargs
-        )
+        llm = get_llm_adapter(provider=settings.llm.provider, **llm_kwargs)
 
         # Create legacy components (to be wrapped by stages)
         source_collector = SourceCollector(
@@ -224,12 +221,12 @@ class PipelineFactory:
         providers = []
 
         # Check for Unsplash
-        unsplash_key = getattr(settings, 'unsplash_access_key', None)
+        unsplash_key = getattr(settings, "unsplash_access_key", None)
         if unsplash_key:
             providers.append(UnsplashProvider(access_key=unsplash_key))
 
         # Check for Pexels (fallback)
-        pexels_key = getattr(settings, 'pexels_api_key', None)
+        pexels_key = getattr(settings, "pexels_api_key", None)
         if pexels_key:
             providers.append(PexelsProvider(api_key=pexels_key))
 
