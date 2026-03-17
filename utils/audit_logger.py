@@ -113,10 +113,10 @@ class _AuditLogger:
         logs = self._logs
 
         if event_type:
-            logs = [l for l in logs if l.event_type == event_type]
+            logs = [log for log in logs if log.event_type == event_type]
 
         if resource_type:
-            logs = [l for l in logs if l.resource_type == resource_type]
+            logs = [log for log in logs if log.resource_type == resource_type]
 
         return logs[-limit:]
 
@@ -124,7 +124,7 @@ class _AuditLogger:
         """Clear logs older than retention period."""
         cutoff = datetime.utcnow() - timedelta(days=self.retention_days)
         initial_count = len(self._logs)
-        self._logs = [l for l in self._logs if l.timestamp > cutoff]
+        self._logs = [log for log in self._logs if log.timestamp > cutoff]
         cleared = initial_count - len(self._logs)
         logger.info(f"Cleared {cleared} old audit logs")
         return cleared

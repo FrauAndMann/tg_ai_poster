@@ -132,9 +132,9 @@ class TelegramFormatter:
         missing_blocks = []
 
         required_fields = ["title", "hook", "body", "key_facts", "analysis", "sources", "tldr", "hashtags"]
-        for field in required_fields:
-            if field not in post_data or not post_data.get(field):
-                validation_errors.append(f"Missing required field: {field}")
+        for field_name in required_fields:
+            if field_name not in post_data or not post_data.get(field_name):
+                validation_errors.append(f"Missing required field: {field_name}")
 
         # Build the formatted text
         lines = []

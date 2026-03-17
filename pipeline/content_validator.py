@@ -299,14 +299,14 @@ class ContentValidator:
         warnings = []
 
         # Check required fields
-        for field in REQUIRED_JSON_FIELDS:
-            if field not in data or not data[field]:
-                critical.append(f"Missing required field: {field}")
+        for field_name in REQUIRED_JSON_FIELDS:
+            if field_name not in data or not data[field_name]:
+                critical.append(f"Missing required field: {field_name}")
 
         # Check recommended fields
-        for field in RECOMMENDED_JSON_FIELDS:
-            if field not in data or not data[field]:
-                warnings.append(f"Missing recommended field: {field}")
+        for field_name in RECOMMENDED_JSON_FIELDS:
+            if field_name not in data or not data[field_name]:
+                warnings.append(f"Missing recommended field: {field_name}")
 
         # Check key_facts count
         key_facts = data.get("key_facts", [])

@@ -133,7 +133,7 @@ class PollGeneratorV2:
     def _create_poll_from_data(self, data: dict) -> GeneratedPoll:
         """Create poll from parsed data."""
         options = []
-        for i, range(4):
+        for i in range(4):
             opt_text = data.get("options", [{}])[i].get("text", f"Вариант {i+1}")
             options.append(PollOption(text=opt_text))
         poll = GeneratedPoll(

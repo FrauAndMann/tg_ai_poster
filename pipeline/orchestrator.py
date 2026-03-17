@@ -10,7 +10,10 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass, field
-from typing import Optional, Any
+from typing import Optional, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from publisher.base import BasePublisher
 
 from core.config import Settings
 from core.logger import get_logger

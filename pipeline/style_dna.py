@@ -178,7 +178,7 @@ class StyleDNA:
         sentence_lengths = [len(s.split()) for s in sentences]
         avg_length = sum(sentence_lengths) / len(sentence_lengths) if sentence_lengths else 15
         variance = (
-            sum((l - avg_length) ** 2 for l in sentence_lengths) / len(sentence_lengths)
+            sum((length - avg_length) ** 2 for length in sentence_lengths) / len(sentence_lengths)
             if sentence_lengths else 5
         )
 

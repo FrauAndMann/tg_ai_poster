@@ -125,9 +125,9 @@ class SourceCollector:
         """
         date_fields = ["published_parsed", "updated_parsed"]
 
-        for field in date_fields:
-            if hasattr(entry, field):
-                time_struct = getattr(entry, field)
+        for date_field in date_fields:
+            if hasattr(entry, date_field):
+                time_struct = getattr(entry, date_field)
                 if time_struct:
                     try:
                         return datetime(*time_struct[:6])

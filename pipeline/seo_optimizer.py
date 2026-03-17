@@ -98,7 +98,8 @@ class SEOOptimizer:
         for kw in self.HIGH_VALUE_KEYWORDS:
             if kw.lower() in content_lower or kw.lower() in topic_lower:
                 keywords.append(kw)
-        # Extract technical terms (capitalized words, caps = re.findall(r"\b[A-Z][a-z]{2,}\b", content)
+        # Extract technical terms (capitalized words)
+        caps = re.findall(r"\b[A-Z][a-z]{2,}\b", content)
         for cap in caps[:5]:
             if cap.lower() not in [kw.lower() for kw in keywords]:
                 keywords.append(cap)
