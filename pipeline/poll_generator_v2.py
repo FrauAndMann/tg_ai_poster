@@ -144,9 +144,9 @@ class PollGeneratorV2:
         return poll
     def _generate_fallback_poll(self, post_content: str) -> GeneratedPoll:
         """Generate a fallback poll without LLM."""
-        # Extract key terms from content
+        # Extract key terms from content (used for context)
         words = post_content.split()[:20]
-        key_terms = [w for w in words if len(w) > 5][:3]
+        _key_terms = [w for w in words if len(w) > 5][:3]  # noqa: F841
         # Generic poll based on content
         if "AI" in post_content or "ML" in post_content or "нейро" in post_content:
             return GeneratedPoll(
