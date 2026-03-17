@@ -207,21 +207,34 @@ def format_post_from_json(post_data: dict) -> str:
         parts.append("")
         parts.append("🔗 Источники")
         for src in sources:
-            name = src.get("name", "Source")
-            url = src.get("url", "")
-            if url:
-                parts.append(f"• {name} — {url}")
+            # Handle both dict and string formats
+            if isinstance(src, dict):
+                name = src.get("name", "Source")
+                url = src.get("url", "")
+                if url:
+                    parts.append(f"• {name} — {url}")
+                else:
+                    parts.append(f"• {name}")
+            elif isinstance(src, str):
+                # LLM returned string instead of dict
+                parts.append(f"• {src}")
             else:
-                parts.append(f"• {name}")
+                parts.append(f"• {src}")
 
     # Useful links
     if useful_links:
         parts.append("")
         parts.append("Полезные ссылки:")
         for link in useful_links:
-            label = link.get("label", "Link")
-            url = link.get("url", "")
-            parts.append(f"- {label} — {url}")
+            # Handle both dict and string formats
+            if isinstance(link, dict):
+                label = link.get("label", "Link")
+                url = link.get("url", "")
+                parts.append(f"- {label} — {url}")
+            elif isinstance(link, str):
+                parts.append(f"- {link}")
+            else:
+                parts.append(f"- {link}")
 
     # TLDR (required block marker)
     if tldr:
