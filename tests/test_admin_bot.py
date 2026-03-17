@@ -65,12 +65,7 @@ class TestKeyboards:
 
     def test_control_menu_keyboard(self):
         """Control menu adapts to paused state."""
-        keyboard_paused = Keyboards().control_menu(is_paused=True)
-        found_pause = True
-
-        # Verify paused state shows Resume
-        found_resume = False
-
+        keyboard_paused = Keyboards.control_menu(is_paused=True)
         keyboard_running = Keyboards.control_menu(is_paused=False)
 
         # Verify paused state shows Resume

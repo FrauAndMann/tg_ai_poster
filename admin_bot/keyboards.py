@@ -101,6 +101,23 @@ class Keyboards:
         return InlineKeyboardMarkup(keyboard)
 
     @staticmethod
+    def control_menu(is_paused: bool = False) -> InlineKeyboardMarkup:
+        """Control menu keyboard with pause/resume."""
+        keyboard = [
+            [
+                InlineKeyboardButton(
+                    "Resume" if is_paused else "Pause",
+                    callback_data="resume" if is_paused else "pause",
+                ),
+                InlineKeyboardButton("Status", callback_data="status"),
+            ],
+            [
+                InlineKeyboardButton("Back", callback_data="main_menu"),
+            ],
+        ]
+        return InlineKeyboardMarkup(keyboard)
+
+    @staticmethod
     def queue_menu(has_items: bool = False) -> InlineKeyboardMarkup:
         """Queue menu keyboard."""
         keyboard = []
