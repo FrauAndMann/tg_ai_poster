@@ -173,7 +173,7 @@ class ContentCalendar:
     ) -> ContentType:
         """Suggest content type for a date based on spacing rules."""
         # Check what types we've used recently
-        recent_types = [s.content_type for s in existing_slots]
+        [s.content_type for s in existing_slots]
 
         # Find best type that respects spacing rules
         candidates = []

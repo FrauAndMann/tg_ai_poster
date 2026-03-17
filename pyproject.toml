@@ -28,11 +28,9 @@ exclude_lines = [
     "if TYPE_CHECKING:",
 ]
 
-[tool.ruff]
-line-length = 100
+[tool.ruff.lint]
 select = ["E", "F", "W"]
 ignore = ["E501"]
-exclude = [".git", "__pycache__", "venv"]
 
 [tool.black]
 line-length = 100

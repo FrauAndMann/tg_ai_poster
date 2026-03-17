@@ -496,7 +496,7 @@ class PostFormatter:
             list[tuple[str, str]]: List of (name, url) tuples
         """
         sources = []
-        
+
         # Find sources block
         sources_match = re.search(r'🔗.*?Источники:?\s*\n(.*?)(?=\n\n[⚡💡#]|$)', content, re.DOTALL)
         if sources_match:
@@ -511,5 +511,5 @@ class PostFormatter:
                         name = link_match.group(1).strip()
                         url = link_match.group(2).strip()
                         sources.append((name, url))
-        
+
         return sources

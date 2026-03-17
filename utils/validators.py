@@ -184,8 +184,7 @@ def check_telegram_markdown(content: str) -> Tuple[bool, list[str]]:
 
     # Check for unbalanced italic markers
     # Note: underscores in words are valid, only check pairs
-    italic_pattern = re.compile(r"(?<!\\)_(?![\s_])(.*?)(?<![\s\\])_(?![\w])", re.DOTALL)
-    italic_matches = italic_pattern.findall(content)
+    re.compile(r"(?<!\\)_(?![\s_])(.*?)(?<![\s\\])_(?![\w])", re.DOTALL)
 
     # Check for markdown headers (not supported)
     if re.search(r"^#+\s", content, re.MULTILINE):
@@ -224,15 +223,19 @@ def check_emoji_count(
     Returns:
         tuple[bool, Optional[str]]: (is_valid, error_message)
     """
+    # Note: Using character class without + quantifier to count individual emojis
     emoji_pattern = re.compile(
         "["
-        "\U0001F600-\U0001F64F"
-        "\U0001F300-\U0001F5FF"
-        "\U0001F680-\U0001F6FF"
-        "\U0001F1E0-\U0001F1FF"
-        "\U00002702-\U000027B0"
-        "\U000024C2-\U0001F251"
-        "]+",
+        "\U0001F600-\U0001F64F"  # Emoticons
+        "\U0001F300-\U0001F5FF"  # Misc Symbols and Pictographs
+        "\U0001F680-\U0001F6FF"  # Transport and Map
+        "\U0001F1E0-\U0001F1FF"  # Flags (regional)
+        "\U00002702-\U000027B0"  # Dingbats
+        "\U000024C2-\U0001F251"  # Enclosed characters
+        "\U0001F900-\U0001F9FF"  # Supplemental Symbols A
+        "\U00002600-\U000026FF"  # Misc Symbols
+        "\U00002B50-\U00002B55"  # Stars and circles
+        "]",
         flags=re.UNICODE,
     )
 

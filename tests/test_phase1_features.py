@@ -3,11 +3,10 @@ Tests for Phase 1 Features: Draft System, Approval Workflow, A/B Testing.
 """
 import pytest
 import pytest_asyncio
-from datetime import datetime
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import patch
 
 from memory.models import (
-    Base, Post, PostVersion, ABExperiment, ABVariant, PostStatus
+    Post, PostVersion, ABExperiment, ABVariant, PostStatus
 )
 from memory.database import Database
 from pipeline.draft_manager import DraftManager
@@ -20,7 +19,13 @@ async def db():
     """Create in-memory database for testing."""
     database = Database("sqlite+aiosqlite:///:memory:")
     await database.init()
-    yield database
+
+    # Patch get_database in all modules that use it
+    with patch('pipeline.draft_manager.get_database', return_value=database), \
+         patch('pipeline.approval_workflow.get_database', return_value=database), \
+         patch('pipeline.ab_test_manager.get_database', return_value=database):
+        yield database
+
     await database.close()
 
 

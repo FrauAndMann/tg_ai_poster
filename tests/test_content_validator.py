@@ -6,10 +6,6 @@ import pytest
 
 from pipeline.content_validator import (
     ContentValidator,
-    ValidationResult,
-    LLM_META_PATTERNS,
-    QUESTION_PATTERNS,
-    INCOMPLETE_PATTERNS,
 )
 
 

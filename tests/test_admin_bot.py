@@ -2,10 +2,8 @@
 Tests for Admin Bot module.
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock, AsyncMock
+from unittest.mock import Mock
 
-from admin_bot.admin_bot import AdminBot
 from admin_bot.commands import CommandHandler
 from admin_bot.messages import Messages
 from admin_bot.keyboards import Keyboards

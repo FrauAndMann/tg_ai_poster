@@ -6,10 +6,8 @@ Tests database initialization, models, and stores.
 
 import pytest
 import pytest_asyncio
-from datetime import datetime
-from unittest.mock import AsyncMock, patch
 
-from memory.models import Base, Post, Topic, Source
+from memory.models import Post, Topic, Source
 from memory.database import Database
 from memory.post_store import PostStore
 from memory.topic_store import TopicStore
@@ -229,7 +227,7 @@ class TestTopicStore:
     @pytest.mark.asyncio
     async def test_get_by_name(self, topic_store):
         """Test getting topic by name."""
-        created = await topic_store.create(name="Unique Topic")
+        await topic_store.create(name="Unique Topic")
         retrieved = await topic_store.get_by_name("Unique Topic")
 
         assert retrieved is not None

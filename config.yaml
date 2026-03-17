@@ -57,21 +57,21 @@ schedule:
 
 sources:
   rss_feeds:
-    - "https://feeds.feedburner.com/oreilly/radar"
+    # Working feeds
     - "https://www.producthunt.com/feed"
     - "https://hnrss.org/frontpage"
     - "https://techcrunch.com/feed/"
     - "https://openai.com/blog/rss.xml"
-    - "https://www.deeplearning.ai/feed/"
     - "https://vc.ru/rss"
     - "https://incrussia.ru/feed/"
-    - "https://www.forbes.ru/rss"
-    - "https://marketingland.com/feed"
-    - "https://zapier.com/blog/feeds/latest/"
     - "https://buffer.com/resources/rss/"
     - "https://www.reddit.com/r/artificial/.rss"
     - "https://www.reddit.com/r/ChatGPT/.rss"
     - "https://www.reddit.com/r/MachineLearning/.rss"
+    # Alternative AI news sources (replacing broken feeds)
+    - "https://www.artificialintelligence-news.com/feed"
+    - "https://venturebeat.com/category/ai/feed/"
+    - "https://www.unite.ai/feed/"
   use_hackernews: true
   use_producthunt: true
   enable_rss: true
@@ -160,6 +160,30 @@ ab_testing:
 draft:
   max_versions: 50
   auto_cleanup_days: 30
+
+# ===================================
+# Phase 2 Features
+# ===================================
+
+# Content Recycling (Feature 1)
+recycling:
+  enabled: false
+  min_age_days: 30
+  min_engagement_score: 0.7
+  min_rewrite_ratio: 0.4
+  max_candidates_per_run: 5
+  schedule_hours: 168  # Weekly
+
+# Multi-Channel Support (Feature 2)
+channels:
+  enabled: false
+  list:
+    - id: "main"
+      name: "AI News"
+      topic: "AI technologies and future of automation"
+      language: "ru"
+      schedule_type: "fixed"
+      schedule_times: ["09:30", "14:00", "20:00"]
 
 app:
   name: "TG AI Poster"

@@ -7,12 +7,9 @@ Learns which emotional profiles drive highest engagement.
 
 from __future__ import annotations
 
-import re
-from dataclasses import dataclass, field
-from datetime import datetime
-from typing import TYPE_CHECKING, Any, Optional
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Optional
 
-from core.constants import EMOTIONAL_DIMENSIONS
 from core.logger import get_logger
 
 if TYPE_CHECKING:
@@ -162,7 +159,7 @@ class EmotionalScorer:
             "controversial", "debate", "argue", "criticism",
         ])
         profile = EmotionalProfile(
-            curiosity=min(cur0, curiosity / 5),
+            curiosity=min(1.0, curiosity / 5),
             urgency=min(1.0, urgency / 5),
             empathy=min(1.0, empathy / 5),
             inspiration=min(1.0, inspiration / 5),

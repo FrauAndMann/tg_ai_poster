@@ -9,9 +9,6 @@ from __future__ import annotations
 import pytest
 
 from core.events import EventType, PipelineEvent, event_bus
-from domain.post import Post, PostType, PostTypeConfig, PostContent
-from domain.source import Source
-from domain.media import Media
 
 
 class TestEventType:

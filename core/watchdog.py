@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import asyncio
 import shutil
-import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum

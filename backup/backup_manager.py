@@ -10,15 +10,13 @@ Creates automated backups of:
 
 from __future__ import annotations
 
-import gzip
 import hashlib
 import logging
-import os
 import shutil
 import tarfile
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from core.config import Settings
 
@@ -264,7 +262,6 @@ class BackupManager:
         daily_backups = [b for b in backups if b["type"] == "daily"]
         weekly_backups = [b for b in backups if b["type"] == "weekly"]
         monthly_backups = [b for b in backups if b["type"] == "monthly"]
-        manual_backups = [b for b in backups if b["type"] == "manual"]
 
         # Delete old daily backups
         for backup in daily_backups[daily_keep:]:

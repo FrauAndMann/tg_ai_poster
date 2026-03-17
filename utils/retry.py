@@ -10,7 +10,7 @@ import asyncio
 import functools
 import random
 from dataclasses import dataclass
-from typing import Any, Callable, Coroutine, Optional, Tuple, Type, Union
+from typing import Any, Callable, Coroutine, Optional, Tuple, Type
 
 from core.logger import get_logger
 

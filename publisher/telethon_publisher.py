@@ -8,19 +8,16 @@ WARNING: This mode has risks and limitations. See documentation below.
 
 from __future__ import annotations
 
-import asyncio
 from pathlib import Path
 from typing import Optional
 
-from telethon import TelegramClient, types
+from telethon import TelegramClient
 from telethon.errors import (
     ChatWriteForbiddenError,
     SessionPasswordNeededError,
     UserBannedInChannelError,
 )
-from telethon.tl.functions.channels import GetFullChannelRequest
-from telethon.tl.functions.messages import GetFullChatRequest
-from telethon.tl.types import InputPeerChannel, InputPeerChat
+from telethon.tl.types import InputPeerChannel
 
 from core.logger import get_logger
 from publisher.base import BasePublisher

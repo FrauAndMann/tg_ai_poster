@@ -5,13 +5,12 @@ Manages post versions, draft operations, and version history.
 """
 from __future__ import annotations
 
-from typing import Optional
 
 from sqlalchemy import select, desc
 
 from core.logger import get_logger
 from memory.models import Post, PostVersion
-from memory.database import get_session
+from memory.database import get_database
 
 logger = get_logger(__name__)
 
@@ -39,7 +38,7 @@ class DraftManager:
         Returns:
             PostVersion: Created version
         """
-        async with get_session() as session:
+        async with get_database().session() as session:
             # Get next version number
             result = await session.execute(
                 select(PostVersion.version_number)
@@ -67,10 +66,14 @@ class DraftManager:
             session.add(version)
             await session.flush()
 
-            # Update post version
-            post.version = version_number
-            post.current_version_id = version.id
-            session.add(post)
+            # Update post version - get fresh post from this session
+            result = await session.execute(
+                select(Post).where(Post.id == post.id)
+            )
+            db_post = result.scalar_one_or_none()
+            if db_post:
+                db_post.version = version_number
+                db_post.current_version_id = version.id
 
             await session.commit()
             await session.refresh(version)
@@ -89,7 +92,7 @@ class DraftManager:
         Returns:
             PostVersion | None: Version if found
         """
-        async with get_session() as session:
+        async with get_database().session() as session:
             result = await session.execute(
                 select(PostVersion)
                 .where(PostVersion.post_id == post_id)
@@ -108,7 +111,7 @@ class DraftManager:
         Returns:
             list[PostVersion]: List of versions (newest first)
         """
-        async with get_session() as session:
+        async with get_database().session() as session:
             result = await session.execute(
                 select(PostVersion)
                 .where(PostVersion.post_id == post_id)
@@ -134,7 +137,7 @@ class DraftManager:
             logger.warning(f"Version {version} not found for post {post_id}")
             return None
 
-        async with get_session() as session:
+        async with get_database().session() as session:
             # Get the post
             result = await session.execute(
                 select(Post).where(Post.id == post_id)
@@ -197,7 +200,7 @@ class DraftManager:
 
     async def get_latest_version(self, post_id: int) -> PostVersion | None:
         """Get the latest version of a post."""
-        async with get_session() as session:
+        async with get_database().session() as session:
             result = await session.execute(
                 select(PostVersion)
                 .where(PostVersion.post_id == post_id)

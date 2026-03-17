@@ -5,7 +5,6 @@ Tests Bot API and Telethon publishers.
 """
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from publisher.base import BasePublisher
 from publisher import get_publisher

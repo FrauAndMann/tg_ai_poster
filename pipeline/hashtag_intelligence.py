@@ -7,8 +7,7 @@ and post-click rate, and ranks hashtags for optimal selection.
 
 from __future__ import annotations
 
-import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any, Optional
 

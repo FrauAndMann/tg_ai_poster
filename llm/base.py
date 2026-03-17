@@ -8,15 +8,12 @@ Includes circuit breaker integration for resilience.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Optional
 
-from utils.circuit_breaker import CircuitBreaker, CircuitOpenError, CircuitBreakerRegistry
+from utils.circuit_breaker import CircuitOpenError, CircuitBreakerRegistry
 from utils.exceptions import (
     LLMException,
-    LLMRateLimitError,
-    LLMServiceUnavailableError,
-    LLMAuthenticationError,
 )
 
 

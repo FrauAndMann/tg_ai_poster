@@ -113,7 +113,6 @@ class CircuitBreaker:
     def _transition_to_open(self) -> None:
         """Transition to OPEN state."""
         if self._state != CircuitState.OPEN:
-            old_state = self._state
             self._state = CircuitState.OPEN
             self._stats.state_changes += 1
             logger.warning(

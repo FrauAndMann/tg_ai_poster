@@ -11,7 +11,7 @@ import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Callable
+from typing import Optional
 from collections import Counter
 
 from core.logger import get_logger
@@ -515,11 +515,11 @@ class QualityRulesEngine:
         body = post_json.get("body", "")
         key_facts = post_json.get("key_facts", [])
         analysis = post_json.get("analysis", "")
-        sources = post_json.get("sources", [])
+        post_json.get("sources", [])
         tldr = post_json.get("tldr", "")
         hashtags = post_json.get("hashtags", [])
         post_type = post_json.get("post_type", "")
-        media_prompt = post_json.get("media_prompt", "")
+        post_json.get("media_prompt", "")
 
         full_text = f"{title} {hook} {body}"
 

@@ -8,7 +8,7 @@ for optimizing content strategy.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
@@ -482,16 +482,16 @@ class WeeklyReporter:
         """
         # Format report message
         lines = [
-            f"📊 **Weekly Report**",
+            "📊 **Weekly Report**",
             f"📅 Period: {report.period_start.strftime('%Y-%m-%d')} - {report.period_end.strftime('%Y-%m-%d')}",
-            f"",
+            "",
             f"📝 Total posts: {report.total_posts}",
             f"👀 Average views: {report.avg_views:.0f}",
             f"💫 Average engagement: {report.avg_engagement:.1f}",
             f"🎯 Average confidence: {report.avg_confidence:.1%}",
-            f"",
+            "",
             f"📈 Best post type: {report.best_post_type or 'N/A'}",
-            f"",
+            "",
             "**Top Posts:**",
         ]
 

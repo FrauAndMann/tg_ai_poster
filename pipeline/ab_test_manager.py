@@ -7,13 +7,12 @@ from __future__ import annotations
 
 import random
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import select
 
 from core.logger import get_logger
 from memory.models import Post, ABExperiment, ABVariant
-from memory.database import get_session
+from memory.database import get_database
 
 logger = get_logger(__name__)
 
@@ -57,7 +56,7 @@ class ABTestManager:
         Returns:
             ABExperiment: Created experiment
         """
-        async with get_session() as session:
+        async with get_database().session() as session:
             experiment = ABExperiment(
                 name=name,
                 description=description,
@@ -119,7 +118,7 @@ class ABTestManager:
         Returns:
             ABVariant: Selected variant
         """
-        async with get_session() as session:
+        async with get_database().session() as session:
             # Get variants
             result = await session.execute(
                 select(ABVariant)
@@ -149,7 +148,7 @@ class ABTestManager:
         Args:
             variant: Variant shown
         """
-        async with get_session() as session:
+        async with get_database().session() as session:
             result = await session.execute(
                 select(ABVariant).where(ABVariant.id == variant.id)
             )
@@ -178,7 +177,7 @@ class ABTestManager:
             variant: Variant that received engagement
             engagement_score: Engagement score
         """
-        async with get_session() as session:
+        async with get_database().session() as session:
             result = await session.execute(
                 select(ABVariant).where(ABVariant.id == variant.id)
             )
@@ -204,7 +203,7 @@ class ABTestManager:
         Returns:
             dict: Analysis results
         """
-        async with get_session() as session:
+        async with get_database().session() as session:
             # Get experiment
             result = await session.execute(
                 select(ABExperiment).where(ABExperiment.id == experiment_id)
@@ -303,17 +302,17 @@ class ABTestManager:
 
     async def get_active_experiments(self) -> list[ABExperiment]:
         """Get all active experiments."""
-        async with get_session() as session:
+        async with get_database().session() as session:
             result = await session.execute(
                 select(ABExperiment)
-                .where(ABExperiment.is_active == True)
+                .where(ABExperiment.is_active.is_(True))
                 .order_by(ABExperiment.started_at.desc())
             )
             return list(result.scalars().all())
 
     async def get_experiment(self, experiment_id: int) -> ABExperiment | None:
         """Get experiment by ID."""
-        async with get_session() as session:
+        async with get_database().session() as session:
             result = await session.execute(
                 select(ABExperiment).where(ABExperiment.id == experiment_id)
             )
@@ -324,7 +323,7 @@ class ABTestManager:
         experiment_id: int
     ) -> list[ABVariant]:
         """Get all variants for an experiment."""
-        async with get_session() as session:
+        async with get_database().session() as session:
             result = await session.execute(
                 select(ABVariant)
                 .where(ABVariant.experiment_id == experiment_id)
@@ -334,7 +333,7 @@ class ABTestManager:
 
     async def end_experiment(self, experiment_id: int) -> bool:
         """End an active experiment."""
-        async with get_session() as session:
+        async with get_database().session() as session:
             result = await session.execute(
                 select(ABExperiment).where(ABExperiment.id == experiment_id)
             )
@@ -352,7 +351,7 @@ class ABTestManager:
 
     async def get_variant_for_post(self, post_id: int) -> ABVariant | None:
         """Get the variant associated with a post."""
-        async with get_session() as session:
+        async with get_database().session() as session:
             result = await session.execute(
                 select(ABVariant).where(ABVariant.post_id == post_id)
             )

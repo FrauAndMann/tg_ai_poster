@@ -6,11 +6,11 @@ Fetches media for posts from configured providers.
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from core.events import EventType
 from core.logger import get_logger
-from domain.post import Post, POST_TYPE_CONFIGS
+from domain.post import POST_TYPE_CONFIGS
 from domain.media import Media
 from plugins.media.base import MediaProvider
 from .base import BaseStage
@@ -37,7 +37,7 @@ class MediaStage(BaseStage):
     async def execute(self, context: dict[str, Any]) -> dict[str, Any]:
         """Fetch media for the post."""
         post = context.get("post")
-        content = context.get("content")
+        context.get("content")
 
         if not post:
             return context

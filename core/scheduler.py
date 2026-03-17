@@ -6,13 +6,12 @@ Manages posting schedule with support for interval, fixed, and random timing.
 
 from __future__ import annotations
 
-import asyncio
 import random
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Callable, Optional
 
 from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED, JobEvent
-from apscheduler.exceptions import JobLookupError
+from apscheduler.jobstores.base import JobLookupError
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger

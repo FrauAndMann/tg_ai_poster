@@ -19,13 +19,12 @@ import argparse
 import asyncio
 import signal
 import sys
-from pathlib import Path
 from typing import Optional
 
-from core.config import Settings, get_settings, reload_settings
-from core.logger import setup_logger, get_logger, logger
+from core.config import Settings
+from core.logger import setup_logger, logger
 from core.scheduler import Scheduler
-from memory.database import Database, init_database, close_database, get_database
+from memory.database import Database, init_database, close_database
 from pipeline.orchestrator import PipelineOrchestrator, PipelineResult
 from publisher import get_publisher
 from publisher.base import BasePublisher
@@ -115,84 +114,10 @@ async def create_backup(settings: Settings) -> str:
 
 async def restore_backup(settings: Settings, backup_path: str) -> bool:
     """Restore from backup using RestoreManager."""
-    from backup.restore_manager import RestoreManager
 
     restore_manager = RestoreManager(settings)
     result = await restore_manager.restore(backup_path)
     return result.get("success", False)
-
-
-def parse_args() -> argparse.Namespace:
-    """Parse command line arguments."""
-    parser = argparse.ArgumentParser(
-        description="TG AI Poster - Autonomous Telegram posting system",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-    python main.py                    Start scheduled posting
-    python main.py --dry-run          Test without publishing
-    python main.py --once             Run once and exit
-    python main.py --backup           Create backup
-    python main.py --restore file.tar.gz  Restore from backup
-        """,
-    )
-
-    parser.add_argument(
-        "--config",
-        "-c",
-        type=str,
-        default="config.yaml",
-        help="Path to configuration file (default: config.yaml)",
-    )
-
-    parser.add_argument(
-        "--dry-run",
-        "-n",
-        action="store_true",
-        help="Run without actually publishing posts",
-    )
-
-    parser.add_argument(
-        "--once",
-        action="store_true",
-        help="Run pipeline once and exit (no scheduling)",
-    )
-
-    parser.add_argument(
-        "--init-db",
-        action="store_true",
-        help="Initialize database tables and exit",
-    )
-
-    parser.add_argument(
-        "--debug",
-        "-d",
-        action="store_true",
-        help="Enable debug logging",
-    )
-
-    parser.add_argument(
-        "--backup",
-        "-b",
-        action="store_true",
-        help="Create backup and exit",
-    )
-
-    parser.add_argument(
-        "--restore",
-        "-r",
-        type=str,
-        help="Restore from backup file",
-    )
-
-    parser.add_argument(
-        "--version",
-        "-v",
-        action="version",
-        version="TG AI Poster v2.0.0",
-    )
-
-    return parser.parse_args()
 
 
 async def initialize(settings: Settings) -> tuple[Database, BasePublisher]:

@@ -161,6 +161,60 @@ class SourceCollector:
 
         return text.strip()
 
+    async def _fetch_rss_with_fallback(self, url: str):
+        """
+        Fallback method to fetch and clean broken RSS feeds.
+
+        Some feeds have invalid XML characters that feedparser can't handle.
+        This method fetches the raw content, cleans common XML issues,
+        and then parses it.
+
+        Args:
+            url: RSS feed URL
+
+        Returns:
+            Parsed feed object or empty feed
+        """
+        import re
+
+        try:
+            async with ClientSession(timeout=ClientTimeout(total=self.fetch_timeout)) as session:
+                headers = {"User-Agent": self.user_agent}
+                async with session.get(url, headers=headers) as response:
+                    if response.status != 200:
+                        logger.warning(f"Fallback fetch failed: HTTP {response.status}")
+                        return feedparser.parse("")  # Empty feed
+
+                    content = await response.text()
+
+            # Clean common XML issues
+            # Remove invalid XML characters (control chars except \t, \n, \r)
+            content = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', content)
+
+            # Fix common entity issues
+            content = content.replace('&nbsp;', ' ')
+            content = content.replace('&mdash;', '—')
+            content = content.replace('&ndash;', '–')
+            content = content.replace('&rsquo;', "'")
+            content = content.replace('&lsquo;', "'")
+            content = content.replace('&rdquo;', '"')
+            content = content.replace('&ldquo;', '"')
+
+            # Fix unescaped ampersands in URLs
+            content = re.sub(r'&(?!amp;|lt;|gt;|quot;|apos;|#\d+;|#x[0-9a-fA-F]+;)', '&amp;', content)
+
+            # Try parsing cleaned content
+            feed = feedparser.parse(content)
+
+            if len(feed.entries) > 0:
+                logger.info(f"Fallback parsing succeeded for {url}: {len(feed.entries)} entries")
+
+            return feed
+
+        except Exception as e:
+            logger.error(f"Fallback fetch failed for {url}: {e}")
+            return feedparser.parse("")  # Empty feed
+
     async def fetch_rss(self, url: str) -> list[Article]:
         """
         Fetch and parse an RSS feed.
@@ -176,11 +230,19 @@ class SourceCollector:
         articles = []
 
         try:
-            # Use feedparser with custom headers
+            # First try: direct feedparser parse
             feed = feedparser.parse(
                 url,
                 agent=self.user_agent,
             )
+
+            # Check for severe XML issues that resulted in 0 entries
+            if feed.bozo and feed.bozo_exception and len(feed.entries) == 0:
+                logger.warning(
+                    f"RSS feed has severe issues, trying fallback: {url}. Error: {feed.bozo_exception}"
+                )
+                # Fallback: fetch raw content and try to clean it
+                feed = await self._fetch_rss_with_fallback(url)
 
             if feed.bozo and feed.bozo_exception:
                 logger.warning(
@@ -262,7 +324,7 @@ class SourceCollector:
         logger.info(f"Total articles fetched: {len(all_articles)}")
         return all_articles
 
-    async def _get_session(self) -> ClientSession:
+    async def _get_http_session(self) -> ClientSession:
         """Get or create aiohttp session."""
         if self._session is None or self._session.closed:
             timeout = ClientTimeout(total=self.fetch_timeout)
@@ -288,7 +350,7 @@ class SourceCollector:
         articles = []
 
         try:
-            session = await self._get_session()
+            session = await self._get_http_session()
 
             # Get top story IDs
             async with session.get(self.HN_TOPSTORIES_URL) as response:

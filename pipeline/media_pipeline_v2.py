@@ -9,15 +9,12 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
-from datetime import datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Optional
 from pathlib import Path
 
 from core.constants import (
     MAX_IMAGE_PROMPT_LENGTH,
-    IMAGE_VARIANTS_COUNT,
-    MIN_CONTRAST_RATIO,
 )
 from core.logger import get_logger
 
@@ -281,7 +278,6 @@ class MediaPipelineV2:
     async def _poll_replicate(self, poll_url: str) -> Optional[str]:
         """Poll Replicate for result."""
         import aiohttp
-        import asyncio
         for _ in range(30):  # 30 attempts, ~30 seconds
             try:
                 async with aiohttp.ClientSession() as session:

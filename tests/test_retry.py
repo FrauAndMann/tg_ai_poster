@@ -4,15 +4,10 @@ Tests for retry decorator and rate limiter.
 Tests exponential backoff, retry logic, and token bucket rate limiting.
 """
 
-import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from utils.retry import (
     with_retry,
-    with_retry_sync,
-    RetryConfig,
-    RetryContext,
     calculate_backoff,
 )
 from utils.rate_limiter import (
@@ -192,7 +187,7 @@ class TestRateLimiter:
         limiter = RateLimiter(requests_per_minute=60, burst_size=10)
         # Manually add tokens to the bucket for testing
         for bucket in limiter.limiters.values():
-            bucket._tokens = 10.0
+            bucket.tokens = 10.0
         result = await limiter.acquire()
         assert result is True
 
@@ -202,7 +197,7 @@ class TestRateLimiter:
         limiter = RateLimiter(requests_per_minute=1, burst_size=1)
         # Manually add tokens to the bucket for testing
         for bucket in limiter.limiters.values():
-            bucket._tokens = 1.0
+            bucket.tokens = 1.0
 
         # First should succeed
         result1 = await limiter.acquire()
@@ -218,7 +213,7 @@ class TestRateLimiter:
         limiter = RateLimiter(requests_per_minute=60, burst_size=10)
         # Manually add tokens to the bucket for testing
         for bucket in limiter.limiters.values():
-            bucket._tokens = 10.0
+            bucket.tokens = 10.0
         await limiter.acquire()
         status = limiter.get_status()
         assert status["total_requests"] == 1
@@ -230,7 +225,7 @@ class TestRateLimiter:
         limiter = RateLimiter(requests_per_minute=1, burst_size=1)
         # Manually add tokens to the bucket for testing
         for bucket in limiter.limiters.values():
-            bucket._tokens = 1.0
+            bucket.tokens = 1.0
         await limiter.acquire()
         await limiter.reset()
         status = limiter.get_status()
@@ -262,7 +257,7 @@ class TestMultiServiceRateLimiter:
         limiter.add_service("openai", requests_per_minute=60, burst_size=10)
         # Add tokens to the bucket for testing
         for bucket in limiter._services["openai"].limiters.values():
-            bucket._tokens = 10.0
+            bucket.tokens = 10.0
         result = await limiter.acquire("openai")
         assert result is True
 
@@ -276,7 +271,7 @@ class TestMultiServiceRateLimiter:
         # Add tokens to the buckets for testing
         for service in ["openai", "telegram"]:
             for bucket in limiter._services[service].limiters.values():
-                bucket._tokens = 10.0
+                bucket.tokens = 10.0
 
         result1 = await limiter.acquire("openai")
         result2 = await limiter.acquire("telegram")

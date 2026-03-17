@@ -10,8 +10,8 @@ import asyncio
 import os
 import sys
 from pathlib import Path
-from typing import AsyncGenerator, Generator
-from unittest.mock import AsyncMock, MagicMock, patch
+from typing import Generator
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import pytest_asyncio

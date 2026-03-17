@@ -4,9 +4,7 @@ Tests for pipeline components.
 Tests source collector, content filter, formatter, and orchestrator.
 """
 
-import pytest
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from pipeline.source_collector import SourceCollector, Article
 from pipeline.content_filter import ContentFilter, ScoredArticle

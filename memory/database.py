@@ -6,19 +6,17 @@ Provides async SQLAlchemy engine and session handling.
 
 from __future__ import annotations
 
-import asyncio
 from contextlib import asynccontextmanager
 from functools import lru_cache
 from typing import AsyncGenerator
 
-from sqlalchemy import event
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy.pool import NullPool, QueuePool
+from sqlalchemy.pool import NullPool
 
 from core.logger import get_logger
 from memory.models import Base
@@ -259,3 +257,5 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
     db = get_database()
     async with db.session() as session:
         yield session
+
+

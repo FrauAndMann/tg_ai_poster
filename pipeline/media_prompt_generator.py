@@ -13,7 +13,6 @@ from typing import Optional
 from core.logger import get_logger
 from llm.base import BaseLLMAdapter
 
-from pipeline.source_collector import Article
 
 logger = get_logger(__name__)
 

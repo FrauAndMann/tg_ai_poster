@@ -11,7 +11,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Optional
 
 from core.constants import STYLE_PROFILE_MIN_POSTS
 from core.logger import get_logger
@@ -169,7 +169,7 @@ class StyleDNA:
 
         all_text = " ".join(posts)
         total_chars = len(all_text)
-        total_words = len(all_text.split())
+        len(all_text.split())
 
         # Sentence analysis
         sentences = re.split(r'[.!?]+', all_text)

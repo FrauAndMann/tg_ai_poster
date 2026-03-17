@@ -8,10 +8,9 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
-from sqlalchemy import and_, desc, func, or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import and_, desc, func, select
 
 from core.logger import get_logger
 from memory.database import Database

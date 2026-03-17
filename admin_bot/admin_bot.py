@@ -6,16 +6,12 @@ Provides Telegram-based control panel for managing the posting system.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from typing import TYPE_CHECKING, Optional
 
-from telegram import Bot
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler
+from telegram.ext import Application, CallbackQueryHandler, CommandHandler
 from telegram.request import HTTPXRequest
 
-from admin_bot.commands import CommandHandler
-from admin_bot.keyboards import Keyboards
 from core.config import Settings
 
 if TYPE_CHECKING:
@@ -64,7 +60,7 @@ class AdminBot:
 
         self._is_running = False
         self._application: Optional[Application] = None
-        self._command_handler: Optional[CommandHandler] = None
+        self._command_handler: Optional["CommandHandler"] = None
 
     async def start(self) -> None:
         """Start the admin bot."""

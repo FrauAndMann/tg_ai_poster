@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Optional
 
 from core.logger import get_logger
-from llm.base import LLMResponse, Message
+from llm.base import LLMResponse
 from llm.openai_adapter import OpenAIAdapter
 
 logger = get_logger(__name__)

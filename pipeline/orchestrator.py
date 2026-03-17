@@ -7,11 +7,9 @@ source verification, editorial review, and media generation.
 
 from __future__ import annotations
 
-import asyncio
 import json
 import re
 from dataclasses import dataclass, field
-from datetime import datetime
 from typing import Optional, Any
 
 from core.config import Settings
@@ -52,63 +50,98 @@ def parse_json_post(response: str | dict, validator: ContentValidator | None = N
     if isinstance(response, dict):
         return response
 
+    # Helper to clean and extract JSON
+    def extract_json(text: str) -> str | None:
+        """Extract JSON from various formats."""
+        text = text.strip()
+
+        # Strategy 1: Direct parse
+        if text.startswith("{"):
+            return text
+
+        # Strategy 2: Remove markdown code blocks (```json ... ```)
+        if "```" in text:
+            # Try to extract from code block
+            code_block_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', text)
+            if code_block_match:
+                extracted = code_block_match.group(1).strip()
+                if extracted.startswith("{"):
+                    return extracted
+
+        # Strategy 3: Find first { and last }
+        first_brace = text.find("{")
+        last_brace = text.rfind("}")
+        if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
+            return text[first_brace:last_brace + 1]
+
+        return None
+
+    def fix_common_json_errors(text: str) -> str:
+        """Fix common JSON formatting errors."""
+        # Remove trailing commas before } or ]
+        text = re.sub(r',\s*([}\]])', r'\1', text)
+        # Fix unescaped quotes in strings (simple heuristic)
+        # Fix missing quotes around keys
+        text = re.sub(r'(\w+)\s*:', r'"\1":', text)
+        return text
+
     # Pre-validate for LLM meta-text if validator provided
     if validator:
         pre_check = validator.validate_raw_response(response)
         if pre_check.needs_regeneration:
             logger.warning(f"LLM meta-text detected in response: {pre_check.critical_issues}")
-            # Try to salvage by looking for JSON within the response
-            json_match = re.search(r'\{[\s\S]*\}', response)
-            if json_match:
-                response = json_match.group(0)
-                logger.info("Attempting to extract JSON from meta-text response")
-            else:
-                logger.error("No valid JSON found in response")
-                return None
 
-    # Try to parse as JSON string
-    try:
-        # Clean up potential markdown fences
-        text = response.strip()
-        if text.startswith("```"):
-            # Extract content from code block
-            parts = text.split("```")
-            if len(parts) >= 2:
-                text = parts[1]
-                if text.startswith("json"):
-                    text = text[4:]
-                text = text.strip()
-
-        data = json.loads(text)
-
-        # Validate required fields exist
-        if not isinstance(data, dict):
-            logger.error(f"JSON parsed but not a dict: {type(data)}")
-            return None
-
-        # Check for at least body or content field
-        if not data.get("body") and not data.get("content"):
-            logger.error("JSON missing both 'body' and 'content' fields")
-            return None
-
-        return data
-
-    except json.JSONDecodeError as e:
-        logger.error(f"JSON parsing failed: {e}")
-        # Try to find JSON object in the response
-        json_match = re.search(r'\{[\s\S]*\}', response)
-        if json_match:
-            try:
-                data = json.loads(json_match.group(0))
-                if isinstance(data, dict) and (data.get("body") or data.get("content")):
-                    logger.info("Successfully extracted JSON from response")
-                    return data
-            except json.JSONDecodeError:
-                pass
-
-        # Not valid JSON - this is a critical failure
-        logger.error("Response is not valid JSON and cannot be salvaged")
+    # Extract JSON from response
+    json_text = extract_json(response)
+    if not json_text:
+        logger.error("No JSON object found in response")
         return None
+
+    # Try parsing strategies
+    parse_attempts = [
+        ("raw", lambda t: t),
+        ("fixed", fix_common_json_errors),
+        ("no_comments", lambda t: re.sub(r'//.*$', '', t, flags=re.MULTILINE)),
+    ]
+
+    for strategy_name, transformer in parse_attempts:
+        try:
+            text_to_parse = transformer(json_text)
+            data = json.loads(text_to_parse)
+
+            # Validate required fields exist
+            if not isinstance(data, dict):
+                logger.error(f"JSON parsed but not a dict: {type(data)}")
+                continue
+
+            # Check for at least body or content field
+            if not data.get("body") and not data.get("content"):
+                logger.error(f"JSON missing both 'body' and 'content' fields (strategy: {strategy_name})")
+                continue
+
+            if strategy_name != "raw":
+                logger.info(f"JSON parsed successfully using {strategy_name} strategy")
+            return data
+
+        except json.JSONDecodeError as e:
+            logger.debug(f"JSON parsing failed with {strategy_name} strategy: {e}")
+            continue
+
+    # Last resort: try to extract with more aggressive regex
+    try:
+        # Find the largest {...} block
+        json_match = re.search(r'\{(?:[^{}]|"(?:\\.|[^"\\])*")*\}', response)
+        if json_match:
+            data = json.loads(json_match.group(0))
+            if isinstance(data, dict) and (data.get("body") or data.get("content")):
+                logger.info("Successfully extracted JSON using fallback regex")
+                return data
+    except json.JSONDecodeError:
+        pass
+
+    logger.error("Response is not valid JSON and cannot be salvaged")
+    logger.debug(f"Response preview: {response[:500]}...")
+    return None
 
 
 def format_post_from_json(post_data: dict) -> str:
@@ -247,8 +280,8 @@ class PipelineOrchestrator:
     """
     Orchestrates the full content generation pipeline.
 
-    Coordinates all stages: collection, verification, filtering, 
-    selection, generation, editorial review, quality check, 
+    Coordinates all stages: collection, verification, filtering,
+    selection, generation, editorial review, quality check,
     and formatting.
     """
 
@@ -990,7 +1023,7 @@ class PipelineOrchestrator:
 
             # Add media prompt to output (not to post content)
             if media_prompt:
-                logger.info(f"Media prompt ready for image generation")
+                logger.info("Media prompt ready for image generation")
 
             # Stage 10: Save post
             post_id = await self._save_post(
@@ -1104,17 +1137,17 @@ class PipelineOrchestrator:
             )
 
         generated = await self._generate_post(topic, source_context)
-        
+
         # Editorial review
         editor_result = await self._editorial_review(generated.content)
         final_content = editor_result.improved_content or generated.content
-        
+
         # Quality check
         quality = await self._quality_check(final_content)
-        
+
         # Media prompt
         media_prompt = await self._generate_media_prompt(topic, final_content)
-        
+
         formatted = await self._format_post(final_content)
 
         metadata = {

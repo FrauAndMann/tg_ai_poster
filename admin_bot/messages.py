@@ -7,7 +7,7 @@ Contains formatted message templates for all bot responses.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Optional
 
 
 class Messages:
@@ -173,7 +173,7 @@ class Messages:
                 lines.append(f"  • {post_type}: {count}")
 
         if top_post_day:
-            lines.append(f"")
+            lines.append("")
             lines.append(f"🔥 Лучший день: {top_post_day}")
 
         return "\n".join(lines)

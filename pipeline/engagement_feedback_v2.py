@@ -6,7 +6,6 @@ Tracks time-series engagement data and builds decay curves for quality signals.
 
 from __future__ import annotations
 
-import asyncio
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any, Optional

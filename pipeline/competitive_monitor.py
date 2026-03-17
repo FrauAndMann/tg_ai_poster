@@ -132,10 +132,7 @@ class CompetitiveMonitor:
         all_content = " ".join(p.content for p in posts)
         topics = [p.topic for p in posts if p.topic]
         formats = self._detect_formats(all_content)
-        hashtags_used = [h for p in posts for h in p.hashtags for h]
-
-            tag for h in hashtags_used
-        ]
+        [tag for p in posts for tag in p.hashtags]
 
         # Calculate averages
         avg_engagement = sum(p.engagement for p in posts) / len(posts)
@@ -145,12 +142,12 @@ class CompetitiveMonitor:
 
         # Most common format
         primary_format = max(formats, key=formats.get)
-        most_engaging_format = formats[0] if formats else None
+        formats[0] if formats else None
 
         # Generate insight
         insight = CompetitiveInsight(
             category="content_analysis",
-            topic=most_common(topic_counts.keys()) if topic_counts else "various",
+            topic=max(topic_counts.keys(), key=lambda k: topic_counts[k]) if topic_counts else "various",
             frequency=len(posts),
             engagement_avg=avg_engagement,
             format_types=primary_format,
@@ -258,7 +255,7 @@ class CompetitiveMonitor:
             key=lambda x: x[1],
             reverse=True,
         )
-        return [tag for tag, sorted_hashtags[:10]]
+        return [tag for tag, _ in sorted_hashtags[:10]]
     def get_opportunities(self) -> list[str]:
         """Get list of content opportunities."""
         opportunities = []

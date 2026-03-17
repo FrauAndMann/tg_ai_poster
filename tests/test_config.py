@@ -4,22 +4,14 @@ Tests for configuration module.
 Tests settings loading, YAML parsing, and environment variables.
 """
 
-import os
-from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
 from core.config import (
     Settings,
     TelegramConfig,
-    TelethonConfig,
     LLMConfig,
-    ChannelConfig,
     ScheduleConfig,
-    SourcesConfig,
-    SafetyConfig,
-    DatabaseConfig,
 )
 
 

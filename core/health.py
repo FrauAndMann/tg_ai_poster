@@ -12,7 +12,6 @@ Provides comprehensive health checking for:
 from __future__ import annotations
 
 import asyncio
-import json
 import shutil
 from dataclasses import dataclass
 from datetime import datetime
@@ -130,7 +129,7 @@ class HealthChecker:
         try:
             # Simple query to check connection
             if hasattr(self.db, 'execute'):
-                result = await self.db.execute("SELECT 1")
+                await self.db.execute("SELECT 1")
             else:
                 # Fallback for different DB interfaces
                 logger.debug("Database connection check - alternative method")
@@ -161,7 +160,7 @@ class HealthChecker:
                 )
 
             # Light ping - minimal token request
-            result = await asyncio.wait_for(
+            await asyncio.wait_for(
                 self.llm_adapter.generate(
                     "Say 'ok'",
                     max_tokens=5,

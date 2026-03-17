@@ -18,6 +18,16 @@
 - **[PIPELINE_UPDATE.md](PIPELINE_UPDATE.md)** - Обновления pipeline v2.0
 - **[v2.0_CHANGES.md](v2.0_CHANGES.md)** - Полная документация рефакторинга v2.0
 
+### Design Specifications
+
+- **[specs/phase1-features-design.md](specs/phase1-features-design.md)** - Phase 1: Draft System, Approval Workflow, A/B Testing
+- **[specs/phase2-features-design.md](specs/phase2-features-design.md)** - Phase 2: Thread Mode, Smart Queue, Analytics
+
+### Implementation Plans
+
+- **[plans/phase1-features.md](plans/phase1-features.md)** - План имплементации Phase 1
+- **[plans/phase2-implementation-plan.md](plans/phase2-implementation-plan.md)** - План имплементации Phase 2 (8 недель)
+
 ---
 
 ## Введение

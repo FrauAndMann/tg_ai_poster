@@ -12,13 +12,11 @@ import re
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any, Optional
-from urllib.parse import quote
 
 import aiohttp
 
 from core.constants import (
     HN_TOPSTORIES_URL,
-    PRODUCTHUNT_RSS_URL,
 )
 from core.logger import get_logger
 

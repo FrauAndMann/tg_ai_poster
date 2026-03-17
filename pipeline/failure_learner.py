@@ -8,7 +8,8 @@ and automatically patches the generation prompt.
 
 from __future__ import annotations
 
-import re
+import asyncio
+import json
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Optional
@@ -108,13 +109,13 @@ class FailureLearner:
     ) -> None:
         """Record a quality check failure."""
         if rule_name not in self._patterns:
-            pattern = self._patterns[rule_name]
-        else:
             pattern = FailurePattern(
                 rule_name=rule_name,
                 example_texts=[example_text],
             )
             self._patterns[rule_name] = pattern
+        else:
+            pattern = self._patterns[rule_name]
         pattern.failure_count += 1
         pattern.example_texts.append(example_text)
         pattern.last_seen = datetime.now()

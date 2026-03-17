@@ -357,7 +357,7 @@ class AIClicheDetector:
 
         lengths = [len(p) for p in paragraphs]
         avg_len = sum(lengths) / len(lengths)
-        variance = sum((l - avg_len) ** 2 for l in lengths) / len(lengths)
+        variance = sum((length - avg_len) ** 2 for length in lengths) / len(lengths)
 
         # Low variance suggests AI generation
         normalized_variance = variance / (avg_len ** 2) if avg_len > 0 else 0
@@ -403,7 +403,7 @@ class AIClicheDetector:
         avg_len = sum(lengths) / len(lengths)
 
         # Count sentences within 20% of average
-        near_avg = sum(1 for l in lengths if abs(l - avg_len) <= avg_len * 0.2)
+        near_avg = sum(1 for length in lengths if abs(length - avg_len) <= avg_len * 0.2)
         ratio = near_avg / len(lengths)
 
         # High ratio suggests AI generation

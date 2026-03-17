@@ -225,7 +225,7 @@ STYLE INSTRUCTIONS:"""
         try:
             # Get style analysis from LLM
             response = await self.llm.generate(prompt)
-            style_instructions = response.text.strip()
+            response.text.strip()
 
             # Create new style profile
             async with self.db.session() as session:

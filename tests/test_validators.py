@@ -5,7 +5,6 @@ Tests duplicate detection, forbidden words, length checks,
 and Telegram markdown validation.
 """
 
-import pytest
 
 from utils.validators import (
     check_duplicate,

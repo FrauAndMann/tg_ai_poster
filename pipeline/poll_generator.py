@@ -10,8 +10,6 @@ from dataclasses import dataclass
 from typing import Optional
 from enum import Enum
 
-from loguru import logger
-
 from llm import BaseLLMAdapter
 from pipeline.source_collector import Article
 from core.logger import get_logger

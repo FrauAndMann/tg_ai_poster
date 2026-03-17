@@ -10,8 +10,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from datetime import datetime
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Optional
 
 from core.logger import get_logger
 
@@ -158,7 +157,6 @@ class Localizer:
 
         # Check title and body for language hints
         text = f"{content.get('title', '')} {content.get('body', '')}"
-        common_languages = ["ru", "en", "es"]
 
         # Simple heuristics for language detection
         russian_markers = ["и", "в", "на", "что", "это", "не", "как"]

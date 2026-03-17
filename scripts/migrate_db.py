@@ -5,7 +5,6 @@ Adds new columns to the posts table.
 """
 
 import sqlite3
-import os
 from pathlib import Path
 
 
@@ -64,7 +63,7 @@ def migrate_database(db_path: str = "./data/tg_poster.db"):
     conn.commit()
     conn.close()
 
-    print(f"\nMigration complete!")
+    print("\nMigration complete!")
     print(f"Added: {len(added)} columns")
     print(f"Skipped: {len(skipped)} columns (already exist)")
 

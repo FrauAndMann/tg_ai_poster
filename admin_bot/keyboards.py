@@ -54,35 +54,6 @@ class Keyboards:
         return InlineKeyboardMarkup(keyboard)
 
     @staticmethod
-    def control_menu(is_paused: bool = False) -> InlineKeyboardMarkup:
-        """Control menu keyboard with pause/resume state."""
-        if is_paused:
-            keyboard = [
-                [
-                    InlineKeyboardButton("Resume", callback_data="resume"),
-                ],
-                [
-                    InlineKeyboardButton("Trigger", callback_data="trigger"),
-                ],
-                [
-                    InlineKeyboardButton("Back", callback_data="main_menu"),
-                ],
-            ]
-        else:
-            keyboard = [
-                [
-                    InlineKeyboardButton("Pause", callback_data="pause"),
-                ],
-                [
-                    InlineKeyboardButton("Trigger", callback_data="trigger"),
-                ],
-                [
-                    InlineKeyboardButton("Back", callback_data="main_menu"),
-                ],
-            ]
-        return InlineKeyboardMarkup(keyboard)
-
-    @staticmethod
     def circuit_menu(has_open_circuits: bool = False) -> InlineKeyboardMarkup:
         """Circuit breaker menu keyboard."""
         keyboard = []
@@ -111,35 +82,6 @@ class Keyboards:
                 InlineKeyboardButton("No", callback_data="cancel"),
             ],
         ]
-        return InlineKeyboardMarkup(keyboard)
-
-    @staticmethod
-    def control_menu(is_paused: bool = False) -> InlineKeyboardMarkup:
-        """Control menu keyboard with pause/resume state."""
-        if is_paused:
-            keyboard = [
-                [
-                    InlineKeyboardButton("Resume", callback_data="resume"),
-                ],
-                [
-                    InlineKeyboardButton("Trigger", callback_data="trigger"),
-                ],
-                [
-                    InlineKeyboardButton("Back", callback_data="main_menu"),
-                ],
-            ]
-        else:
-            keyboard = [
-                [
-                    InlineKeyboardButton("Pause", callback_data="pause"),
-                ],
-                [
-                    InlineKeyboardButton("Trigger", callback_data="trigger"),
-                ],
-                [
-                    InlineKeyboardButton("Back", callback_data="main_menu"),
-                ],
-            ]
         return InlineKeyboardMarkup(keyboard)
 
     @staticmethod

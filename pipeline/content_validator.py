@@ -167,7 +167,7 @@ class ContentValidator:
             List of found meta-text issues
         """
         issues = []
-        content_lower = content.lower()
+        content.lower()
 
         for pattern in self._meta_patterns:
             matches = pattern.findall(content)

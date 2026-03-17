@@ -7,13 +7,12 @@ Exposes health, posts, analytics endpoints with API key authentication.
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Optional
 
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.security import HTTPAuthorizationCredentials
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from core.logger import get_logger
 from core.config import get_settings
@@ -133,7 +132,7 @@ class APIServer:
         import uvicorn
         self._app = self.create_app()
         self._start_time = datetime.now()
-        config = uvicorn.Config(app=app, host=host, port=port)
+        config = uvicorn.Config(app=self._app, host=host, port=port)
         await config.setup()
         logger.info("API server started on %s:%d", host, port)
     async def stop(self) -> None:

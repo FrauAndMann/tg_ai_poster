@@ -477,21 +477,21 @@ class BenchmarkReporter:
         """Export as Markdown."""
         lines = [
             f"# Benchmark Report - {report.period.value.title()}",
-            f"",
+            "",
             f"**Period:** {report.start_date.date()} to {report.end_date.date()}",
             f"**Generated:** {report.generated_at.isoformat()}",
-            f"",
-            f"## Summary",
-            f"",
-            f"| Metric | Value |",
-            f"|--------|-------|",
+            "",
+            "## Summary",
+            "",
+            "| Metric | Value |",
+            "|--------|-------|",
             f"| Total Posts | {report.total_posts} |",
             f"| Avg Quality Score | {report.avg_quality_score:.1f} |",
             f"| Engagement Rate | {report.engagement_rate * 100:.2f}% |",
             f"| Success Rate | {report.success_rate * 100:.1f}% |",
-            f"",
-            f"## Quality Distribution",
-            f"",
+            "",
+            "## Quality Distribution",
+            "",
         ]
 
         for bucket, count in report.quality_distribution.items():
@@ -499,18 +499,18 @@ class BenchmarkReporter:
 
         if report.recommendations:
             lines.extend([
-                f"",
-                f"## Recommendations",
-                f"",
+                "",
+                "## Recommendations",
+                "",
             ])
             for rec in report.recommendations:
                 lines.append(f"- {rec}")
 
         if report.trends:
             lines.extend([
-                f"",
-                f"## Trends",
-                f"",
+                "",
+                "## Trends",
+                "",
             ])
             for trend in report.trends:
                 lines.append(f"- {trend}")

@@ -5,13 +5,12 @@ Handles post status transitions and automated approval based on quality metrics.
 """
 from __future__ import annotations
 
-from typing import Optional
 
 from sqlalchemy import select
 
 from core.logger import get_logger
 from memory.models import Post, PostStatus
-from memory.database import get_session
+from memory.database import get_database
 
 logger = get_logger(__name__)
 
@@ -172,7 +171,7 @@ class ApprovalWorkflow:
             )
             return False
 
-        async with get_session() as session:
+        async with get_database().session() as session:
             # Get fresh post from DB
             result = await session.execute(
                 select(Post).where(Post.id == post.id)
@@ -240,7 +239,7 @@ class ApprovalWorkflow:
         Returns:
             list[Post]: Posts with the specified status
         """
-        async with get_session() as session:
+        async with get_database().session() as session:
             result = await session.execute(
                 select(Post)
                 .where(Post.status == status.value)

@@ -8,10 +8,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 
-from pyee.asyncio import AsyncIOEventEmitter
 
 from core.config import Settings
-from core.events import event_bus, EventType
+from core.events import event_bus
 from core.logger import get_logger
 from pipeline.coordinator import PipelineCoordinator
 from pipeline.stages import (
@@ -87,9 +86,8 @@ class PipelineFactory:
         from pipeline.topic_selector import TopicSelector
         from pipeline.llm_generator import LLMGenerator
         from pipeline.prompt_builder import PromptBuilder
-        from pipeline.editor_review import EditorReviewer, MediaPromptGenerator
+        from pipeline.editor_review import EditorReviewer
         from pipeline.quality_checker import QualityChecker
-        from pipeline.formatter import PostFormatter as LegacyFormatter
 
         # Initialize stores
         post_store = PostStore(db)
@@ -115,7 +113,7 @@ class PipelineFactory:
             rss_feeds=settings.sources.rss_feeds,
         )
 
-        source_verifier = SourceVerifier(
+        SourceVerifier(
             llm_adapter=llm,
             min_sources=1,
             min_trust_score=50.0,

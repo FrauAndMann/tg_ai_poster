@@ -7,10 +7,8 @@ against multiple sources to detect hallucinations and errors.
 
 from __future__ import annotations
 
-import asyncio
 import re
 from dataclasses import dataclass, field
-from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Optional
 
@@ -214,7 +212,7 @@ class FactualVerifier:
         for (entity, attribute), fact in self.KNOWN_FACTS.items():
             if entity in claim_lower and attribute in claim_lower:
                 claim.status = VerificationStatus.VERIFIED
-                claim.verification_notes = f"Verified against known facts database"
+                claim.verification_notes = "Verified against known facts database"
                 return claim
 
         # Check for hallucination indicators

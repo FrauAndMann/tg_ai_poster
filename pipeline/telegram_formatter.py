@@ -13,7 +13,6 @@ from typing import Optional
 
 from core.logger import get_logger
 
-from pipeline.source_collector import Article
 
 logger = get_logger(__name__)
 
@@ -262,27 +261,64 @@ class TelegramFormatter:
 
         return "\n\n".join(result)
     def _escape_markdown_v2(self, text: str) -> str:
-        """Escape special characters for MarkdownV2."""
-        # Preserve formatting markers temporarily
-        text = text.replace("*", "\x00BOLD\x00")
-        text = text.replace("_", "\x00ITALIC\x00")
-        text = text.replace("[", "\x00LINK_START\x00")
-        text = text.replace("]", "\x00LINK_END\x00")
-        text = text.replace("(", "\x00URL_START\x00")
-        text = text.replace(")", "\x00URL_END\x00")
+        """
+        Escape special characters for Telegram MarkdownV2.
 
-        # Escape special characters
-        for char in self.MARKDOWN_V2_SPECIAL:
-            if char not in ["*", "_", "[", "]", "(", ")"]:
+        IMPORTANT: Telegram MarkdownV2 requires proper balancing of formatting entities.
+        Unbalanced _ or * characters cause "can't find end of entity" errors.
+        This method escapes ALL potentially problematic characters to ensure
+        the post is always valid, sacrificing some formatting for reliability.
+        """
+        # First, handle intentional formatting by finding balanced pairs
+        # and temporarily replacing them with placeholders
+
+        # Find balanced italic pairs: _text_ (not adjacent to other underscores)
+        def protect_balanced(text: str, marker: str, placeholder: str) -> str:
+            """Protect balanced marker pairs, escape unbalanced ones."""
+            result = []
+            i = 0
+            while i < len(text):
+                if text[i] == marker:
+                    # Look for a closing marker
+                    # Find next marker that's not part of a word
+                    for j in range(i + 1, len(text)):
+                        if text[j] == marker:
+                            # Check if this is a valid closing marker
+                            # (not part of a word like variable_name)
+                            if j + 1 >= len(text) or not text[j + 1].isalnum():
+                                if i > 0 and text[i - 1].isalnum():
+                                    # This underscore is part of a word (like variable_name)
+                                    # Don't treat it as formatting
+                                    break
+                                # Valid pair found - protect it
+                                result.append(placeholder)
+                                result.append(text[i + 1:j])
+                                result.append(placeholder)
+                                i = j + 1
+                                break
+                    else:
+                        # No closing marker found - escape this one
+                        result.append(f"\\{marker}")
+                        i += 1
+                        continue
+                else:
+                    result.append(text[i])
+                    i += 1
+            return "".join(result)
+
+        # For safety in automated content, we escape ALL formatting markers
+        # This ensures posts always publish successfully
+        # The content should be readable without italic/bold formatting
+
+        # Escape all MarkdownV2 special characters
+        # Order matters: escape backslash first
+        text = text.replace("\\", "\\\\")
+
+        # Then escape all other special chars
+        special_chars = "_*[]()~`>#+-=|{}.!"
+        for char in special_chars:
+            if char != "\\":  # Already handled
                 text = text.replace(char, f"\\{char}")
-
-        # Restore formatting markers
-        text = text.replace("\x00BOLD\x00", "*")
-        text = text.replace("\x00ITALIC\x00", "_")
-        text = text.replace("\x00LINK_START\x00", "[")
-        text = text.replace("\x00LINK_END\x00", "]")
-        text = text.replace("\x00URL_START\x00", "(")
-        text = text.replace("\x00URL_END\x00", ")")
 
         return text
 

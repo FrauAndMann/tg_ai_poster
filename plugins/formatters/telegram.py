@@ -7,12 +7,10 @@ Formats posts for Telegram with MarkdownV2 support and clickable links.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
 from typing import Any, Optional, Union
 
 from core.logger import get_logger
-from domain.post import Post, PostType, POST_TYPE_CONFIGS
-from domain.source import Source
+from domain.post import Post, POST_TYPE_CONFIGS
 from plugins.formatters.base import PostFormatter, FormattedPost
 
 logger = get_logger(__name__)

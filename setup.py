@@ -9,7 +9,6 @@ set up their Telegram bot and channel settings.
 from __future__ import annotations
 
 import asyncio
-import os
 import sys
 from pathlib import Path
 from typing import Optional
@@ -94,7 +93,7 @@ def get_list(prompt: str, default: list[str] = None) -> list[str]:
     """Get a list of values."""
     default_str = ", ".join(default) if default else ""
     print(f"{prompt}")
-    print(f"Enter items separated by commas (or leave empty for default)")
+    print("Enter items separated by commas (or leave empty for default)")
     value = input(f"[{default_str}]: ").strip()
 
     if not value:

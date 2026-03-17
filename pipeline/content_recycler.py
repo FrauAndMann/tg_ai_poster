@@ -7,7 +7,6 @@ for republication with AI-rewritten content while preserving core facts.
 
 from __future__ import annotations
 
-import asyncio
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Optional
@@ -20,7 +19,7 @@ from core.constants import (
 from core.logger import get_logger
 
 if TYPE_CHECKING:
-    from llm.base import BaseLLMAdapter, LLMResponse
+    from llm.base import BaseLLMAdapter
     from memory.post_store import PostStore
 
 logger = get_logger(__name__)
@@ -171,7 +170,7 @@ class ContentRecycler:
         """Fetch posts that meet recycling criteria from database."""
         # This would query the post_store for posts matching criteria
         # Implementation depends on PostStore interface
-        cutoff_date = datetime.now() - timedelta(days=self.min_age_days)
+        datetime.now() - timedelta(days=self.min_age_days)
 
         # Placeholder - actual implementation would use post_store
         return []

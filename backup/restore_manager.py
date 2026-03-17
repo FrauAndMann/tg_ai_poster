@@ -268,7 +268,9 @@ class RestoreManager:
             backup_config = backup_root / "config.yaml"
             if backup_config.exists():
                 shutil.copy2(backup_config, self.config_path)
-                logger.info(f"Restored config.yaml")
+            if backup_config.exists():
+                shutil.copy2(backup_config, self.config_path)
+                logger.info("Restored config.yaml")
 
             # Restore config directory
             backup_config_dir = backup_root / "config"
@@ -276,7 +278,11 @@ class RestoreManager:
                 if self.config_dir.exists():
                     shutil.rmtree(self.config_dir)
                 shutil.copytree(backup_config_dir, self.config_dir)
-                logger.info(f"Restored config directory")
+            if backup_config_dir.exists():
+                if self.config_dir.exists():
+                    shutil.rmtree(self.config_dir)
+                shutil.copytree(backup_config_dir, self.config_dir)
+                logger.info("Restored config directory")
 
             return True
 

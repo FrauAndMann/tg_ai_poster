@@ -2,7 +2,6 @@
 Tests for Circuit Breaker module.
 """
 
-import asyncio
 import time
 
 import pytest
@@ -158,8 +157,8 @@ class TestCircuitBreakerRegistry:
 
     def test_registry_get_all_status(self):
         """Registry returns status of all circuit breakers."""
-        cb1 = CircuitBreakerRegistry.get_or_create("test1", failure_threshold=3)
-        cb2 = CircuitBreakerRegistry.get_or_create("test2", failure_threshold=5)
+        CircuitBreakerRegistry.get_or_create("test1", failure_threshold=3)
+        CircuitBreakerRegistry.get_or_create("test2", failure_threshold=5)
 
         status = CircuitBreakerRegistry.get_all_status()
         assert "test1" in status
