@@ -57,25 +57,64 @@ schedule:
 
 sources:
   rss_feeds:
-    # Working feeds
+    # === TECH NEWS ===
     - "https://www.producthunt.com/feed"
     - "https://hnrss.org/frontpage"
     - "https://techcrunch.com/feed/"
+    - "https://www.theverge.com/ai-artificial-intelligence/rss/index.xml"
+    - "https://feeds.arstechnica.com/arstechnica/technology-lab"
+    - "https://www.wired.com/feed/tag/ai/latest/rss"
+    - "https://www.technologyreview.com/feed/"
+
+    # === AI COMPANIES ===
     - "https://openai.com/blog/rss.xml"
+    - "https://deepmind.google/discover/blog/rss/"
+    - "https://blog.google/technology/ai/rss/"
+
+    # === RUSSIAN SOURCES ===
     - "https://vc.ru/rss"
     - "https://incrussia.ru/feed/"
-    - "https://buffer.com/resources/rss/"
+    - "https://habr.com/ru/rss/articles/"
+    - "https://naked-science.ru/feed"
+    - "https://rb.ru/feeds/rss"
+
+    # === AI/ML NEWS ===
     - "https://www.reddit.com/r/artificial/.rss"
     - "https://www.reddit.com/r/ChatGPT/.rss"
     - "https://www.reddit.com/r/MachineLearning/.rss"
-    # Alternative AI news sources (replacing broken feeds)
     - "https://www.artificialintelligence-news.com/feed"
     - "https://venturebeat.com/category/ai/feed/"
-    - "https://www.unite.ai/feed/"
+
+    # === RESEARCH ===
+    - "https://huggingface.co/blog/feed.xml"
+    - "https://distill.pub/rss.xml"
+
   use_hackernews: true
   use_producthunt: true
   enable_rss: true
   rss_fetch_interval_hours: 6
+
+  # === NEW API SOURCES ===
+  newsapi:
+    enabled: false  # Requires API key
+    api_key: "${NEWSAPI_KEY:-}"
+    query: "artificial intelligence OR machine learning OR AI"
+    language: "en"
+    page_size: 20
+
+  arxiv:
+    enabled: true
+    categories:
+      - "cs.AI"
+      - "cs.LG"
+      - "cs.CL"
+    max_results: 15
+
+  gdelt:
+    enabled: false  # Experimental
+    themes:
+      - "artificial_intelligence"
+      - "machine_learning"
 
 safety:
   manual_approval: false

@@ -600,6 +600,220 @@ class SourceCollector:
         self._seen_hashes.clear()
         logger.info("Cleared seen hashes cache")
 
+    async def fetch_arxiv(
+        self,
+        categories: Optional[list[str]] = None,
+        max_results: int = 15,
+    ) -> list[Article]:
+        """
+        Fetch recent papers from ArXiv.
+
+        Args:
+            categories: ArXiv categories (e.g., cs.AI, cs.LG)
+            max_results: Maximum papers to fetch
+
+        Returns:
+            list[Article]: List of ArXiv papers as articles
+        """
+        import xml.etree.ElementTree as ET
+
+        categories = categories or ["cs.AI", "cs.LG", "cs.CL"]
+        logger.debug(f"Fetching ArXiv papers from {categories}")
+
+        articles = []
+
+        try:
+            session = await self._get_http_session()
+
+            # Build query URL
+            # ArXiv API: http://export.arxiv.org/api/query
+            base_url = "http://export.arxiv.org/api/query"
+            query = " OR ".join(f"cat:{cat}" for cat in categories)
+            params = {
+                "search_query": query,
+                "sortBy": "submittedDate",
+                "sortOrder": "descending",
+                "max_results": max_results,
+            }
+
+            async with session.get(base_url, params=params) as response:
+                if response.status != 200:
+                    logger.error(f"ArXiv API error: {response.status}")
+                    return []
+                xml_content = await response.text()
+
+            # Parse XML response
+            root = ET.fromstring(xml_content)
+
+            # Define namespace
+            ns = {"atom": "http://www.w3.org/2005/Atom"}
+
+            for entry in root.findall("atom:entry", ns):
+                title_elem = entry.find("atom:title", ns)
+                summary_elem = entry.find("atom:summary", ns)
+                link_elem = entry.find("atom:id", ns)
+                published_elem = entry.find("atom:published", ns)
+
+                if title_elem is None or link_elem is None:
+                    continue
+
+                title = self._clean_text(title_elem.text or "")
+                summary = self._clean_text(summary_elem.text or "")[:500] if summary_elem is not None else ""
+                url = link_elem.text or ""
+
+                published_at = None
+                if published_elem is not None and published_elem.text:
+                    try:
+                        published_at = datetime.fromisoformat(
+                            published_elem.text.replace("Z", "+00:00")
+                        )
+                    except (ValueError, TypeError):
+                        pass
+
+                articles.append(Article(
+                    title=title,
+                    summary=summary,
+                    url=url,
+                    published_at=published_at,
+                    source="arxiv.org",
+                    tags=["research", "arxiv"],
+                ))
+
+            logger.info(f"Fetched {len(articles)} papers from ArXiv")
+
+        except Exception as e:
+            logger.error(f"Failed to fetch ArXiv: {e}")
+
+        return articles
+
+    async def fetch_newsapi(
+        self,
+        api_key: str,
+        query: str = "artificial intelligence",
+        language: str = "en",
+        page_size: int = 20,
+    ) -> list[Article]:
+        """
+        Fetch news from NewsAPI.
+
+        Args:
+            api_key: NewsAPI API key
+            query: Search query
+            language: Language code
+            page_size: Number of results
+
+        Returns:
+            list[Article]: List of news articles
+        """
+        if not api_key:
+            logger.warning("NewsAPI key not provided, skipping")
+            return []
+
+        logger.debug(f"Fetching from NewsAPI: {query}")
+
+        articles = []
+
+        try:
+            session = await self._get_http_session()
+
+            url = "https://newsapi.org/v2/everything"
+            params = {
+                "q": query,
+                "language": language,
+                "pageSize": page_size,
+                "sortBy": "publishedAt",
+                "apiKey": api_key,
+            }
+
+            async with session.get(url, params=params) as response:
+                if response.status != 200:
+                    logger.error(f"NewsAPI error: {response.status}")
+                    return []
+                data = await response.json()
+
+            for item in data.get("articles", []):
+                title = item.get("title", "")
+                summary = item.get("description", "") or ""
+                url = item.get("url", "")
+                source_name = item.get("source", {}).get("name", "NewsAPI")
+
+                published_at = None
+                if item.get("publishedAt"):
+                    try:
+                        published_at = datetime.fromisoformat(
+                            item["publishedAt"].replace("Z", "+00:00")
+                        )
+                    except (ValueError, TypeError):
+                        pass
+
+                if title and url:
+                    articles.append(Article(
+                        title=self._clean_text(title),
+                        summary=self._clean_text(summary)[:500],
+                        url=url,
+                        published_at=published_at,
+                        source=source_name,
+                        tags=["newsapi"],
+                    ))
+
+            logger.info(f"Fetched {len(articles)} articles from NewsAPI")
+
+        except Exception as e:
+            logger.error(f"Failed to fetch NewsAPI: {e}")
+
+        return articles
+
+    async def fetch_all_extended(
+        self,
+        arxiv_categories: Optional[list[str]] = None,
+        arxiv_max: int = 15,
+        newsapi_key: Optional[str] = None,
+        newsapi_query: str = "artificial intelligence",
+    ) -> list[Article]:
+        """
+        Fetch from all sources including extended APIs.
+
+        Args:
+            arxiv_categories: ArXiv categories
+            arxiv_max: Max ArXiv results
+            newsapi_key: NewsAPI key
+            newsapi_query: NewsAPI query
+
+        Returns:
+            list[Article]: Combined articles
+        """
+        import asyncio
+
+        # Base sources
+        tasks = [self.fetch_rss(url) for url in self.rss_feeds]
+
+        # HackerNews
+        if self.enable_hackernews:
+            tasks.append(self.fetch_hackernews())
+
+        # ProductHunt
+        if self.enable_producthunt:
+            tasks.append(self.fetch_producthunt())
+
+        # ArXiv
+        tasks.append(self.fetch_arxiv(arxiv_categories, arxiv_max))
+
+        # NewsAPI (if key provided)
+        if newsapi_key:
+            tasks.append(self.fetch_newsapi(newsapi_key, newsapi_query))
+
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        all_articles = []
+        for result in results:
+            if isinstance(result, list):
+                all_articles.extend(result)
+            elif isinstance(result, Exception):
+                logger.error(f"Extended fetch error: {result}")
+
+        logger.info(f"Total articles fetched (extended): {len(all_articles)}")
+        return all_articles
+
     async def close(self) -> None:
         """Close the aiohttp session."""
         if self._session and not self._session.closed:
