@@ -6,11 +6,13 @@ Fetches, parses, and deduplicates articles from configured sources.
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
+import html
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Optional
-import html
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 import feedparser
 from aiohttp import ClientSession, ClientTimeout
@@ -67,6 +69,45 @@ class Article:
             "tags": self.tags,
         }
 
+    @property
+    def content(self) -> str:
+        """Compatibility alias for systems expecting full article content."""
+        return self.summary
+
+    @property
+    def normalized_url(self) -> str:
+        """Normalize URL for stronger deduplication."""
+        parsed = urlparse(self.url)
+        normalized_query = urlencode(
+            sorted(
+                (key, value)
+                for key, value in parse_qsl(parsed.query, keep_blank_values=True)
+                if not key.lower().startswith("utm_")
+            )
+        )
+        return urlunparse(
+            (
+                parsed.scheme.lower(),
+                parsed.netloc.lower(),
+                parsed.path.rstrip("/"),
+                "",
+                normalized_query,
+                "",
+            )
+        )
+
+    @property
+    def source_domain(self) -> str:
+        """Get canonical domain for article URL."""
+        return urlparse(self.url).netloc.lower().replace("www.", "")
+
+    @property
+    def age_hours(self) -> Optional[float]:
+        """Get article age in hours."""
+        if not self.published_at:
+            return None
+        return max(0.0, (datetime.utcnow() - self.published_at).total_seconds() / 3600)
+
 
 class SourceCollector:
     """
@@ -92,6 +133,10 @@ class SourceCollector:
         enable_hackernews: bool = True,
         enable_producthunt: bool = True,
         hackernews_limit: int = 20,
+        feed_cache_ttl_minutes: int = 15,
+        max_concurrent_fetches: int = 10,
+        max_article_age_days: int = 7,
+        source_weights: Optional[dict[str, float]] = None,
     ) -> None:
         """
         Initialize source collector.
@@ -112,8 +157,16 @@ class SourceCollector:
         self.enable_hackernews = enable_hackernews
         self.enable_producthunt = enable_producthunt
         self.hackernews_limit = hackernews_limit
+        self.feed_cache_ttl = timedelta(minutes=feed_cache_ttl_minutes)
+        self.max_article_age_days = max_article_age_days
+        self.source_weights = {
+            (domain.lower().replace("www.", "")): weight
+            for domain, weight in (source_weights or {}).items()
+        }
         self._seen_hashes: set[str] = set()
         self._session: Optional[ClientSession] = None
+        self._feed_cache: dict[str, tuple[datetime, list[Article]]] = {}
+        self._fetch_semaphore = asyncio.Semaphore(max(1, max_concurrent_fetches))
 
     def _parse_date(self, entry: dict) -> Optional[datetime]:
         """
@@ -164,6 +217,98 @@ class SourceCollector:
 
         return text.strip()
 
+    def _is_cache_valid(self, url: str) -> bool:
+        """Check whether a feed cache entry is still valid."""
+        if url not in self._feed_cache:
+            return False
+        cached_at, _ = self._feed_cache[url]
+        return datetime.utcnow() - cached_at < self.feed_cache_ttl
+
+    def _cache_articles(self, url: str, articles: list[Article]) -> None:
+        """Cache articles for a feed URL."""
+        self._feed_cache[url] = (datetime.utcnow(), list(articles))
+
+    def _parse_feed_entries(self, feed, url: str) -> list[Article]:
+        """Parse feedparser output into Article objects."""
+        articles: list[Article] = []
+        feed_title = feed.feed.get("title", url)
+
+        for entry in feed.entries[: self.max_articles_per_feed]:
+            try:
+                title = self._clean_text(entry.get("title", ""))
+                summary = self._clean_text(
+                    entry.get("summary") or entry.get("description", "")
+                )
+                article_url = entry.get("link", "")
+
+                if not title or not article_url:
+                    continue
+
+                published_at = self._parse_date(entry)
+
+                tags = []
+                if hasattr(entry, "tags"):
+                    tags = [tag.term for tag in entry.tags if hasattr(tag, "term")]
+
+                articles.append(
+                    Article(
+                        title=title,
+                        summary=summary[:500] if summary else "",
+                        url=article_url,
+                        published_at=published_at,
+                        source=feed_title,
+                        tags=tags,
+                    )
+                )
+            except Exception as e:
+                logger.warning(f"Failed to parse RSS entry: {e}")
+
+        return articles
+
+    def _score_article(self, article: Article) -> float:
+        """Compute a lightweight priority score for ranking fetched articles."""
+        score = 0.0
+
+        if article.published_at:
+            age_hours = article.age_hours or 0.0
+            score += max(0.0, 72.0 - min(age_hours, 72.0))
+        else:
+            score += 12.0
+
+        score += min(len(article.tags) * 1.5, 6.0)
+        score += min(len(article.summary) / 140.0, 5.0)
+
+        domain = article.source_domain
+        source_weight = self.source_weights.get(domain)
+        if source_weight is not None:
+            score += source_weight * 10
+        elif domain.endswith("openai.com") or domain.endswith("anthropic.com"):
+            score += 8.0
+        elif domain.endswith("github.com") or domain.endswith("arxiv.org"):
+            score += 6.0
+        elif "news.ycombinator.com" in domain:
+            score += 3.0
+
+        text = f"{article.title} {article.summary}".lower()
+        if any(
+            keyword in text
+            for keyword in ("release", "launch", "announce", "breakthrough", "gpt")
+        ):
+            score += 4.0
+
+        return score
+
+    def rank_articles(self, articles: list[Article]) -> list[Article]:
+        """Rank articles by freshness and source priority."""
+        return sorted(
+            articles,
+            key=lambda article: (
+                self._score_article(article),
+                article.published_at or datetime.min,
+            ),
+            reverse=True,
+        )
+
     async def _fetch_rss_with_fallback(self, url: str):
         """
         Fallback method to fetch and clean broken RSS feeds.
@@ -181,16 +326,14 @@ class SourceCollector:
         import re
 
         try:
-            async with ClientSession(
-                timeout=ClientTimeout(total=self.fetch_timeout)
-            ) as session:
-                headers = {"User-Agent": self.user_agent}
-                async with session.get(url, headers=headers) as response:
-                    if response.status != 200:
-                        logger.warning(f"Fallback fetch failed: HTTP {response.status}")
-                        return feedparser.parse("")  # Empty feed
+            session = await self._get_http_session()
+            headers = {"User-Agent": self.user_agent}
+            async with session.get(url, headers=headers) as response:
+                if response.status != 200:
+                    logger.warning(f"Fallback fetch failed: HTTP {response.status}")
+                    return feedparser.parse("")  # Empty feed
 
-                    content = await response.text()
+                content = await response.text()
 
             # Clean common XML issues
             # Remove invalid XML characters (control chars except \t, \n, \r)
@@ -211,7 +354,7 @@ class SourceCollector:
             )
 
             # Try parsing cleaned content
-            feed = feedparser.parse(content)
+            feed = await asyncio.to_thread(feedparser.parse, content)
 
             if len(feed.entries) > 0:
                 logger.info(
@@ -236,66 +379,38 @@ class SourceCollector:
         """
         logger.debug(f"Fetching RSS feed: {url}")
 
-        articles = []
+        if self._is_cache_valid(url):
+            logger.debug("Using cached RSS feed for %s", url)
+            return list(self._feed_cache[url][1])
+
+        articles: list[Article] = []
 
         try:
-            # First try: direct feedparser parse
-            feed = feedparser.parse(
-                url,
-                agent=self.user_agent,
-            )
-
-            # Check for severe XML issues that resulted in 0 entries
-            if feed.bozo and feed.bozo_exception and len(feed.entries) == 0:
-                logger.warning(
-                    f"RSS feed has severe issues, trying fallback: {url}. Error: {feed.bozo_exception}"
-                )
-                # Fallback: fetch raw content and try to clean it
-                feed = await self._fetch_rss_with_fallback(url)
-
-            if feed.bozo and feed.bozo_exception:
-                logger.warning(
-                    f"RSS feed has issues: {url}. Error: {feed.bozo_exception}"
+            async with self._fetch_semaphore:
+                # First try: direct feedparser parse in a worker thread
+                feed = await asyncio.to_thread(
+                    feedparser.parse,
+                    url,
+                    agent=self.user_agent,
                 )
 
-            feed_title = feed.feed.get("title", url)
-
-            for entry in feed.entries[: self.max_articles_per_feed]:
-                try:
-                    title = self._clean_text(entry.get("title", ""))
-                    summary = self._clean_text(
-                        entry.get("summary") or entry.get("description", "")
+                # Check for severe XML issues that resulted in 0 entries
+                if feed.bozo and feed.bozo_exception and len(feed.entries) == 0:
+                    logger.warning(
+                        f"RSS feed has severe issues, trying fallback: {url}. Error: {feed.bozo_exception}"
                     )
-                    article_url = entry.get("link", "")
+                    # Fallback: fetch raw content and try to clean it
+                    feed = await self._fetch_rss_with_fallback(url)
 
-                    if not title or not article_url:
-                        continue
-
-                    published_at = self._parse_date(entry)
-
-                    # Get tags/categories
-                    tags = []
-                    if hasattr(entry, "tags"):
-                        tags = [tag.term for tag in entry.tags if hasattr(tag, "term")]
-
-                    article = Article(
-                        title=title,
-                        summary=summary[:500]
-                        if summary
-                        else "",  # Limit summary length
-                        url=article_url,
-                        published_at=published_at,
-                        source=feed_title,
-                        tags=tags,
+                if feed.bozo and feed.bozo_exception:
+                    logger.warning(
+                        f"RSS feed has issues: {url}. Error: {feed.bozo_exception}"
                     )
 
-                    articles.append(article)
-
-                except Exception as e:
-                    logger.warning(f"Failed to parse RSS entry: {e}")
-                    continue
+                articles = self._parse_feed_entries(feed, url)
 
             logger.info(f"Fetched {len(articles)} articles from {url}")
+            self._cache_articles(url, articles)
 
         except Exception as e:
             logger.error(f"Failed to fetch RSS feed {url}: {e}")
@@ -309,8 +424,6 @@ class SourceCollector:
         Returns:
             list[Article]: Combined list of articles from all feeds
         """
-        import asyncio
-
         logger.info(f"Fetching from {len(self.rss_feeds)} RSS feeds")
 
         tasks = [self.fetch_rss(url) for url in self.rss_feeds]
@@ -332,8 +445,16 @@ class SourceCollector:
             elif isinstance(result, Exception):
                 logger.error(f"Feed fetch error: {result}")
 
-        logger.info(f"Total articles fetched: {len(all_articles)}")
-        return all_articles
+        deduplicated = self.deduplicate(all_articles)
+        filtered = self.filter_by_date(deduplicated, self.max_article_age_days)
+        ranked = self.rank_articles(filtered)
+
+        logger.info(
+            "Total articles fetched: %s, after processing: %s",
+            len(all_articles),
+            len(ranked),
+        )
+        return ranked
 
     async def _get_http_session(self) -> ClientSession:
         """Get or create aiohttp session."""
@@ -463,11 +584,17 @@ class SourceCollector:
             self._seen_hashes.update(seen_hashes)
 
         unique_articles = []
+        seen_urls = {article.normalized_url for article in unique_articles}
 
         for article in articles:
-            if article.content_hash not in self._seen_hashes:
+            normalized_url = article.normalized_url
+            if (
+                article.content_hash not in self._seen_hashes
+                and normalized_url not in seen_urls
+            ):
                 unique_articles.append(article)
                 self._seen_hashes.add(article.content_hash)
+                seen_urls.add(normalized_url)
 
         logger.info(
             f"Deduplication: {len(articles)} -> {len(unique_articles)} articles"
@@ -586,8 +713,8 @@ class SourceCollector:
         if keywords:
             articles = self.filter_by_keywords(articles, keywords)
 
-        # Sort by date (newest first)
-        articles = self.sort_by_date(articles)
+        # Rank by freshness, trust, and content richness
+        articles = self.rank_articles(articles)
 
         return articles
 

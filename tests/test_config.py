@@ -139,6 +139,12 @@ telegram:
   bot_token: "test_token"
 llm:
   model: "gpt-4-turbo"
+realtime:
+  enabled: false
+media:
+  enabled: true
+sources:
+  max_articles_per_feed: 15
 """
         yaml_path = tmp_path / "create_config.yaml"
         yaml_path.write_text(yaml_content)
@@ -147,3 +153,6 @@ llm:
 
         assert settings.telegram.bot_token == "test_token"
         assert settings.llm.model == "gpt-4-turbo"
+        assert settings.realtime.enabled is False
+        assert settings.media.enabled is True
+        assert settings.sources.max_articles_per_feed == 15

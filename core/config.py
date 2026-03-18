@@ -227,6 +227,22 @@ class SourcesConfig(BaseSettings):
     rss_fetch_interval_hours: int = Field(
         default=6, ge=1, description="Hours between RSS fetches"
     )
+    max_articles_per_feed: int = Field(
+        default=10, ge=1, le=100, description="Max articles fetched from one feed"
+    )
+    feed_cache_ttl_minutes: int = Field(
+        default=15, ge=1, le=240, description="Feed cache TTL in minutes"
+    )
+    max_concurrent_fetches: int = Field(
+        default=10, ge=1, le=50, description="Maximum concurrent source fetches"
+    )
+    max_article_age_days: int = Field(
+        default=7, ge=1, le=30, description="Drop stale articles older than N days"
+    )
+    source_weights: dict[str, float] = Field(
+        default_factory=dict,
+        description="Optional per-domain source weights for ranking collected news",
+    )
 
 
 class SafetyConfig(BaseSettings):
@@ -462,11 +478,13 @@ class Settings(BaseSettings):
             "llm",
             "channel",
             "schedule",
+            "realtime",
             "sources",
             "safety",
             "database",
             "redis",
             "admin",
+            "media",
             "admin_bot",
             "circuit_breaker",
             "backup",

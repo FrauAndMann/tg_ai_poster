@@ -142,7 +142,7 @@ class NarrativeArcManager:
         self.max_arc_length = max_arc_length
         self._arcs: dict[str, NarrativeArc] = {}
 
-    def create_arc(
+    async def create_arc(
         self,
         topic: str,
         description: str,

@@ -108,6 +108,11 @@ class PipelineFactory:
         # Create legacy components (to be wrapped by stages)
         source_collector = SourceCollector(
             rss_feeds=settings.sources.rss_feeds,
+            max_articles_per_feed=settings.sources.max_articles_per_feed,
+            feed_cache_ttl_minutes=settings.sources.feed_cache_ttl_minutes,
+            max_concurrent_fetches=settings.sources.max_concurrent_fetches,
+            max_article_age_days=settings.sources.max_article_age_days,
+            source_weights=settings.sources.source_weights,
         )
 
         SourceVerifier(

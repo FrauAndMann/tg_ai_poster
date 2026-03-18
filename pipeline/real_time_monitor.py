@@ -8,6 +8,7 @@ automatically triggering post generation when significant news is detected.
 from __future__ import annotations
 
 import asyncio
+import re
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Optional
@@ -115,6 +116,7 @@ class RealTimeMonitor:
         self._last_check_time: Optional[datetime] = None
         self._pending_alerts: list[NewsAlert] = []
         self._processed_urls: set[str] = set()
+        self._processed_signatures: set[str] = set()
 
     async def start(self) -> None:
         """Start continuous monitoring."""
@@ -217,8 +219,13 @@ class RealTimeMonitor:
             NewsAlert if article is newsworthy, None otherwise
         """
         title = article.title.lower()
-        content = (article.content or "").lower()
+        content = getattr(article, "content", None) or getattr(article, "summary", "")
+        content = content.lower()
         combined = f"{title} {content}"
+        signature = self._make_signature(title)
+
+        if signature in self._processed_signatures:
+            return None
 
         priority = 0
         keywords_matched = []
@@ -254,9 +261,30 @@ class RealTimeMonitor:
                 priority += 1
                 reasons.append("Recent (< 6 hours)")
 
+        # Reward richer summaries and trusted sources
+        if len(content) > 140:
+            priority += 1
+            reasons.append("Has meaningful summary/context")
+
+        source_name = getattr(article, "source", "").lower()
+        trusted_sources = {
+            "openai",
+            "anthropic",
+            "google",
+            "deepmind",
+            "github",
+            "hackernews",
+            "arxiv.org",
+        }
+        if any(source in source_name for source in trusted_sources):
+            priority += 1
+            reasons.append("Trusted/high-signal source")
+
         # Minimum threshold for alert
         if priority < 3:
             return None
+
+        self._processed_signatures.add(signature)
 
         reason = "; ".join(reasons) if reasons else "Breaking news keywords detected"
 
@@ -377,6 +405,12 @@ class RealTimeMonitor:
             "pending_alerts": len(self._pending_alerts),
             "processed_urls": len(self._processed_urls),
         }
+
+    def _make_signature(self, text: str) -> str:
+        """Create a normalized signature for lightweight deduplication."""
+        normalized = re.sub(r"[^a-zа-я0-9\s]+", " ", text.lower())
+        tokens = [token for token in normalized.split() if len(token) > 2]
+        return " ".join(tokens[:12])
 
     def get_pending_alerts(self, limit: int = 10) -> list[dict]:
         """
