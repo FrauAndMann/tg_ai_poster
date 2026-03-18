@@ -258,13 +258,8 @@ class PostFormatter:
                     if len(parts) == 2:
                         line = parts[0] + "\\*" + parts[1]
 
-            if "_" in line:
-                # Count underscores (but not in URLs)
-                # Simple approach: escape all _ that aren't part of __word__
-                count = line.count("_")
-                if count % 2 != 0:
-                    # Escape all underscores to be safe
-                    line = line.replace("_", "\\_")
+            # Note: _ escaping is handled by _escape_markdown_v2_with_links
+            # Don't pre-escape here to avoid double-escaping
 
             fixed_lines.append(line)
 
