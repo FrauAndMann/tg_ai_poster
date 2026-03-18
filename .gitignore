@@ -1,17 +1,33 @@
-# TG AI Poster Git Ignore
-# =======================
+# ======================
+# TG AI Poster - Git Ignore
+# ======================
+#
+# This file specifies intentionally untracked files that Git should ignore.
+# https://git-scm.com/docs/gitignore
 
-# Environment variables (NEVER commit!)
+# ===========================================
+# ENVIRONMENT & SECRETS
+# ===========================================
+# Never commit environment files - they contain sensitive data!
 .env
 .env.local
 .env.*.local
+.env.production
+.env.development
+*.env
 
-# Python
+# ===========================================
+# PYTHON
+# ===========================================
+# Byte-compiled / optimized files
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyc
+*.pyo
 *.so
-.Python
+
+# Distribution / packaging directories
 build/
 develop-eggs/
 dist/
@@ -25,18 +41,39 @@ sdist/
 var/
 wheels/
 *.egg-info/
-.installed.cfg
 *.egg
+*.manifest
+*.spec
+pip-log.txt
 
-# Virtual environments
+# ===========================================
+# VIRTUAL ENVIRONMENTS
+# ===========================================
+# Common virtual environment directories
 venv/
 ENV/
 env/
 .venv/
+.env/
 
-# IDE
+# ===========================================
+# IDE & EDITORS
+# ===========================================
+# JetBrains IDEs (PyCharm, IntelliJ)
 .idea/
+*.iml
+*.ipr
+*.iws
+
+# Visual Studio Code
 .vscode/
+*.code-workspace
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# Vim
 *.swp
 *.swo
 *~
@@ -44,56 +81,141 @@ env/
 .pydevproject
 .settings/
 
-# Testing
+# Emacs
+*~
+\#*\#
+.\#*
+
+# ===========================================
+# TESTING & COVERAGE
+# ===========================================
 .pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
 .tox/
 .nox/
+.hypothesis/
+.pytest_cache/
 
-# Type checking
+# ===========================================
+# TYPE CHECKING & LINTING
+# ===========================================
 .mypy_cache/
 .dmypy.json
-dmypy.json
+.mypy_report.txt
+.pyre/
+.pyretype/
 
-# Database
+# Ruff
+.ruff_cache/
+
+# ===========================================
+# DATABASE FILES
+# ===========================================
+# SQLite databases
 *.db
 *.sqlite
 *.sqlite3
+
+# Database data directory
 data/
 
-# Logs
+# ===========================================
+# LOGS & TEMPORARY FILES
+# ===========================================
+# Application logs
 logs/
 *.log
-
-# Telegram sessions (sensitive!)
-sessions/
-*.session
-*.session-journal
-
-# OS
-.DS_Store
-Thumbs.db
-Desktop.ini
-
-# Docker
-.docker/
+log/
+*.log.*
 
 # Temporary files
 tmp/
 temp/
 *.tmp
 *.temp
+*.bak
+*.backup
 
-# AI assistant files (never commit)
+# ===========================================
+# TELEGRAM SESSIONS
+# ===========================================
+# Telethon session files (contain auth data)
+sessions/
+*.session
+*.session-journal
+telethon.session
+
+# ===========================================
+# OPERATING SYSTEM
+# ===========================================
+# macOS
+.DS_Store
+.AppleDouble/
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Desktop.ini
+ehthumbs.db
+ehthumbs_vista.db
+
+# Linux
+*~
+.directory
+
+# ===========================================
+# DOCKER & CONTAINERS
+# ===========================================
+.docker/
+docker-compose.override.yml
+.dockerignore
+
+# ===========================================
+# AI ASSISTANT FILES
+# ===========================================
+# These files contain project-specific instructions and should not be shared
 CLAUDE.md
+GEMINI.md
+AGENTS.md
 .claude/
 .serena/
 .cursorrules
 .cursorignore
-.mcp*
-*.mcp
-GEMINI.md
-AGENTS.md
 .copilot/
 .aider*
+.aider-chat.mac
+.continuerules
+
+# Model Context Protocol
+.mcp/
+*.mcp.json
+mcp_config.json
+
+# ===========================================
+# MEDIA & ASSETS
+# ===========================================
+# Generated images (if stored locally)
+generated_images/
+media/output/
+*.generated.png
+
+# ===========================================
+# MISC
+# ===========================================
+# Archive files
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Lock files
+*.lock
+*.pid
+
+# Local config overrides
+config.local.yaml
+config.local.yml
+settings.local.yaml
