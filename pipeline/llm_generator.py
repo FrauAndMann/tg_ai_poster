@@ -140,7 +140,8 @@ class LLMGenerator:
                 temperature=temperature,
             )
             logger.debug(f"LLM response received: {len(response.content)} chars")
-            logger.debug(f"LLM response preview: {response.content[:300]}...")
+            # Log full response for debugging JSON parsing issues
+            logger.info(f"LLM full response:\n---START---\n{response.content}\n---END---")
 
             generation_time = time.time() - start_time
 

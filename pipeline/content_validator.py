@@ -42,11 +42,10 @@ LLM_META_PATTERNS = [
     r"here\s+is\s+(what|the)",
     r"as\s+(an\s+)?ai",
     r"as\s+a\s+(language\s+)?model",
-    # Thinking/reasoning indicators
+    # Thinking/reasoning indicators (but NOT JSON in code blocks)
     r"^(thinking|думаю|размышляю)\s*:",
     r"^\*\*?(thinking|думаю|размышления)\*\*?",
     r"```thinking",
-    r"```json\s*\n\s*\{",  # JSON in code blocks (should be raw JSON)
 ]
 
 # Question patterns that shouldn't be the main content

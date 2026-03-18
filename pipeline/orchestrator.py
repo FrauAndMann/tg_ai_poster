@@ -55,29 +55,75 @@ def parse_json_post(
     if isinstance(response, dict):
         return response
 
-    # Helper to clean and extract JSON
+    # Log raw response for debugging
+    logger.debug(f"Raw LLM response ({len(response)} chars): {response[:500]}...")
+
+    # Helper to clean and extract JSON with multiple robust strategies
     def extract_json(text: str) -> str | None:
-        """Extract JSON from various formats."""
+        """Extract JSON from various formats with multiple fallback strategies."""
         text = text.strip()
 
-        # Strategy 1: Direct parse
+        # Strategy 1: Direct parse - text IS the JSON
         if text.startswith("{"):
-            return text
+            # Check if it's complete JSON
+            try:
+                json.loads(text)
+                return text
+            except json.JSONDecodeError:
+                pass  # Continue to other strategies
 
-        # Strategy 2: Remove markdown code blocks (```json ... ```)
-        if "```" in text:
-            # Try to extract from code block
-            code_block_match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text)
-            if code_block_match:
-                extracted = code_block_match.group(1).strip()
+        # Strategy 2: Extract from markdown code blocks (multiple patterns)
+        code_block_patterns = [
+            r"```json\s*([\s\S]*?)\s*```",  # ```json ... ```
+            r"```\s*([\s\S]*?)\s*```",       # ``` ... ```
+            r"`([^`]+)`",                    # `...` (inline code)
+        ]
+
+        for pattern in code_block_patterns:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                extracted = match.group(1).strip()
                 if extracted.startswith("{"):
-                    return extracted
+                    try:
+                        json.loads(extracted)
+                        logger.debug("Extracted JSON from code block")
+                        return extracted
+                    except json.JSONDecodeError:
+                        continue  # Try next pattern
 
-        # Strategy 3: Find first { and last }
+        # Strategy 3: Find balanced braces (handle nested objects)
         first_brace = text.find("{")
-        last_brace = text.rfind("}")
-        if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
-            return text[first_brace : last_brace + 1]
+        if first_brace != -1:
+            # Find matching closing brace
+            depth = 0
+            last_brace = -1
+            for i, char in enumerate(text[first_brace:], first_brace):
+                if char == "{":
+                    depth += 1
+                elif char == "}":
+                    depth -= 1
+                    if depth == 0:
+                        last_brace = i
+                        break
+
+            if last_brace > first_brace:
+                candidate = text[first_brace : last_brace + 1]
+                try:
+                    json.loads(candidate)
+                    logger.debug("Extracted JSON using brace matching")
+                    return candidate
+                except json.JSONDecodeError:
+                    # Try the simple rfind as fallback
+                    simple_last = text.rfind("}")
+                    if simple_last > first_brace:
+                        return text[first_brace : simple_last + 1]
+
+        # Strategy 4: Try to find JSON anywhere in text
+        json_pattern = r'\{(?:[^{}]|"(?:\\.|[^"\\])*")*\}'
+        match = re.search(json_pattern, text)
+        if match:
+            logger.debug("Extracted JSON using pattern search")
+            return match.group(0)
 
         return None
 
@@ -86,8 +132,8 @@ def parse_json_post(
         # Remove trailing commas before } or ]
         text = re.sub(r",\s*([}\]])", r"\1", text)
         # Fix unescaped quotes in strings (simple heuristic)
-        # Fix missing quotes around keys
-        text = re.sub(r"(\w+)\s*:", r'"\1":', text)
+        # Fix missing quotes around keys (only for word characters)
+        text = re.sub(r'(?<!")(\w+)(?=\s*:)', r'"\1"', text)
         return text
 
     # Pre-validate for LLM meta-text if validator provided
@@ -102,6 +148,7 @@ def parse_json_post(
     json_text = extract_json(response)
     if not json_text:
         logger.error("No JSON object found in response")
+        logger.error(f"Response preview (first 1000 chars): {response[:1000]}")
         return None
 
     # Try parsing strategies
@@ -148,9 +195,92 @@ def parse_json_post(
     except json.JSONDecodeError:
         pass
 
+    # Fallback: Try to create JSON from plain-text response
+    logger.warning("Attempting to create JSON from plain-text response")
+    fallback_data = _create_fallback_json(response)
+    if fallback_data:
+        logger.info("Successfully created fallback JSON from plain-text")
+        return fallback_data
+
     logger.error("Response is not valid JSON and cannot be salvaged")
     logger.debug(f"Response preview: {response[:500]}...")
     return None
+
+
+def _create_fallback_json(text: str) -> dict[str, Any] | None:
+    """
+    Create a JSON structure from plain-text LLM response.
+
+    This is a fallback when LLM returns text instead of JSON.
+    Attempts to extract title, body, and other fields heuristically.
+
+    Args:
+        text: Plain-text LLM response
+
+    Returns:
+        dict: Structured post data or None if text is too short/invalid
+    """
+    text = text.strip()
+
+    # Minimum length check
+    if len(text) < 100:
+        return None
+
+    # Remove markdown code block markers if present
+    text = re.sub(r"^```\w*\n?", "", text)
+    text = re.sub(r"\n?```$", "", text)
+    text = text.strip()
+
+    # Try to extract title (first line or line starting with #)
+    lines = text.split("\n")
+    title = ""
+    body_start = 0
+
+    for i, line in enumerate(lines):
+        line = line.strip()
+        if line.startswith("#"):
+            title = line.lstrip("#").strip()
+            body_start = i + 1
+            break
+        elif len(line) > 10 and i == 0:
+            # First non-empty line as title
+            title = line[:120]
+            body_start = i + 1
+            break
+
+    # Extract body (remaining text)
+    body_lines = [l.strip() for l in lines[body_start:] if l.strip()]
+    body = "\n\n".join(body_lines)
+
+    if len(body) < 100:
+        return None
+
+    # Extract hashtags
+    hashtags = re.findall(r"#(\w+)", text)
+
+    # Extract potential key facts (lines starting with - or •)
+    key_facts = []
+    for line in body_lines:
+        line = line.strip()
+        if line.startswith(("-", "•", "*")) and len(line) > 20:
+            key_facts.append(line.lstrip("-•* ").strip())
+    key_facts = key_facts[:5]  # Max 5 facts
+
+    # Create fallback structure
+    fallback = {
+        "title": title or "AI News Update",
+        "hook": body_lines[0] if body_lines else "",
+        "body": body[:2000],  # Limit body length
+        "key_facts": key_facts if key_facts else ["See full article for details"],
+        "analysis": "",
+        "sources": [],
+        "tldr": body[:200] + "..." if len(body) > 200 else body,
+        "hashtags": hashtags if hashtags else ["AI", "Technology"],
+        "needs_review": True,  # Mark for manual review
+        "post_type": "breaking",
+    }
+
+    return fallback
 
 
 def format_post_from_json(post_data: dict) -> str:
