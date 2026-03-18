@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Optional
 from core.logger import get_logger
 from llm.base import BaseLLMAdapter
 from memory.post_store import PostStore
+from pipeline.anti_water import FillerDetector, DensityScorer
 from pipeline.grammar_checker import get_grammar_checker
 
 if TYPE_CHECKING:
@@ -107,6 +108,8 @@ class QualityChecker:
         max_hashtags: int = 5,
         similarity_threshold: float = 0.85,
         forbidden_words: Optional[list[str]] = None,
+        enable_water_detection: bool = True,
+        enable_density_scoring: bool = True,
     ) -> None:
         """
         Initialize quality checker.
@@ -123,6 +126,8 @@ class QualityChecker:
             max_hashtags: Maximum hashtag count
             similarity_threshold: Threshold for duplicate detection
             forbidden_words: Words that should not appear
+            enable_water_detection: Enable filler words/water content detection
+            enable_density_scoring: Enable information density scoring
         """
         self.llm = llm_adapter
         self.post_store = post_store
@@ -135,6 +140,12 @@ class QualityChecker:
         self.max_hashtags = max_hashtags
         self.similarity_threshold = similarity_threshold
         self.forbidden_words = forbidden_words or []
+        self.enable_water_detection = enable_water_detection
+        self.enable_density_scoring = enable_density_scoring
+
+        # Initialize anti-water modules if enabled
+        self._filler_detector = FillerDetector() if enable_water_detection else None
+        self._density_scorer = DensityScorer() if enable_density_scoring else None
 
     def _count_emojis(self, text: str) -> int:
         """Count emojis in text."""
@@ -409,6 +420,45 @@ class QualityChecker:
                     suggestions.append("Упростите длинные предложения для лучшей читаемости")
         except Exception as e:
             logger.debug(f"Grammar check skipped: {e}")
+
+        # Water content detection (filler words check)
+        if self._filler_detector is not None:
+            try:
+                filler_report = self._filler_detector.detect(text_content)
+                if not filler_report.passes_threshold:
+                    issues.append(
+                        f"High water content: {filler_report.water_percentage:.1f}% "
+                        f"(threshold: {self._filler_detector.max_water_percentage}%)"
+                    )
+                    if filler_report.filler_list:
+                        suggestions.append(
+                            f"Remove filler phrases: {', '.join(filler_report.filler_list[:3])}"
+                        )
+                    score -= 10
+                elif filler_report.water_percentage > 10:
+                    # Warning level but still passes
+                    suggestions.append(
+                        f"Consider reducing filler content ({filler_report.water_percentage:.1f}% water)"
+                    )
+            except Exception as e:
+                logger.debug(f"Water detection skipped: {e}")
+
+        # Information density scoring
+        if self._density_scorer is not None:
+            try:
+                density_report = self._density_scorer.score(text_content)
+                if not density_report.passes_threshold:
+                    issues.append(
+                        f"Low information density: {density_report.density_score:.1f} "
+                        f"(minimum: {self._density_scorer.min_density})"
+                    )
+                    suggestions.extend(density_report.recommendations[:2])
+                    score -= 10
+                elif density_report.numbers_count < 2:
+                    # Suggest adding more specific data
+                    suggestions.append("Add more specific numbers and metrics to increase information density")
+            except Exception as e:
+                logger.debug(f"Density scoring skipped: {e}")
 
         # Ensure score is within bounds
         score = max(0, min(100, score))
