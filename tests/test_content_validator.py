@@ -6,6 +6,7 @@ import pytest
 
 from pipeline.content_validator import (
     ContentValidator,
+    KeyFactsValidationResult,
 )
 
 
@@ -322,3 +323,242 @@ class TestSanitization:
         result = validator.validate_raw_response(content)
         # Should detect meta-text even if sanitization is attempted
         assert result.score < 100
+
+
+class TestValidateKeyFacts:
+    """Test validate_key_facts method."""
+
+    @pytest.fixture
+    def validator(self):
+        return ContentValidator()
+
+    def test_validate_key_facts_count(self, validator):
+        """Test that key facts count must be 4-5."""
+        # Too few facts
+        few_facts = ["Fact 1", "Fact 2"]
+        result = validator.validate_key_facts(few_facts)
+        assert not result.is_valid
+        assert "Too few key facts" in " ".join(result.issues)
+        assert result.facts_count == 2
+
+        # Too many facts
+        many_facts = ["Fact 1", "Fact 2", "Fact 3", "Fact 4", "Fact 5", "Fact 6"]
+        result = validator.validate_key_facts(many_facts)
+        assert not result.is_valid
+        assert "Too many key facts" in " ".join(result.issues)
+        assert result.facts_count == 6
+
+        # Valid count (4 facts)
+        valid_4_facts = ["Fact 1", "Fact 2", "Fact 3", "Fact 4"]
+        result = validator.validate_key_facts(valid_4_facts)
+        assert result.facts_count == 4
+        # Should not have count-related issues
+        count_issues = [i for i in result.issues if "key facts" in i.lower()]
+        assert len(count_issues) == 0
+
+        # Valid count (5 facts)
+        valid_5_facts = ["Fact 1", "Fact 2", "Fact 3", "Fact 4", "Fact 5"]
+        result = validator.validate_key_facts(valid_5_facts)
+        assert result.facts_count == 5
+        # Should not have count-related issues
+        count_issues = [i for i in result.issues if "key facts" in i.lower()]
+        assert len(count_issues) == 0
+
+    def test_validate_key_facts_structure(self, validator):
+        """Test that each fact must be a single sentence."""
+        # Compound fact with multiple sentences
+        compound_facts = [
+            "First fact. Second sentence.",  # Multiple sentences
+            "Fact 2",
+            "Fact 3",
+            "Fact 4",
+        ]
+        result = validator.validate_key_facts(compound_facts)
+        assert not result.is_valid
+        assert any("multiple sentences" in i.lower() or "compound" in i.lower() for i in result.issues)
+
+        # Non-string fact
+        non_string_facts = ["Fact 1", 123, "Fact 3", "Fact 4"]
+        result = validator.validate_key_facts(non_string_facts)
+        assert not result.is_valid
+        assert any("not a string" in i.lower() for i in result.issues)
+
+        # Empty fact
+        empty_facts = ["Fact 1", "", "Fact 3", "Fact 4"]
+        result = validator.validate_key_facts(empty_facts)
+        assert not result.is_valid
+        assert any("empty" in i.lower() for i in result.issues)
+
+    def test_validate_key_facts_independently_verifiable(self, validator):
+        """Test that each fact must be independently verifiable (no overlapping facts)."""
+        # Overlapping facts (high similarity - almost identical content)
+        overlapping_facts = [
+            "OpenAI released GPT-4 with 40% improvement in benchmarks",
+            "OpenAI released GPT-4 with 40% improvement in benchmarks",  # Exact duplicate
+            "The model supports 100 languages worldwide",
+            "API is available for all developers",
+        ]
+        result = validator.validate_key_facts(overlapping_facts)
+        assert not result.is_valid
+        assert any("overlap" in i.lower() for i in result.issues)
+
+        # Non-overlapping, independently verifiable facts
+        good_facts = [
+            "OpenAI released GPT-4 on March 14, 2023",
+            "The model shows 40% improvement in benchmarks",
+            "GPT-4 supports 100 languages worldwide",
+            "API pricing starts at $0.03 per 1K tokens",
+        ]
+        result = validator.validate_key_facts(good_facts)
+        # Should have no overlap issues (may have other issues like no metrics)
+        overlap_issues = [i for i in result.issues if "overlap" in i.lower()]
+        assert len(overlap_issues) == 0
+
+    def test_validate_key_facts_format(self, validator):
+        """Test that key facts use proper format (bullet points)."""
+        # This test validates that the method accepts properly formatted facts
+        # The actual formatting is done in the post formatter
+        properly_formatted = [
+            "OpenAI released GPT-4 on March 14, 2023",
+            "The model shows 40% improvement in benchmarks",
+            "GPT-4 supports 100 languages",
+            "API pricing starts at $0.03 per 1K tokens",
+        ]
+        result = validator.validate_key_facts(properly_formatted)
+        assert result.facts_count == 4
+        # Check that result has proper structure
+        assert hasattr(result, 'is_valid')
+        assert hasattr(result, 'score')
+        assert hasattr(result, 'issues')
+        assert hasattr(result, 'facts_count')
+        assert hasattr(result, 'has_metrics')
+
+    def test_validate_key_facts_with_no_numbers(self, validator):
+        """Test that facts without any metrics/numbers trigger a warning."""
+        facts_no_numbers = [
+            "OpenAI released a new model recently",
+            "The model supports many languages",
+            "API is available for developers",
+            "The company is based in San Francisco",
+        ]
+        result = validator.validate_key_facts(facts_no_numbers)
+        assert not result.is_valid
+        assert not result.has_metrics
+        assert any("metrics" in i.lower() or "numbers" in i.lower() for i in result.issues)
+
+    def test_validate_key_facts_have_at_least_one_metric(self, validator):
+        """Test that at least one fact has a metric/number."""
+        facts_with_metric = [
+            "OpenAI released GPT-4 with 40% improvement",
+            "The model supports 100 languages",
+            "API is available for developers",
+            "The company is based in San Francisco",
+        ]
+        result = validator.validate_key_facts(facts_with_metric)
+        assert result.has_metrics is True
+        # Should not have the "no metrics" issue
+        metric_issues = [i for i in result.issues if "metrics" in i.lower() or "numbers" in i.lower()]
+        assert len(metric_issues) == 0
+
+
+class TestValidateKeyFactsTLDR:
+    """Test TLDR validation within validate_key_facts."""
+
+    @pytest.fixture
+    def validator(self):
+        return ContentValidator()
+
+    def test_tldr_max_2_sentences(self, validator):
+        """Test that TLDR must be max 2 sentences."""
+        good_facts = [
+            "OpenAI released GPT-4 with 40% improvement",
+            "The model supports 100 languages",
+            "API is available for developers",
+            "The company is based in San Francisco",
+        ]
+
+        # TLDR with 3 sentences (too many)
+        long_tldr = "OpenAI released GPT-4. The model is improved. It supports many languages."
+        result = validator.validate_key_facts(good_facts, tldr=long_tldr)
+        assert not result.tldr_valid
+        assert result.tldr_sentence_count == 3
+        assert any("too many sentences" in i.lower() for i in result.issues)
+
+    def test_tldr_meaningful_without_full_post(self, validator):
+        """Test that TLDR is meaningful without reading full post."""
+        good_facts = [
+            "OpenAI released GPT-4 with 40% improvement",
+            "The model supports 100 languages",
+            "API is available for developers",
+            "The company is based in San Francisco",
+        ]
+
+        # TLDR with meta-language (not self-contained)
+        meta_tldr = "This post discusses the new GPT-4 release from OpenAI."
+        result = validator.validate_key_facts(good_facts, tldr=meta_tldr)
+        assert not result.tldr_valid
+        assert any("meta" in i.lower() or "self-referential" in i.lower() for i in result.issues)
+
+    def test_tldr_self_contained(self, validator):
+        """Test that TLDR passes self-contained check."""
+        good_facts = [
+            "OpenAI released GPT-4 with 40% improvement",
+            "The model supports 100 languages",
+            "API is available for developers",
+            "The company is based in San Francisco",
+        ]
+
+        # Good TLDR (self-contained)
+        good_tldr = "OpenAI released GPT-4 with 40% improvement and 100 language support."
+        result = validator.validate_key_facts(good_facts, tldr=good_tldr)
+        assert result.tldr_valid
+        assert result.tldr_sentence_count == 1
+
+    def test_tldr_too_short(self, validator):
+        """Test that TLDR is not too short."""
+        good_facts = [
+            "OpenAI released GPT-4 with 40% improvement",
+            "The model supports 100 languages",
+            "API is available for developers",
+            "The company is based in San Francisco",
+        ]
+
+        # TLDR too short
+        short_tldr = "GPT-4 released."
+        result = validator.validate_key_facts(good_facts, tldr=short_tldr)
+        assert not result.tldr_valid
+        assert any("too short" in i.lower() for i in result.issues)
+
+
+class TestKeyFactsValidationResult:
+    """Test KeyFactsValidationResult dataclass."""
+
+    def test_result_to_dict(self):
+        """Test that KeyFactsValidationResult can be converted to dict."""
+        result = KeyFactsValidationResult(
+            is_valid=True,
+            score=95.0,
+            issues=[],
+            facts_count=4,
+            has_metrics=True,
+            tldr_valid=True,
+            tldr_sentence_count=1,
+        )
+        result_dict = result.to_dict()
+
+        assert result_dict["is_valid"] is True
+        assert result_dict["score"] == 95.0
+        assert result_dict["facts_count"] == 4
+        assert result_dict["has_metrics"] is True
+        assert result_dict["tldr_valid"] is True
+        assert result_dict["tldr_sentence_count"] == 1
+
+    def test_result_default_values(self):
+        """Test KeyFactsValidationResult default values."""
+        result = KeyFactsValidationResult(is_valid=True, score=100.0)
+
+        assert result.issues == []
+        assert result.facts_count == 0
+        assert result.has_metrics is False
+        assert result.tldr_valid is True
+        assert result.tldr_sentence_count == 0

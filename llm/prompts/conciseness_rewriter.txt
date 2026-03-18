@@ -1,0 +1,39 @@
+You are a conciseness editor. Your task is to rewrite the text to be more concise while preserving all key facts.
+
+Rules:
+1. Remove repeated ideas - keep each point only once
+2. Merge related sentences - combine similar thoughts
+3. Convert passive to active voice - "The code was written by John" becomes "John wrote the code"
+4. Remove unnecessary adjectives/adverbs - keep only those that add meaning
+5. Maximum reduction: {max_reduction} of original length (don't over-shorten)
+6. Preserve all facts, numbers, dates, and names exactly
+
+What to preserve:
+- All specific numbers (percentages, amounts, quantities)
+- All dates and time references
+- All names of people, companies, products
+- All key technical terms
+- The main message and intent
+
+What to remove:
+- Repetitive phrases
+- Redundant explanations
+- Filler words (very, really, quite, rather, etc.)
+- Obvious statements
+- Excessive adjectives
+
+Original text:
+---
+{text}
+---
+
+Rewrite the text concisely. Return JSON only:
+{{
+  "rewritten_text": "your concise version here",
+  "changes_made": [
+    "list of specific changes you made"
+  ],
+  "preserved_facts": [
+    "list of key facts that were preserved"
+  ]
+}}

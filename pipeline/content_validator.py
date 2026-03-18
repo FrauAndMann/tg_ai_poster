@@ -85,6 +85,12 @@ MIN_BODY_LENGTH = 150
 MIN_BODY_SENTENCES = 3
 MIN_KEY_FACTS = 2
 
+# Key facts requirements
+MIN_KEY_FACTS_COUNT = 4
+MAX_KEY_FACTS_COUNT = 5
+MIN_TLDR_SENTENCES = 1
+MAX_TLDR_SENTENCES = 2
+
 
 @dataclass
 class ValidationResult:
@@ -117,6 +123,41 @@ class ValidationResult:
             "critical_issues": self.critical_issues,
             "warnings": self.warnings,
             "needs_regeneration": self.needs_regeneration,
+        }
+
+
+@dataclass
+class KeyFactsValidationResult:
+    """
+    Result of key facts validation.
+
+    Attributes:
+        is_valid: Whether key facts pass all checks
+        score: Quality score (0-100)
+        issues: List of issues found
+        facts_count: Number of facts provided
+        has_metrics: Whether at least one fact has a metric/number
+        tldr_valid: Whether TLDR passes self-contained check
+        tldr_sentence_count: Number of sentences in TLDR
+    """
+
+    is_valid: bool
+    score: float
+    issues: list[str] = field(default_factory=list)
+    facts_count: int = 0
+    has_metrics: bool = False
+    tldr_valid: bool = True
+    tldr_sentence_count: int = 0
+
+    def to_dict(self) -> dict:
+        return {
+            "is_valid": self.is_valid,
+            "score": self.score,
+            "issues": self.issues,
+            "facts_count": self.facts_count,
+            "has_metrics": self.has_metrics,
+            "tldr_valid": self.tldr_valid,
+            "tldr_sentence_count": self.tldr_sentence_count,
         }
 
 
@@ -528,6 +569,277 @@ class ContentValidator:
             needs_regeneration=needs_regeneration,
             sanitized_content=self._sanitize_content(content) if meta_issues else None,
         )
+
+    def validate_key_facts(
+        self, key_facts: list[str], tldr: Optional[str] = None
+    ) -> KeyFactsValidationResult:
+        """
+        Validate key facts structure and quality.
+
+        Requirements:
+        - Exactly 4-5 key facts
+        - Each fact must be a single sentence
+        - Each fact must be independently verifiable
+        - No overlapping facts
+        - At least one fact should contain a metric/number
+
+        TLDR requirements:
+        - Maximum 2 sentences
+        - Must be meaningful without reading full post
+        - Must pass self-contained check
+
+        Args:
+            key_facts: List of key fact strings
+            tldr: Optional TLDR string to validate
+
+        Returns:
+            KeyFactsValidationResult with validation outcome
+        """
+        issues: list[str] = []
+        score = 100.0
+        has_metrics = False
+
+        # Normalize input
+        if not isinstance(key_facts, list):
+            key_facts = []
+
+        facts_count = len(key_facts)
+
+        # Check facts count (exactly 4-5)
+        if facts_count < MIN_KEY_FACTS_COUNT:
+            issues.append(
+                f"Too few key facts: {facts_count} (required: {MIN_KEY_FACTS_COUNT}-{MAX_KEY_FACTS_COUNT})"
+            )
+            score -= 25
+        elif facts_count > MAX_KEY_FACTS_COUNT:
+            issues.append(
+                f"Too many key facts: {facts_count} (required: {MIN_KEY_FACTS_COUNT}-{MAX_KEY_FACTS_COUNT})"
+            )
+            score -= 15
+
+        # Check each fact structure
+        for i, fact in enumerate(key_facts):
+            if not isinstance(fact, str):
+                issues.append(f"Fact #{i + 1} is not a string")
+                score -= 10
+                continue
+
+            fact = fact.strip()
+
+            # Check if fact is empty
+            if not fact:
+                issues.append(f"Fact #{i + 1} is empty")
+                score -= 15
+                continue
+
+            # Check for single sentence (no compound facts with multiple sentences)
+            # Split by common sentence terminators
+            sentences = re.split(r"[.!?。।]", fact)
+            non_empty_sentences = [s.strip() for s in sentences if s.strip()]
+
+            if len(non_empty_sentences) > 1:
+                issues.append(
+                    f"Fact #{i + 1} contains multiple sentences (compound fact): '{fact[:50]}...'"
+                )
+                score -= 10
+
+            # Check for compound facts with "and" connecting separate claims
+            # Look for patterns like "X did Y and Z did W" or "X is Y and Z is W"
+            compound_patterns = [
+                r"\s+и\s+.{10,}\s+и\s+",  # Multiple "и" in Russian
+                r"\s+and\s+.{10,}\s+and\s+",  # Multiple "and" in English
+            ]
+            for pattern in compound_patterns:
+                if re.search(pattern, fact, re.IGNORECASE):
+                    issues.append(
+                        f"Fact #{i + 1} appears to be compound (multiple claims): '{fact[:50]}...'"
+                    )
+                    score -= 8
+                    break
+
+            # Check for numbers/metrics
+            if re.search(r"\d+[.,]?\d*%?", fact):
+                has_metrics = True
+
+        # Check for overlapping facts
+        if facts_count >= 2:
+            overlap_issues = self._check_fact_overlaps(key_facts)
+            issues.extend(overlap_issues)
+            score -= len(overlap_issues) * 12
+
+        # Check if at least one fact has metrics
+        if facts_count >= MIN_KEY_FACTS_COUNT and not has_metrics:
+            issues.append("No key facts contain metrics or numbers")
+            score -= 10
+
+        # Validate TLDR if provided
+        tldr_valid = True
+        tldr_sentence_count = 0
+
+        if tldr:
+            tldr_result = self._validate_tldr(tldr)
+            tldr_valid = tldr_result["is_valid"]
+            tldr_sentence_count = tldr_result["sentence_count"]
+            if not tldr_valid:
+                issues.extend(tldr_result["issues"])
+                score -= len(tldr_result["issues"]) * 10
+
+        score = max(0, min(100, score))
+
+        return KeyFactsValidationResult(
+            is_valid=len(issues) == 0,
+            score=score,
+            issues=issues,
+            facts_count=facts_count,
+            has_metrics=has_metrics,
+            tldr_valid=tldr_valid,
+            tldr_sentence_count=tldr_sentence_count,
+        )
+
+    def _check_fact_overlaps(self, key_facts: list[str]) -> list[str]:
+        """
+        Check for overlapping/duplicate facts.
+
+        Args:
+            key_facts: List of key facts
+
+        Returns:
+            List of overlap issues
+        """
+        issues = []
+
+        # Normalize facts for comparison
+        normalized_facts = []
+        for fact in key_facts:
+            if isinstance(fact, str):
+                # Convert to lowercase and remove extra whitespace
+                normalized = " ".join(fact.lower().split())
+                # Remove numbers for semantic comparison
+                normalized_no_nums = re.sub(r"\d+[.,]?\d*%?", "", normalized)
+                normalized_facts.append((normalized, normalized_no_nums))
+
+        # Compare each pair of facts
+        for i in range(len(normalized_facts)):
+            for j in range(i + 1, len(normalized_facts)):
+                fact1, fact1_no_nums = normalized_facts[i]
+                fact2, fact2_no_nums = normalized_facts[j]
+
+                # Check for high similarity (without numbers)
+                if self._calculate_similarity(fact1_no_nums, fact2_no_nums) > 0.7:
+                    issues.append(
+                        f"Facts #{i + 1} and #{j + 1} appear to overlap"
+                    )
+
+                # Check if one fact contains most of another
+                if len(fact1_no_nums) > 20 and len(fact2_no_nums) > 20:
+                    shorter = min(fact1_no_nums, fact2_no_nums, key=len)
+                    longer = max(fact1_no_nums, fact2_no_nums, key=len)
+                    if shorter in longer:
+                        issues.append(
+                            f"Facts #{i + 1} and #{j + 1} have overlapping content"
+                        )
+
+        return issues
+
+    def _calculate_similarity(self, text1: str, text2: str) -> float:
+        """
+        Calculate simple word-based similarity between two texts.
+
+        Args:
+            text1: First text
+            text2: Second text
+
+        Returns:
+            Similarity score (0-1)
+        """
+        words1 = set(text1.split())
+        words2 = set(text2.split())
+
+        if not words1 or not words2:
+            return 0.0
+
+        intersection = words1 & words2
+        union = words1 | words2
+
+        return len(intersection) / len(union) if union else 0.0
+
+    def _validate_tldr(self, tldr: str) -> dict:
+        """
+        Validate TLDR quality.
+
+        Requirements:
+        - Maximum 2 sentences (under 4 is ideal)
+        - Must be meaningful without reading full post
+        - No meta-language like "this post discusses"
+
+        Args:
+            tldr: TLDR string
+
+        Returns:
+            Dict with is_valid, sentence_count, and issues
+        """
+        issues = []
+
+        if not isinstance(tldr, str):
+            return {"is_valid": False, "sentence_count": 0, "issues": ["TLDR is not a string"]}
+
+        tldr = tldr.strip()
+
+        if not tldr:
+            return {"is_valid": False, "sentence_count": 0, "issues": ["TLDR is empty"]}
+
+        # Count sentences
+        sentences = re.split(r"[.!?。।]", tldr)
+        non_empty_sentences = [s.strip() for s in sentences if s.strip()]
+        sentence_count = len(non_empty_sentences)
+
+        # Check sentence count
+        if sentence_count > MAX_TLDR_SENTENCES:
+            issues.append(
+                f"TLDR has too many sentences: {sentence_count} (max: {MAX_TLDR_SENTENCES})"
+            )
+
+        # Check for meta-language (self-referential phrases)
+        meta_patterns = [
+            r"этот\s+пост",
+            r"данная\s+статья",
+            r"этот\s+материал",
+            r"в\s+данном\s+тексте",
+            r"this\s+post",
+            r"this\s+article",
+            r"the\s+above\s+text",
+            r"мы\s+обсудили",
+            r"we\s+discussed",
+            r"as\s+mentioned",
+            r"как\s+упоминалось",
+        ]
+
+        for pattern in meta_patterns:
+            if re.search(pattern, tldr, re.IGNORECASE):
+                issues.append("TLDR contains self-referential/meta language")
+                break
+
+        # Check if TLDR is too short to be meaningful
+        if len(tldr) < 20:
+            issues.append("TLDR is too short to be meaningful")
+
+        # Check if TLDR starts with vague phrases
+        vague_starts = [
+            r"^это\s+",
+            r"^это\s+-\s+",
+            r"^this\s+is\s+",
+            r"^вот\s+",
+        ]
+        for pattern in vague_starts:
+            if re.search(pattern, tldr, re.IGNORECASE):
+                issues.append("TLDR starts with a vague phrase")
+                break
+
+        return {
+            "is_valid": len(issues) == 0,
+            "sentence_count": sentence_count,
+            "issues": issues,
+        }
 
     def is_publication_ready(self, content: str | dict) -> tuple[bool, str]:
         """
