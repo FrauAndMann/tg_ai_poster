@@ -95,6 +95,40 @@ class QualityChecker:
         "в этом посте мы",
     ]
 
+    # Engagement phrases (positive indicators)
+    ENGAGEMENT_PHRASES_POSITIVE = [
+        "почему это важно",
+        "вот главное",
+        "ключевой момент",
+        "на что обратить внимание",
+        "что это значит для",
+        "why this matters",
+        "key takeaway",
+        "here's the thing",
+        "bottom line",
+        "what this means for",
+    ]
+
+    # Strong hook patterns (indicates engaging opening)
+    ENGAGEMENT_HOOK_PATTERNS = [
+        r"^[^{]{50,200}[\?!]",  # Strong hook under 200 chars ending with ? or !
+        r"^(новый|обнаружен|появился|released|discovered|emerged)",  # News hooks
+        r"^(почему|как|что будет|why|how|what's next)",  # Question hooks
+    ]
+
+    # CTA (Call to Action) patterns
+    CTA_PATTERNS = [
+        r"\?$",  # Ends with question mark (at end of string)
+        r"что вы думаете",
+        r"делитесь в комментариях",
+        r"какой.*?выбираете",
+        r"what do you think",
+        r"share your thoughts",
+        r"как считаете",
+        r"а вы что",
+        r"вопрос.*\?",
+    ]
+
     def __init__(
         self,
         llm_adapter: Optional[BaseLLMAdapter] = None,
@@ -146,6 +180,11 @@ class QualityChecker:
         # Initialize anti-water modules if enabled
         self._filler_detector = FillerDetector() if enable_water_detection else None
         self._density_scorer = DensityScorer() if enable_density_scoring else None
+
+        # Compile engagement hook patterns for performance
+        self._engagement_hook_patterns = [
+            re.compile(p, re.IGNORECASE) for p in self.ENGAGEMENT_HOOK_PATTERNS
+        ]
 
     def _count_emojis(self, text: str) -> int:
         """Count emojis in text."""
@@ -237,6 +276,46 @@ class QualityChecker:
                 return False, f"Generic opening detected: '{opening}'"
 
         return True, None
+
+    def _check_engagement(self, content: str) -> tuple[bool, Optional[str], list[str]]:
+        """
+        Check for engagement indicators.
+
+        Returns:
+            tuple: (passed, issue, suggestions)
+        """
+        suggestions = []
+        content_lower = content.lower()
+
+        # Check for positive engagement phrases
+        has_engagement = any(phrase in content_lower for phrase in self.ENGAGEMENT_PHRASES_POSITIVE)
+        if not has_engagement:
+            suggestions.append("Add engagement markers: 'почему это важно', 'ключевой момент', etc.")
+
+        # Check hook strength (first significant line)
+        lines = [l.strip() for l in content.split("\n") if l.strip() and not l.strip().startswith("#")]
+        first_line = lines[0] if lines else ""
+
+        # Use pre-compiled patterns from __post_init__
+        hook_strong = any(
+            pattern.search(first_line)
+            for pattern in self._engagement_hook_patterns
+        )
+
+        if not hook_strong and first_line:
+            suggestions.append("Strengthen opening hook with question, discovery, or urgency")
+
+        # Check for CTA (Call to Action)
+        has_cta = any(re.search(pattern, content, re.IGNORECASE) for pattern in self.CTA_PATTERNS)
+        if not has_cta:
+            suggestions.append("Add call-to-action: question at end or invitation to discuss")
+
+        passed = has_engagement or hook_strong or has_cta
+
+        if not passed:
+            return False, "Low engagement indicators", suggestions
+
+        return True, None, suggestions
 
     def _check_telegram_markdown(self, content: str) -> tuple[bool, Optional[str]]:
         """Check Telegram markdown formatting (soft check)."""
@@ -391,6 +470,16 @@ class QualityChecker:
         if not passed:
             issues.append(issue)
             score -= 15
+
+        # Engagement check
+        passed, issue, engagement_suggestions = self._check_engagement(text_content)
+        if not passed:
+            issues.append(issue)
+            suggestions.extend(engagement_suggestions)
+            score -= 10
+        elif engagement_suggestions:
+            # Passed but has suggestions for improvement
+            suggestions.extend(engagement_suggestions)
 
         # Similarity check
         passed, issue = await self._check_similarity(text_content)

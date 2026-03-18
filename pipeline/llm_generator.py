@@ -114,12 +114,13 @@ class LLMGenerator:
             else:
                 temperature = 0.2  # Default
 
-        # Build prompts
+        # Build prompts with post-type-specific template
         system_prompt, user_prompt = await self.prompt_builder.build_full_prompt(
             topic=topic,
             source_context=source_context,
             include_recent_posts=include_recent_posts,
             forbidden_topics=forbidden_topics,
+            post_type=post_type,
         )
 
         # Add extra instructions if provided

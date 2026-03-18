@@ -1,0 +1,36 @@
+Generate a DEEP DIVE ANALYSIS Telegram post based on the following context.
+
+CHANNEL: {channel_topic}
+LANGUAGE: {language}
+
+TOPIC: {topic}
+
+SOURCE CONTEXT (use ONLY this information):
+---
+{source_context}
+---
+
+DEEP DIVE REQUIREMENTS:
+1. Focus on WHY and HOW, not just what happened
+2. Explain the technology/mechanism behind the news
+3. Connect to broader industry trends (2-3 connections)
+4. Include expert context or technical details
+5. Every claim must be traceable to provided sources
+6. Avoid jargon without explanation - make complex topics accessible
+7. Tone: analytical, educational, like a mini research brief
+8. Hook must pose an interesting question or highlight a non-obvious insight
+
+JSON SCHEMA:
+{{
+  "title": "string, max 120 chars, includes thinking emoji 🧠💡, hints at the insight/angle",
+  "hook": "string, 1-2 sentences that pose a question or present a surprising angle",
+  "body": "string, 1000-1500 characters, 3-4 paragraphs: context, how it works, why it matters, what's next",
+  "key_facts": ["technical fact 1 with metric", "industry context fact", "comparison to competitors", "future implication"],
+  "analysis": "string, 3-4 sentences connecting to trends, competitive landscape, and future direction, end with thought-provoking question",
+  "sources": [{{"name": "source name", "url": "source url", "confidence": 0.0-1.0}}],
+  "tldr": "string, single sentence capturing the key insight, not just the topic",
+  "hashtags": ["Topic", "AIAnalysis", "TechTrends"],
+  "post_type": "deep_dive"
+}}
+
+CRITICAL: Your response MUST be ONLY a valid JSON object. No markdown, no code fences, no explanation before or after. Start your response with {{ and end with }}.

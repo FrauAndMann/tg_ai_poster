@@ -95,6 +95,10 @@ MAX_TLDR_SENTENCES = 2
 # Matches Chinese characters, Japanese kanji, and Korean hanja
 CJK_PATTERN = re.compile(r"[\u4e00-\u9fff\u3400-\u4dbf\U00020000-\U0002a6df\U0002a700-\U0002b73f\U0002b740-\U0002b81f\U0002b820-\U0002ceaf]")
 
+# CJK threshold: only flag as critical if more than this many CJK chars
+# Prevents false positives from occasional CJK in technical terms/URLs
+CJK_CRITICAL_THRESHOLD = 5
+
 
 @dataclass
 class ValidationResult:
@@ -207,35 +211,46 @@ class ContentValidator:
         # CJK character pattern for detecting Chinese/Japanese/Korean characters
         self._cjk_pattern = CJK_PATTERN
 
-    def _check_cjk_characters(self, content: str) -> list[str]:
+    def _check_cjk_characters(self, content: str) -> tuple[list[str], int]:
         """
         Check for Chinese/Japanese/Korean characters in content.
 
         GLM-5 and other Chinese models may sometimes output CJK characters
         which should not appear in Russian/English content.
 
+        Uses threshold-based detection to avoid false positives from
+        occasional CJK characters in URLs or technical terms.
+
         Args:
             content: Content to check
 
         Returns:
-            List of issues found
+            Tuple of (list of issues found, total CJK character count)
         """
         issues = []
         matches = self._cjk_pattern.findall(content)
+        total_count = len(matches)
 
         if matches:
             # Get unique characters and show example
             unique_chars = list(set(matches))[:5]  # Show max 5 examples
             char_display = "".join(unique_chars)
-            total_count = len(matches)
-            issues.append(
-                f"Chinese/Japanese characters detected ({total_count} found): '{char_display}...'"
-            )
-            logger.warning(
-                f"CJK characters detected in content: {total_count} occurrences"
-            )
 
-        return issues
+            # Only flag as critical if above threshold
+            if total_count > CJK_CRITICAL_THRESHOLD:
+                issues.append(
+                    f"Chinese/Japanese characters detected ({total_count} found): '{char_display}...'"
+                )
+                logger.warning(
+                    f"CJK characters detected in content: {total_count} occurrences (above threshold)"
+                )
+            else:
+                # Below threshold: log as debug, don't add to issues
+                logger.debug(
+                    f"CJK characters below threshold ({total_count}/{CJK_CRITICAL_THRESHOLD}): '{char_display}'"
+                )
+
+        return issues, total_count
 
     def _check_meta_text(self, content: str) -> list[str]:
         """
@@ -452,10 +467,11 @@ class ContentValidator:
         issues = []
         score = 100.0
 
-        # Check for CJK characters (critical issue for GLM models)
-        cjk_issues = self._check_cjk_characters(response)
+        # Check for CJK characters (critical issue for GLM models, threshold-based)
+        cjk_issues, cjk_count = self._check_cjk_characters(response)
         issues.extend(cjk_issues)
-        score -= len(cjk_issues) * 40
+        # Reduced penalty: 10 points per issue (was 40)
+        score -= len(cjk_issues) * 10
 
         # Check for meta-text
         meta_issues = self._check_meta_text(response)
@@ -501,14 +517,14 @@ class ContentValidator:
         warnings = []
         score = 100.0
 
-        # Check for CJK characters (Chinese/Japanese/Korean)
+        # Check for CJK characters (Chinese/Japanese/Korean, threshold-based)
         body = data.get("body", "")
         title = data.get("title", "")
         all_text = f"{title} {body}"
-        cjk_issues = self._check_cjk_characters(all_text)
+        cjk_issues, cjk_count = self._check_cjk_characters(all_text)
         if cjk_issues:
             critical.extend(cjk_issues)
-            score -= len(cjk_issues) * 40  # Heavy penalty for CJK chars
+            score -= len(cjk_issues) * 10  # Reduced penalty (was 40)
 
         # Check JSON structure
         json_critical, json_warnings = self._check_json_structure(data)
@@ -569,10 +585,10 @@ class ContentValidator:
         warnings = []
         score = 100.0
 
-        # Check for CJK characters (critical issue for GLM models)
-        cjk_issues = self._check_cjk_characters(content)
+        # Check for CJK characters (critical issue for GLM models, threshold-based)
+        cjk_issues, cjk_count = self._check_cjk_characters(content)
         critical.extend(cjk_issues)
-        score -= len(cjk_issues) * 40
+        score -= len(cjk_issues) * 10  # Reduced penalty (was 40)
 
         # Check for meta-text
         meta_issues = self._check_meta_text(content)

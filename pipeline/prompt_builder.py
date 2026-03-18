@@ -69,6 +69,9 @@ class PromptBuilder:
         template_files = {
             "system_prompt": "system_prompt.txt",
             "post_generator": "post_generator.txt",
+            "breaking_post": "breaking_post.txt",
+            "deep_dive_post": "deep_dive_post.txt",
+            "tool_roundup": "tool_roundup.txt",
             "topic_selector": "topic_selector.txt",
             "quality_checker": "quality_checker.txt",
             "source_verifier": "source_verifier.txt",
@@ -174,10 +177,43 @@ class PromptBuilder:
             forbidden_topics=forbidden_str,
         )
 
+    def _get_post_type_template(self, post_type: str) -> str:
+        """
+        Get post-type-specific template or fallback to generic.
+
+        Args:
+            post_type: Type of post (breaking, deep_dive, analysis, tool_roundup)
+
+        Returns:
+            str: Template content
+        """
+        template_map = {
+            "breaking": "breaking_post",
+            "deep_dive": "deep_dive_post",
+            "analysis": "deep_dive_post",  # analysis uses same template as deep_dive
+            "tool_roundup": "tool_roundup",
+        }
+
+        template_name = template_map.get(post_type, "post_generator")
+        template = self._templates.get(template_name)
+
+        if not template:
+            logger.warning(f"Template not found: {template_name}, falling back to post_generator")
+            template = self._templates.get(
+                "post_generator",
+                "Write a Telegram post about: {topic}\n\n"
+                "Context: {source_context}",
+            )
+        else:
+            logger.debug(f"Using post-type template: {template_name}")
+
+        return template
+
     def build_post_prompt(
         self,
         topic: str,
         source_context: Optional[str] = None,
+        post_type: str = "breaking",
     ) -> str:
         """
         Build the post generation prompt.
@@ -185,17 +221,13 @@ class PromptBuilder:
         Args:
             topic: Topic for the post
             source_context: Optional source material/context
+            post_type: Type of post (breaking, deep_dive, tool_roundup, analysis)
 
         Returns:
             str: Complete post generation prompt
         """
-        template = self._templates.get(
-            "post_generator",
-            "Write a Telegram post about: {topic}\n\n"
-            "Context: {source_context}\n\n"
-            "Length: {post_length_min}-{post_length_max} characters\n"
-            "Language: {language}",
-        )
+        # Get post-type-specific template
+        template = self._get_post_type_template(post_type)
 
         # Escape curly braces in source_context to prevent str.format() errors
         safe_source = (source_context or "No additional context provided. Use your knowledge.").replace("{", "{{").replace("}", "}}")
@@ -322,6 +354,7 @@ class PromptBuilder:
         source_context: Optional[str] = None,
         include_recent_posts: bool = True,
         forbidden_topics: Optional[list[str]] = None,
+        post_type: str = "breaking",
     ) -> tuple[str, str]:
         """
         Build complete prompt with system and user components.
@@ -331,6 +364,7 @@ class PromptBuilder:
             source_context: Optional source material
             include_recent_posts: Include recent posts for style
             forbidden_topics: Topics to avoid
+            post_type: Type of post (breaking, deep_dive, tool_roundup, analysis)
 
         Returns:
             tuple[str, str]: (system_prompt, user_prompt)
@@ -346,10 +380,11 @@ class PromptBuilder:
             forbidden_topics=forbidden_topics,
         )
 
-        # Build user prompt
+        # Build user prompt with post-type-specific template
         user_prompt = self.build_post_prompt(
             topic=topic,
             source_context=source_context,
+            post_type=post_type,
         )
 
         return system_prompt, user_prompt

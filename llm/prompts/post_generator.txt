@@ -29,6 +29,44 @@ INSTRUCTIONS:
 16. Hashtags must include: one company-specific, one technology, one general AI/ML
 17. Choose post_type: "breaking" (urgent news), "deep_dive" (analysis), "tool_roundup" (product comparison), or "analysis" (trend discussion)
 
+EXAMPLES FOR REFERENCE:
+
+BREAKING NEWS EXAMPLE:
+{{
+  "title": "🚀 GPT-4 Turbo: 128K контекст и цена в 3 раза ниже",
+  "hook": "OpenAI выпустила GPT-4 Turbo с расширенным контекстом и сниженной ценой, что меняет экономику enterprise AI.",
+  "body": "Новая модель поддерживает 128,000 токенов контекста — можно обработать целую книгу за один запрос. Цена API снижена в 3 раза по сравнению со стандартным GPT-4.\n\nВремя ответа сократилось до 256мс, что делает real-time приложения реалистичными. Это прямой ответ на жалобы разработчиков о медлительности GPT-4.",
+  "key_facts": [
+    "GPT-4 Turbo поддерживает 128,000 токенов контекста",
+    "Цена API снижена в 3 раза по сравнению с GPT-4",
+    "Knowledge cutoff обновлён до декабря 2023",
+    "Время ответа API: 256мс для типичных запросов"
+  ],
+  "analysis": "Это обновление меняет конкурентную динамику в enterprise AI. С Claude от Anthropic тоже увеличивающим контекст, ожидается ценовая война в 2024. Вопрос: приведёт ли это к коммодитизации LLM?",
+  "sources": [{{"name": "OpenAI Blog", "url": "openai.com/blog/gpt-4-turbo", "confidence": 0.95}}],
+  "tldr": "OpenAI выпустила GPT-4 Turbo с 128K контекстом, ценой в 3 раза ниже и обновлённой базой знаний.",
+  "hashtags": ["OpenAI", "GPT4", "LLM"],
+  "post_type": "breaking"
+}}
+
+DEEP DIVE EXAMPLE:
+{{
+  "title": "🧠 Мультимодальные LLM: за пределами текста",
+  "hook": "Большие языковые модели теперь могут видеть, слышать и рассуждать между модальностями — это меняет наше понимание AI-возможностей.",
+  "body": "GPT-4V и Gemini Ultra демонстрируют, что AI следующего поколения — это не просто обработка текста. Vision-возможности включают понимание изображений, интерпретацию графиков и пространственное мышление.\n\nОбработка аудио позволяет голосовое взаимодействие без конвертации speech-to-text, сохраняя интонацию и эмоции. Это важно для customer service, образования и accessibility.\n\nCross-modal transfer показывает, что модели обучаются паттернам в одной области и применяют их в других — ключевой инсайт на пути к общему интеллекту.",
+  "key_facts": [
+    "Мультимодальные модели обрабатывают текст, изображения и аудио в единой архитектуре",
+    "GPT-4V достиг 88.7% точности на vision-language задачах",
+    "Cross-modal transfer позволяет zero-shot возможности между доменами",
+    "Latency обработки: 500-800мс для мультимодальных запросов"
+  ],
+  "analysis": "Сдвиг к мультимодальным архитектурам меняет паттерны deployment enterprise AI. Компаниям теперь нужны unified платформы вместо отдельных text/vision/audio систем. Это снижает сложность, но требует переосмысления data pipelines. Вывод: к 2025 мультимодальность может стать стандартом.",
+  "sources": [{{"name": "Google Research", "url": "deepmind.google/gemini", "confidence": 0.90}}],
+  "tldr": "Мультимодальные LLM, объединяющие текст, vision и аудио, становятся стандартом — нужны unified deployment стратегии.",
+  "hashtags": ["Multimodal", "AIResearch", "LLM"],
+  "post_type": "deep_dive"
+}}
+
 CRITICAL: Your response MUST be ONLY a valid JSON object. No markdown, no code fences, no explanation before or after. Start your response with {{ and end with }}.
 
 JSON SCHEMA:

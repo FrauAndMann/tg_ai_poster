@@ -1,0 +1,36 @@
+Generate a BREAKING NEWS Telegram post based on the following context.
+
+CHANNEL: {channel_topic}
+LANGUAGE: {language}
+
+TOPIC: {topic}
+
+SOURCE CONTEXT (use ONLY this information):
+---
+{source_context}
+---
+
+BREAKING NEWS REQUIREMENTS:
+1. Speed is critical - focus on WHAT happened and WHEN
+2. Lead with the most important fact (inverted pyramid style)
+3. Include specific numbers, dates, company/product names
+4. Explain immediate impact in 1-2 sentences
+5. Every claim must be traceable to provided sources
+6. Avoid hype words: "revolutionary", "breakthrough", "game-changing"
+7. Tone: urgent but factual, like a news wire
+8. Hook must answer: What happened? Why does it matter RIGHT NOW?
+
+JSON SCHEMA:
+{{
+  "title": "string, max 100 chars, includes news emoji like 🚨⚡🔥, starts with company/product name",
+  "hook": "string, 1 sentence starting with the news event, answering 'what' and 'so what'",
+  "body": "string, 600-1000 characters, 2-3 short paragraphs with: what happened, key numbers, immediate impact",
+  "key_facts": ["fact 1 with specific number/date", "fact 2 with specific number/date", "fact 3", "fact 4"],
+  "analysis": "string, 1-2 sentences on immediate market/industry impact, end with forward-looking question",
+  "sources": [{{"name": "source name", "url": "source url", "confidence": 0.0-1.0}}],
+  "tldr": "string, single sentence with the news event and its key number/metric",
+  "hashtags": ["CompanyName", "Technology", "AI"],
+  "post_type": "breaking"
+}}
+
+CRITICAL: Your response MUST be ONLY a valid JSON object. No markdown, no code fences, no explanation before or after. Start your response with {{ and end with }}.

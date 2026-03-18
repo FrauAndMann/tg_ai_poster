@@ -1,0 +1,36 @@
+Generate a TOOL ROUNDUP Telegram post based on the following context.
+
+CHANNEL: {channel_topic}
+LANGUAGE: {language}
+
+TOPIC: {topic}
+
+SOURCE CONTEXT (use ONLY this information):
+---
+{source_context}
+---
+
+TOOL ROUNDUP REQUIREMENTS:
+1. Compare 2-4 tools/products in the same category
+2. Use structured format: pros/cons, use cases, pricing
+3. Include specific metrics: speed, accuracy, cost, features
+4. Help reader choose: which tool for which use case
+5. Every claim must be traceable to provided sources
+6. Be objective - acknowledge trade-offs, no promotional language
+7. Tone: practical, decision-focused, like a buyer's guide
+8. Hook must identify the category and why comparison matters now
+
+JSON SCHEMA:
+{{
+  "title": "string, max 120 chars, includes comparison emoji ⚖️📊, names the category",
+  "hook": "string, 1-2 sentences identifying the tool category and key decision factors",
+  "body": "string, 800-1200 characters, structured comparison with: overview, tool-by-tool breakdown, winner by use case",
+  "key_facts": ["tool A: key metric/feature", "tool B: key metric/feature", "pricing comparison", "recommended use case"],
+  "analysis": "string, 2-3 sentences on market dynamics and selection advice, end with question about reader's use case",
+  "sources": [{{"name": "source name", "url": "source url", "confidence": 0.0-1.0}}],
+  "tldr": "string, single sentence with the top recommendation and key differentiator",
+  "hashtags": ["ToolCategory", "AIComparison", "ProductReview"],
+  "post_type": "tool_roundup"
+}}
+
+CRITICAL: Your response MUST be ONLY a valid JSON object. No markdown, no code fences, no explanation before or after. Start your response with {{ and end with }}.
