@@ -1,0 +1,41 @@
+# Banned phrases registry for content quality
+
+filler_patterns:
+  # Russian filler phrases
+  - "стоит отметить"
+  - "нельзя не сказать"
+  - "нельзя не упомянуть"
+  - "безусловно"
+  - "несомненно"
+  - "весьма"
+  - "по сути"
+  - "в принципе"
+
+  # English filler phrases
+  - "it is worth noting"
+  - "needless to say"
+  - "it goes without saying"
+  - "in today's world"
+
+hype_words:
+  - pattern: "революционн\\w*"
+    severity: block
+  - pattern: "прорывн\\w*"
+    severity: block
+  - pattern: "game-changing"
+    severity: block
+  - pattern: "revolutionary"
+    severity: warn
+
+vague_phrases:
+  - "некоторое время"
+  - "в ближайшем будущем"
+  - "some time"
+  - "in the near future"
+
+cringe_phrases:
+  - "друзья"
+  - "коллеги"
+  - "представьте себе"
+  - "friends"
+  - "imagine this"
