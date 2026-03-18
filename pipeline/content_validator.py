@@ -612,7 +612,7 @@ class ContentValidator:
         score = max(0, min(100, score))
 
         is_valid = len(critical) == 0
-        is_ready = score >= 60
+        is_ready = score >= 60 and len(critical) == 0
         needs_regeneration = score < 50 or len(critical) >= 2
 
         return ValidationResult(
