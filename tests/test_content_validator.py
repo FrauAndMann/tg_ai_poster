@@ -562,3 +562,54 @@ class TestKeyFactsValidationResult:
         assert result.has_metrics is False
         assert result.tldr_valid is True
         assert result.tldr_sentence_count == 0
+
+
+class TestCJKCharacterDetection:
+    """Test Chinese/Japanese/Korean character detection."""
+
+    @pytest.fixture
+    def validator(self):
+        return ContentValidator()
+
+    def test_detect_chinese_characters(self, validator):
+        """Test detection of Chinese characters in content."""
+        content = "Компания通胀 объявила о новом продукте"
+        result = validator.validate_raw_response(content)
+        assert not result.is_valid
+        assert any("Chinese" in i or "CJK" in i or "Japanese" in i for i in result.critical_issues)
+
+    def test_detect_mixed_cjk_content(self, validator):
+        """Test detection of mixed Russian/CJK content."""
+        content = "这是中文 текст с китайскими иероглифами"
+        result = validator.validate_raw_response(content)
+        assert not result.is_valid
+
+    def test_valid_russian_content_no_cjk(self, validator):
+        """Test that normal Russian content passes CJK check."""
+        content = "OpenAI выпустила новую модель GPT-5 с улучшениями на 40%."
+        result = validator.validate_raw_response(content)
+        # Should not have CJK issues
+        cjk_issues = [i for i in result.critical_issues if "Chinese" in i or "CJK" in i or "Japanese" in i]
+        assert len(cjk_issues) == 0
+
+    def test_cjk_in_json_post(self, validator):
+        """Test CJK detection in JSON post body."""
+        data = {
+            "title": "Тестовый пост",
+            "body": "Компания通胀 выпустила новый продукт с улучшениями.",
+            "key_facts": ["Факт 1", "Факт 2", "Факт 3", "Факт 4"],
+        }
+        result = validator.validate_json_post(data)
+        assert not result.is_valid
+        assert any("Chinese" in i or "CJK" in i or "Japanese" in i for i in result.critical_issues)
+
+    def test_cjk_heavy_penalty(self, validator):
+        """Test that CJK characters result in heavy score penalty."""
+        content_with_cjk = "通胀通胀通胀通胀通胀"  # Multiple CJK chars
+        content_without_cjk = "Company announced new product"
+
+        result_with_cjk = validator.validate_raw_response(content_with_cjk)
+        result_without_cjk = validator.validate_raw_response(content_without_cjk)
+
+        assert result_with_cjk.score < result_without_cjk.score
+

@@ -312,15 +312,34 @@ Reply with ONLY this JSON:
                             )
                             break
 
-            # Find matching article
+            # Find matching article - MUST match exactly or be a substring of an article title
+            # LLM cannot invent topics that don't exist in the source articles
             matching_article = None
             for article in filtered_articles:
-                if article.title == selected_topic or selected_topic in article.title:
+                # Check if selected topic matches article title exactly
+                if article.title == selected_topic:
+                    matching_article = article
+                    break
+                # Check if selected topic is a substring of article title
+                if selected_topic in article.title:
+                    matching_article = article
+                    break
+                # Check if article title is a substring of selected topic (partial match)
+                if article.title in selected_topic:
                     matching_article = article
                     break
 
+            # If LLM invented a topic not in articles, use the first article's title instead
             if not matching_article and filtered_articles:
+                logger.warning(
+                    f"LLM selected topic not found in articles: '{selected_topic[:50]}...'. "
+                    f"Using first article as fallback."
+                )
                 matching_article = filtered_articles[0]
+                # IMPORTANT: Override the invented topic with actual article title
+                selected_topic = matching_article.title
+                result["selected_topic"] = selected_topic
+                result["reason"] = "Override: LLM invented topic not in sources"
 
             logger.info(f"Selected topic: {selected_topic[:50]}...")
 
