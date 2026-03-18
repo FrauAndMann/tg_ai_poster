@@ -280,7 +280,19 @@ async def run_scheduled(
         from pipeline.real_time_monitor import RealTimeMonitor
         from pipeline.source_collector import SourceCollector
 
-        source_collector = SourceCollector(rss_feeds=settings.sources.rss_feeds)
+        source_collector = SourceCollector(
+            rss_feeds=settings.sources.rss_feeds,
+            max_articles_per_feed=settings.sources.max_articles_per_feed,
+            feed_cache_ttl_minutes=settings.sources.feed_cache_ttl_minutes,
+            max_concurrent_fetches=settings.sources.max_concurrent_fetches,
+            max_article_age_days=settings.sources.max_article_age_days,
+            source_weights=settings.sources.source_weights,
+            request_retries=settings.sources.request_retries,
+            retry_base_delay_ms=settings.sources.retry_base_delay_ms,
+            disable_after_failures=settings.sources.disable_after_failures,
+            disable_duration_minutes=settings.sources.disable_duration_minutes,
+            state_path=settings.sources.state_path,
+        )
         topic_store = TopicStore(orchestrator.post_store.db)
 
         realtime_monitor = RealTimeMonitor(
@@ -290,6 +302,11 @@ async def run_scheduled(
             poll_interval=settings.realtime.poll_interval_minutes,
             auto_post=settings.realtime.auto_post,
             breaking_threshold=settings.realtime.breaking_threshold,
+            entity_cooldown_minutes=settings.realtime.entity_cooldown_minutes,
+            duplicate_collapse_hours=settings.realtime.duplicate_collapse_hours,
+            state_path=settings.realtime.state_path,
+            max_pending_alerts=settings.realtime.max_pending_alerts,
+            max_processed_urls=settings.realtime.max_processed_urls,
         )
         realtime_monitor.MIN_POST_INTERVAL = settings.realtime.min_post_interval_minutes
 

@@ -86,7 +86,7 @@ class TestRealTimeMonitor:
         return store
 
     @pytest.fixture
-    def monitor(self, mock_source_collector, mock_orchestrator, mock_topic_store):
+    def monitor(self, mock_source_collector, mock_orchestrator, mock_topic_store, tmp_path):
         """Create monitor instance."""
         return RealTimeMonitor(
             source_collector=mock_source_collector,
@@ -95,6 +95,7 @@ class TestRealTimeMonitor:
             poll_interval=15,
             auto_post=False,
             breaking_threshold=7,
+            state_path=str(tmp_path / "realtime_monitor_state.json"),
         )
 
     def test_monitor_initialization(self, monitor):
@@ -146,6 +147,19 @@ class TestRealTimeMonitor:
         assert alert is not None
         assert alert.priority >= 5
         assert any("google" in kw or "deepmind" in kw for kw in alert.keywords_matched)
+
+    def test_analyze_article_assigns_severity(self, monitor):
+        """Test alert severity label is derived from priority."""
+        article = MagicMock()
+        article.title = "Breaking: OpenAI announces GPT-5"
+        article.content = "OpenAI has just announced GPT-5 for developers."
+        article.url = "https://example.com/openai"
+        article.published_at = datetime.now() - timedelta(minutes=15)
+
+        alert = monitor._analyze_article(article, corroboration_count=2)
+
+        assert alert is not None
+        assert alert.severity in {"high", "critical", "medium"}
 
     def test_quick_similarity_same_text(self, monitor):
         """Test similarity check with identical texts."""
@@ -230,6 +244,50 @@ class TestRealTimeMonitor:
         assert len(alerts) >= 1
         assert alerts[0].priority >= 3
 
+    @pytest.mark.asyncio
+    async def test_check_for_news_adds_corroboration_bonus(
+        self, monitor, mock_source_collector
+    ):
+        """Test similar reports increase alert priority."""
+        article1 = MagicMock()
+        article1.title = "OpenAI announces GPT-5 release"
+        article1.content = "OpenAI has announced GPT-5."
+        article1.url = "https://example.com/1"
+        article1.published_at = datetime.now() - timedelta(minutes=30)
+
+        article2 = MagicMock()
+        article2.title = "OpenAI announces GPT-5 release!"
+        article2.content = "Another report confirms GPT-5 release."
+        article2.url = "https://example.com/2"
+        article2.published_at = datetime.now() - timedelta(minutes=20)
+
+        mock_source_collector.fetch_all = AsyncMock(return_value=[article1, article2])
+
+        alerts = await monitor._check_for_news()
+
+        assert len(alerts) >= 1
+        assert any("Corroborated" in alert.reason for alert in alerts)
+
+    def test_entity_cooldown_prevents_repeat_alerts(self, monitor):
+        """Test same entity can be throttled by cooldown."""
+        article = MagicMock()
+        article.title = "OpenAI announces new release"
+        article.content = "OpenAI releases a new API."
+        article.url = "https://example.com/openai-1"
+        article.published_at = datetime.now() - timedelta(minutes=10)
+
+        first_alert = monitor._analyze_article(article)
+        assert first_alert is not None
+
+        second_article = MagicMock()
+        second_article.title = "OpenAI announces another release"
+        second_article.content = "OpenAI follows up with more news."
+        second_article.url = "https://example.com/openai-2"
+        second_article.published_at = datetime.now() - timedelta(minutes=5)
+
+        second_alert = monitor._analyze_article(second_article)
+        assert second_alert is None
+
 
 class TestRealTimeMonitorAutoPost:
     """Test auto-post functionality."""
@@ -259,7 +317,7 @@ class TestRealTimeMonitorAutoPost:
 
     @pytest.fixture
     def auto_post_monitor(
-        self, mock_source_collector, mock_orchestrator, mock_topic_store
+        self, mock_source_collector, mock_orchestrator, mock_topic_store, tmp_path
     ):
         """Create monitor with auto-post enabled."""
         return RealTimeMonitor(
@@ -269,6 +327,7 @@ class TestRealTimeMonitorAutoPost:
             poll_interval=15,
             auto_post=True,
             breaking_threshold=7,
+            state_path=str(tmp_path / "realtime_monitor_state.json"),
         )
 
     @pytest.mark.asyncio

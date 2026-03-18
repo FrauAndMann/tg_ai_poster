@@ -5,6 +5,7 @@ Tests source collector, content filter, formatter, and orchestrator.
 """
 
 from datetime import datetime, timedelta
+import pytest
 
 from pipeline.source_collector import SourceCollector, Article
 from pipeline.content_filter import ContentFilter, ScoredArticle
@@ -38,6 +39,17 @@ class TestSourceCollector:
         assert data["title"] == "Test"
         assert data["url"] == "https://example.com"
 
+    def test_article_normalized_url_and_content_alias(self):
+        """Test article URL normalization and content alias."""
+        article = Article(
+            title="Test",
+            summary="Summary body",
+            url="https://Example.com/path/?utm_source=test&b=2&a=1",
+        )
+
+        assert article.content == "Summary body"
+        assert article.normalized_url == "https://example.com/path?a=1&b=2"
+
     def test_deduplicate(self):
         """Test deduplication."""
         collector = SourceCollector(rss_feeds=[])
@@ -50,6 +62,18 @@ class TestSourceCollector:
 
         unique = collector.deduplicate(articles)
         assert len(unique) == 2
+
+    def test_deduplicate_uses_normalized_url(self):
+        """Test deduplication by normalized URL, not only hash."""
+        collector = SourceCollector(rss_feeds=[])
+
+        articles = [
+            Article(title="Article 1", summary="Summary", url="https://example.com/post?utm_source=x&id=1"),
+            Article(title="Article 1 copy", summary="Summary", url="https://example.com/post?id=1"),
+        ]
+
+        unique = collector.deduplicate(articles)
+        assert len(unique) == 1
 
     def test_filter_by_date(self):
         """Test date filtering."""
@@ -114,6 +138,127 @@ class TestSourceCollector:
         sorted_articles = collector.sort_by_date(articles, descending=True)
         assert sorted_articles[0].title == "New"
         assert sorted_articles[-1].title == "Old"
+
+    def test_rank_articles_prefers_fresh_authoritative_sources(self):
+        """Test ranking prefers fresher and higher-signal articles."""
+        now = datetime.utcnow()
+        collector = SourceCollector(
+            rss_feeds=[],
+            source_weights={"openai.com": 1.0},
+        )
+        articles = [
+            Article(
+                title="Older generic tech post",
+                summary="A small update from a generic blog.",
+                url="https://example.com/post",
+                published_at=now - timedelta(hours=24),
+            ),
+            Article(
+                title="OpenAI announces new release",
+                summary="A detailed product and API launch note.",
+                url="https://openai.com/blog/post",
+                published_at=now - timedelta(hours=1),
+            ),
+        ]
+
+        ranked = collector.rank_articles(articles)
+        assert ranked[0].url == "https://openai.com/blog/post"
+
+    def test_deduplicate_clusters_similar_titles(self):
+        """Test duplicate-title clustering across feeds."""
+        now = datetime.utcnow()
+        collector = SourceCollector(rss_feeds=[])
+        articles = [
+            Article(
+                title="OpenAI releases GPT-5 for developers",
+                summary="Short note",
+                url="https://example.com/1",
+                published_at=now - timedelta(hours=5),
+            ),
+            Article(
+                title="OpenAI releases GPT-5 for developers!",
+                summary="Longer and richer launch note for developers.",
+                url="https://openai.com/blog/gpt-5",
+                published_at=now - timedelta(hours=1),
+            ),
+        ]
+
+        unique = collector.deduplicate(articles)
+        assert len(unique) == 1
+        assert unique[0].url == "https://openai.com/blog/gpt-5"
+
+    @pytest.mark.asyncio
+    async def test_fetch_rss_uses_cached_articles_on_not_modified(self, monkeypatch, tmp_path):
+        """Test HTTP 304 path reuses cached articles and updates health report."""
+        state_path = tmp_path / "collector_state.json"
+        collector = SourceCollector(
+            rss_feeds=["https://example.com/feed.xml"],
+            state_path=str(state_path),
+        )
+        cached = [
+            Article(
+                title="Cached article",
+                summary="Cached summary",
+                url="https://example.com/a",
+            )
+        ]
+        collector._cache_articles("https://example.com/feed.xml", cached)
+        stats = collector._get_feed_stats("https://example.com/feed.xml")
+        stats.etag = "etag-1"
+
+        async def fake_fetch(url):
+            return 304, "", "etag-1", "", 12.5
+
+        monkeypatch.setattr(collector, "_fetch_feed_response", fake_fetch)
+
+        articles = await collector.fetch_rss("https://example.com/feed.xml")
+        report = collector.get_feed_health_report()["https://example.com/feed.xml"]
+
+        assert len(articles) == 1
+        assert articles[0].title == "Cached article"
+        assert report["cache_hits"] >= 1
+
+    @pytest.mark.asyncio
+    async def test_fetch_rss_disables_feed_after_repeated_failures(self, monkeypatch, tmp_path):
+        """Test failing feeds are temporarily disabled."""
+        collector = SourceCollector(
+            rss_feeds=["https://example.com/feed.xml"],
+            request_retries=0,
+            disable_after_failures=1,
+            state_path=str(tmp_path / "collector_state.json"),
+        )
+
+        async def failing_fetch(url):
+            raise RuntimeError("boom")
+
+        monkeypatch.setattr(collector, "_fetch_feed_response", failing_fetch)
+
+        articles = await collector.fetch_rss("https://example.com/feed.xml")
+        report = collector.get_feed_health_report()["https://example.com/feed.xml"]
+
+        assert articles == []
+        assert report["is_disabled"] is True
+
+    @pytest.mark.asyncio
+    async def test_close_closes_underlying_session(self, tmp_path):
+        """Test explicit collector close lifecycle."""
+        collector = SourceCollector(
+            rss_feeds=[],
+            state_path=str(tmp_path / "collector_state.json"),
+        )
+
+        class DummySession:
+            def __init__(self):
+                self.closed = False
+
+            async def close(self):
+                self.closed = True
+
+        session = DummySession()
+        collector._session = session
+        await collector.close()
+
+        assert session.closed is True
 
 
 class TestContentFilter:

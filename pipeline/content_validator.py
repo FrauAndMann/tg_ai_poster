@@ -210,6 +210,8 @@ class ContentValidator:
         ]
         # CJK character pattern for detecting Chinese/Japanese/Korean characters
         self._cjk_pattern = CJK_PATTERN
+        self._repeated_punctuation_pattern = re.compile(r"([!?.,])\1{3,}")
+        self._zero_width_pattern = re.compile(r"[\u200b\u200c\u200d\ufeff]")
 
     def _check_cjk_characters(self, content: str) -> tuple[list[str], int]:
         """
@@ -236,13 +238,21 @@ class ContentValidator:
             unique_chars = list(set(matches))[:5]  # Show max 5 examples
             char_display = "".join(unique_chars)
 
-            # Only flag as critical if above threshold
-            if total_count > CJK_CRITICAL_THRESHOLD:
+            has_mixed_scripts = bool(re.search(r"[A-Za-zА-Яа-яЁё]", content))
+
+            # Dynamic threshold:
+            # - 2+ CJK chars mixed into RU/EN text are usually model glitches
+            # - single isolated chars are tolerated to reduce false positives
+            # - fully/mostly CJK snippets are always flagged
+            if total_count >= 2 or total_count > CJK_CRITICAL_THRESHOLD or (
+                total_count >= 1 and not has_mixed_scripts
+            ):
                 issues.append(
-                    f"Chinese/Japanese characters detected ({total_count} found): '{char_display}...'"
+                    f"CJK/Chinese/Japanese characters detected ({total_count} found): '{char_display}...'"
                 )
                 logger.warning(
-                    f"CJK characters detected in content: {total_count} occurrences (above threshold)"
+                    "CJK characters detected in content: %s occurrences",
+                    total_count,
                 )
             else:
                 # Below threshold: log as debug, don't add to issues
@@ -251,6 +261,25 @@ class ContentValidator:
                 )
 
         return issues, total_count
+
+    def _check_noise_patterns(self, content: str) -> tuple[list[str], list[str]]:
+        """Detect low-signal formatting noise in model output."""
+        critical = []
+        warnings = []
+
+        if self._zero_width_pattern.search(content):
+            warnings.append("Zero-width/invisible characters detected")
+
+        if self._repeated_punctuation_pattern.search(content):
+            warnings.append("Excessive repeated punctuation detected")
+
+        non_empty_lines = [line.strip() for line in content.splitlines() if line.strip()]
+        if len(non_empty_lines) >= 4:
+            unique_ratio = len(set(non_empty_lines)) / len(non_empty_lines)
+            if unique_ratio < 0.6:
+                warnings.append("Content has repetitive lines/sections")
+
+        return critical, warnings
 
     def _check_meta_text(self, content: str) -> list[str]:
         """
@@ -488,6 +517,11 @@ class ContentValidator:
         issues.extend(question_issues)
         score -= len(question_issues) * 15
 
+        noise_critical, noise_warnings = self._check_noise_patterns(response)
+        issues.extend(noise_critical)
+        score -= len(noise_critical) * 15
+        score -= len(noise_warnings) * 5
+
         score = max(0, min(100, score))
 
         is_valid = len(issues) == 0
@@ -498,7 +532,7 @@ class ContentValidator:
             is_ready=score >= 60,
             score=score,
             critical_issues=issues if not is_valid else [],
-            warnings=[],
+            warnings=noise_warnings,
             needs_regeneration=needs_regeneration,
             sanitized_content=self._sanitize_content(response) if issues else None,
         )
@@ -547,6 +581,12 @@ class ContentValidator:
             meta_issues = self._check_meta_text(body)
             critical.extend(meta_issues)
             score -= len(meta_issues) * 30
+
+            noise_critical, noise_warnings = self._check_noise_patterns(body)
+            critical.extend(noise_critical)
+            warnings.extend(noise_warnings)
+            score -= len(noise_critical) * 15
+            score -= len(noise_warnings) * 5
 
         # Check title if present
         title = data.get("title", "")
@@ -599,6 +639,12 @@ class ContentValidator:
         incomplete_issues = self._check_incomplete(content)
         critical.extend(incomplete_issues)
         score -= len(incomplete_issues) * 25
+
+        noise_critical, noise_warnings = self._check_noise_patterns(content)
+        critical.extend(noise_critical)
+        warnings.extend(noise_warnings)
+        score -= len(noise_critical) * 15
+        score -= len(noise_warnings) * 5
 
         # Check structure
         struct_critical, struct_warnings = self._check_structure(content)

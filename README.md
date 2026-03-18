@@ -1,203 +1,320 @@
-<h1 align="center">TG AI Poster</h1>
+# TG AI Poster
 
-<p align="center">
-  <strong>Autonomous AI-powered Telegram channel management system</strong>
-</p>
+Production-oriented platform for autonomous Telegram publishing with AI generation, editorial validation, source collection, real-time news monitoring, and multi-provider LLM support.
 
-<p align="center">
-  <a href="https://www.python.org/">
-    <img src="https://img.shields.io/badge/Python-3.11%2B-blue?logo=python&logoColor=white" alt="Python">
-  </a>
-  <a href="https://github.com/FrauAndMann/tg_ai_poster/actions">
-    <img src="https://github.com/FrauAndMann/tg_ai_poster/actions/workflows/CI.yml/badge.svg" alt="CI">
-  </a>
-  <a href="https://opensource.org/licenses/MIT">
-    <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
-  </a>
-</p>
+## Why this project exists
+
+`TG AI Poster` is built for teams that want more than a simple "LLM -> Telegram" script. The repository already contains a broad pipeline for:
+
+- collecting signals from RSS and external tech sources;
+- selecting relevant topics for a Telegram channel;
+- generating structured posts via LLM;
+- validating factuality, readability, anti-water quality, and formatting;
+- scheduling or auto-publishing content;
+- monitoring breaking news in near real time.
+
+This update hardens the project toward production usage with stronger validation, better source freshness handling, smarter ranking, improved deduplication, and significantly better documentation.
 
 ---
 
-## Overview
+## What is included
 
-TG AI Poster is a fully autonomous system that generates and publishes high-quality content to Telegram channels 24/7. It collects news from multiple sources, filters by relevance, generates engaging posts using LLM, and publishes them on a configurable schedule.
+### Core capabilities
 
-## Features
+- Multi-provider LLM support: OpenAI, Claude, DeepSeek, GLM, Claude CLI.
+- Telegram publishing via Bot API or Telethon.
+- Source collection from RSS, Hacker News, Product Hunt, ArXiv, and NewsAPI integrations.
+- Topic selection and content generation pipeline.
+- Editorial review and quality scoring.
+- Breaking-news monitoring and automatic triggering.
+- Admin bot and operational tooling.
+- Backups, health checks, scheduler, circuit breaker, retry helpers.
 
-| Category | Features |
-|----------|----------|
-| **LLM Support** | OpenAI GPT, Anthropic Claude, DeepSeek, GLM-5 |
-| **Content Pipeline** | RSS/API collection, relevance filtering, topic selection, generation |
-| **Quality Control** | Source verification, editorial review, 50+ validation rules |
-| **Publishing** | Bot API & Telethon modes, MarkdownV2 formatting |
-| **Scheduling** | Fixed times, intervals, random windows |
-| **Management** | Admin Bot, A/B testing, draft system, approval workflow |
-| **Reliability** | Circuit breaker, health monitoring, auto-backup |
+### Production hardening added in this revision
 
-## Quick Start
+- Dynamic CJK glitch detection in generated content.
+- Noise-pattern validation for repeated punctuation and invisible characters.
+- Stronger raw-response sanitation before publication.
+- RSS feed caching to reduce redundant network work.
+- Conditional feed fetching with `ETag` / `Last-Modified`.
+- Threaded RSS parsing so feed parsing does not block the event loop.
+- Concurrent-fetch control via semaphore.
+- Feed retries with backoff and temporary auto-disable for broken sources.
+- URL normalization for stronger deduplication.
+- Persistent source-health telemetry and per-feed state.
+- Article ranking based on freshness, source signal, metadata richness, language heuristics, and launch/breakthrough cues.
+- Safer compatibility for monitors expecting `article.content`.
+- Better breaking-news prioritization from source trust, corroboration, entity cooldowns, and summary richness.
+- YAML loading for `realtime` and `media` sections in `Settings.create()`.
 
-```bash
-# Clone repository
-git clone https://github.com/FrauAndMann/tg_ai_poster.git
-cd tg_ai_poster
+---
 
-# Install dependencies
-pip install -r requirements.txt
+## Architecture
 
-# Configure
-cp .env.example .env
-# Edit .env with your API keys
-
-# Run setup wizard
-python setup.py
-
-# Test run (no publishing)
-python main.py --dry-run --once
-
-# Start scheduled posting
-python main.py
+```text
+sources -> collector -> filter -> topic selector -> prompt builder -> LLM generator
+        -> validator/editor/quality gates -> formatter -> publisher -> feedback/memory
+                                  \
+                                   -> real-time monitor / breaking-news autopost
 ```
 
-## Configuration
+### Main subsystems
 
-### config.yaml
+| Area | Responsibility |
+| --- | --- |
+| `core/` | Config, logging, scheduler, events, health, watchdog |
+| `pipeline/` | Content collection, filtering, generation, review, quality, formatting |
+| `llm/` | Provider adapters |
+| `memory/` | Database, stores, vector memory |
+| `publisher/` | Telegram delivery backends |
+| `admin_bot/` | Operational bot for administration |
+| `backup/` | Backup and restore workflows |
+| `tests/` | Unit and integration validation |
+
+---
+
+## Quick start
+
+### 1. Clone and install
+
+```bash
+git clone https://github.com/FrauAndMann/tg_ai_poster.git
+cd tg_ai_poster
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 2. Configure secrets
+
+Create `.env` and fill the required variables:
+
+```env
+TELEGRAM_BOT_TOKEN=...
+TELEGRAM_CHANNEL_ID=...
+LLM_API_KEY=...
+ADMIN_TELEGRAM_ID=123456789
+```
+
+### 3. Edit `config.yaml`
+
+Minimal example:
+
 ```yaml
+telegram:
+  posting_mode: bot
+  channel_id: "@your_channel"
+
+llm:
+  provider: openai
+  model: gpt-4o-mini
+  temperature: 0.6
+
+channel:
+  topic: "AI products, models, releases, benchmarks and market analysis"
+  style: "Crisp, analytical, useful, no hype"
+  language: ru
+  post_length_min: 250
+  post_length_max: 1100
+
 schedule:
   type: fixed
   fixed_times: ["09:30", "14:00", "20:00"]
   timezone: "Europe/Moscow"
 
-llm:
-  provider: openai      # openai, claude, deepseek, claude-cli
-  model: gpt-4o-mini
-  temperature: 0.7
+sources:
+  rss_feeds:
+    - "https://openai.com/news/rss.xml"
+    - "https://feeds.feedburner.com/oreilly/radar"
+    - "https://hnrss.org/frontpage"
+  max_articles_per_feed: 15
+  feed_cache_ttl_minutes: 15
+  max_concurrent_fetches: 10
+  max_article_age_days: 7
+  source_weights:
+    openai.com: 1.0
+    anthropic.com: 0.9
+    arxiv.org: 0.8
 
-telegram:
-  channel_id: -1001234567890
-  posting_mode: bot     # bot or telethon
-
-content:
-  language: ru
-  post_length_min: 200
-  post_length_max: 900
+realtime:
+  enabled: true
+  poll_interval_minutes: 15
+  auto_post: true
+  breaking_threshold: 7
 ```
 
-### .env
-```env
-TELEGRAM_BOT_TOKEN=your_bot_token
-OPENAI_API_KEY=sk-your-key
-ADMIN_TELEGRAM_ID=your_telegram_id
+### 4. Validate configuration / dry run
+
+```bash
+python main.py --dry-run --once
 ```
 
-## CLI Commands
+### 5. Run scheduled mode
 
-| Command | Description |
-|---------|-------------|
+```bash
+python main.py
+```
+
+---
+
+## CLI
+
+| Command | Purpose |
+| --- | --- |
 | `python main.py` | Start scheduled posting |
-| `python main.py --dry-run` | Run without publishing |
-| `python main.py --once` | Single post and exit |
-| `python main.py --init-db` | Initialize database |
+| `python main.py --once` | Run one pipeline cycle |
+| `python main.py --dry-run` | Skip publishing but run the logic |
 | `python main.py --debug` | Verbose logging |
-| `python main.py --backup` | Create backup |
-| `python main.py --restore file.tar.gz` | Restore from backup |
+| `python main.py --init-db` | Initialize database |
+| `python main.py --backup` | Create a backup |
+| `python main.py --restore backups/file.tar.gz` | Restore backup |
+| `python setup.py` | Project setup workflow |
 
-## Architecture
+---
 
-```
-tg_ai_poster/
-├── main.py                 # Entry point
-├── config.yaml             # Configuration
-├── .env                    # Secrets (gitignored)
-│
-├── core/                   # Core utilities
-│   ├── config.py          # Configuration loader
-│   ├── logger.py          # Logging setup
-│   ├── scheduler.py       # APScheduler wrapper
-│   └── events.py          # Event bus
-│
-├── pipeline/               # Content pipeline
-│   ├── orchestrator.py    # Main coordinator
-│   ├── source_collector.py
-│   ├── content_filter.py
-│   ├── topic_selector.py
-│   ├── source_verification.py
-│   ├── context_builder.py
-│   ├── llm_generator.py
-│   ├── editor_review.py
-│   ├── quality_checker.py
-│   └── telegram_formatter.py
-│
-├── llm/                    # LLM adapters
-│   ├── base.py            # Abstract interface
-│   ├── openai_adapter.py
-│   ├── claude_adapter.py
-│   ├── deepseek_adapter.py
-│   └── claude_cli_adapter.py
-│
-├── memory/                 # Data layer
-│   ├── models.py          # SQLAlchemy models
-│   ├── database.py
-│   ├── post_store.py
-│   └── topic_store.py
-│
-├── publisher/              # Publishing
-│   ├── base.py
-│   ├── bot_publisher.py
-│   └── telethon_publisher.py
-│
-├── admin_bot/              # Telegram admin bot
-│   ├── bot.py
-│   ├── commands.py
-│   └── keyboards.py
-│
-└── tests/                  # Test suite
-    ├── conftest.py
-    └── test_*.py
+## Configuration guide
+
+### `telegram`
+
+- `posting_mode`: `bot` or `telethon`
+- `channel_id`: target channel ID or username
+- `bot_token`: Bot API token
+- `proxy`: optional HTTP/SOCKS proxy
+
+### `llm`
+
+- `provider`: `openai`, `claude`, `deepseek`, `glm`, `claude-cli`
+- `model`: provider-specific model name
+- `api_key`: secret key if required
+- `base_url`: override API endpoint
+- `max_tokens`, `temperature`: generation settings
+
+### `channel`
+
+- `topic`: editorial niche
+- `style`: channel voice and tone
+- `language`: output language
+- `post_length_min` / `post_length_max`: content boundaries
+- `emojis_per_post`, `hashtags_count`: stylistic constraints
+
+### `sources`
+
+- `rss_feeds`: source list
+- `max_articles_per_feed`: hard cap per feed
+- `feed_cache_ttl_minutes`: cache TTL to reduce fetch waste
+- `max_concurrent_fetches`: fetch parallelism control
+- `max_article_age_days`: freshness filter
+- `source_weights`: per-domain ranking boost
+- `request_retries`, `retry_base_delay_ms`: retry/backoff control
+- `disable_after_failures`, `disable_duration_minutes`: failing-feed circuit breaker
+- `state_path`: persistent source-health state
+
+### `realtime`
+
+- `enabled`: enable news monitor
+- `poll_interval_minutes`: polling frequency
+- `auto_post`: whether breaking news triggers generation
+- `breaking_threshold`: minimum score for autopost
+- `min_post_interval_minutes`: cooldown between autoposts
+- `entity_cooldown_minutes`: throttle repeated alerts about the same entity
+- `duplicate_collapse_hours`: collapse repeated title signatures
+- `state_path`: persistent monitor dedup state
+
+### `safety`
+
+- manual approval toggle;
+- maximum daily posts;
+- minimum posting interval;
+- duplicate similarity threshold;
+- forbidden words;
+- regeneration attempts.
+
+---
+
+## Content-quality system
+
+The repository already contains multiple content-quality layers. In practice, production quality here is a composition of many smaller gates:
+
+- raw LLM response validation;
+- JSON schema and structure validation;
+- body-length and sentence-density checks;
+- filler/water detection;
+- density scoring;
+- grammar checking;
+- voice consistency;
+- hook analysis;
+- paragraph structure checks;
+- fact/claim extraction;
+- hallucination detection;
+- source mapping and verification;
+- formatting validation before Telegram publish.
+
+### New validation improvements
+
+This revision adds:
+
+1. Dynamic detection of CJK leakage in RU/EN posts.
+2. Repeated punctuation warnings.
+3. Invisible-character warnings.
+4. Repetition warnings for duplicated sections.
+5. Better pre-publication raw-response diagnostics.
+
+---
+
+## News-quality and freshness improvements
+
+This revision improves source handling with:
+
+1. RSS feed response caching.
+2. Conditional requests via `ETag` and `Last-Modified`.
+3. Event-loop friendly threaded parsing.
+4. Concurrency limits to avoid burst overload.
+5. Retries with jitter and temporary feed disable on repeated failures.
+6. URL normalization and canonical-link extraction for deduplication.
+7. Freshness-aware ranking.
+8. Domain-weight ranking with aggregator penalty.
+9. Lightweight language heuristics before ranking.
+10. Summary-richness ranking.
+11. Breaking-news keyword reinforcement.
+12. Compatibility fallback from `content` to `summary`.
+13. Title-signature deduplication plus corroboration-aware real-time scoring.
+
+---
+
+## Running tests
+
+```bash
+pytest -q
 ```
 
-## Pipeline Flow
+For targeted tests:
 
+```bash
+pytest tests/test_content_validator.py -q
+pytest tests/test_pipeline.py -q
+pytest tests/test_config.py -q
+pytest tests/test_real_time_monitor.py -q
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  Source         │───▶│  Content        │───▶│  Topic          │
-│  Collection     │    │  Filter         │    │  Selection      │
-│  (RSS/API)      │    │  (relevance)    │    │  (LLM)          │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                                      │
-┌─────────────────┐    ┌─────────────────┐           │
-│  Quality        │◀───│  Editorial      │◀──┐       │
-│  Check          │    │  Review         │   │       │
-│  (50+ rules)    │    │  (AI editor)    │   │       │
-└─────────────────┘    └─────────────────┘   │       │
-         │                                    │       │
-         ▼                           ┌─────────────────┐
-┌─────────────────┐                  │  LLM            │◀──────┘
-│  Telegram       │                  │  Generation     │
-│  Formatter      │                  │  (JSON schema)  │
-│  (MarkdownV2)   │                  └─────────────────┘
-└─────────────────┘                           ▲
-         │                                    │
-         ▼                           ┌─────────────────┐
-┌─────────────────┐                  │  Source         │
-│  Publisher      │                  │  Verification   │
-│  (Bot/Telethon) │                  │  (credibility)  │
-└─────────────────┘                  └─────────────────┘
-```
+
+---
 
 ## Deployment
 
 ### Docker
+
 ```bash
 docker build -t tg-ai-poster .
-docker run -d --env-file .env -v ./data:/app/data tg-ai-poster
+docker run -d --env-file .env -v $(pwd)/data:/app/data tg-ai-poster
 ```
 
 ### Docker Compose
+
 ```bash
 docker-compose up -d
 ```
 
-### Systemd (VPS)
+### VPS / systemd sketch
+
 ```ini
 [Unit]
 Description=TG AI Poster
@@ -205,54 +322,41 @@ After=network.target
 
 [Service]
 Type=simple
-User=tg-poster
-WorkingDirectory=/opt/tg-ai-poster
-ExecStart=/opt/tg-ai-poster/venv/bin/python main.py
+WorkingDirectory=/opt/tg_ai_poster
+ExecStart=/opt/tg_ai_poster/.venv/bin/python main.py
 Restart=always
+RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
 ```
 
-## Testing
+---
 
-```bash
-# Run all tests
-pytest
+## Recommended production checklist
 
-# With coverage
-pytest --cov=. --cov-report=html
+- Run in `--dry-run` first.
+- Use a dedicated Telegram test channel before production.
+- Keep `manual_approval=true` while tuning prompts.
+- Add trusted domains in `sources.source_weights`.
+- Monitor duplicates and forbidden topics in stores.
+- Review generated posts for formatting edge cases.
+- Back up database and vector state.
+- Keep API keys only in `.env`, never in YAML or code.
+- Use conservative autopost thresholds until source quality is proven.
 
-# Specific test
-pytest tests/test_pipeline.py -v
-```
+---
 
-## Security
+## Documentation map
 
-- Never commit `.env` file
-- Use Bot API mode for production
-- Set `max_daily_posts` limits
-- Enable `manual_approval` for sensitive content
-- Rotate API keys periodically
+- `USER_GUIDE.md` — user-level usage.
+- `docs/INDEX.md` — document index.
+- `docs/ROADMAP.md` — roadmap.
+- `docs/SECURITY.md` — security notes.
+- `docs/PRODUCTION_AUDIT_100.md` — 100-point production audit and improvement backlog.
 
-## Tech Stack
-
-- **Python 3.11+** - Main language
-- **SQLAlchemy** - ORM and database
-- **APScheduler** - Job scheduling
-- **python-telegram-bot** - Bot API
-- **Telethon** - User account mode
-- **ChromaDB** - Vector storage for deduplication
-- **Pydantic** - Configuration validation
-- **Pytest** - Testing framework
+---
 
 ## License
 
-[MIT](LICENSE)
-
-## Acknowledgments
-
-- [python-telegram-bot](https://github.com/python-telegram-bot/python-telegram-bot)
-- [Telethon](https://github.com/LonamiWebs/Telethon)
-- [ChromaDB](https://www.trychroma.com/)
-- [APScheduler](https://github.com/agronholm/apscheduler)
+MIT.

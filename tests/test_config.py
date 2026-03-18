@@ -11,6 +11,9 @@ from core.config import (
     TelegramConfig,
     LLMConfig,
     ScheduleConfig,
+    export_config_schema,
+    diff_settings_from_defaults,
+    validate_startup_config,
 )
 
 
@@ -139,6 +142,12 @@ telegram:
   bot_token: "test_token"
 llm:
   model: "gpt-4-turbo"
+realtime:
+  enabled: false
+media:
+  enabled: true
+sources:
+  max_articles_per_feed: 15
 """
         yaml_path = tmp_path / "create_config.yaml"
         yaml_path.write_text(yaml_content)
@@ -147,3 +156,36 @@ llm:
 
         assert settings.telegram.bot_token == "test_token"
         assert settings.llm.model == "gpt-4-turbo"
+        assert settings.realtime.enabled is False
+        assert settings.media.enabled is True
+        assert settings.sources.max_articles_per_feed == 15
+
+    def test_export_config_schema_contains_new_sections(self):
+        """Test config schema export helper."""
+        schema = export_config_schema()
+
+        assert "sources" in schema
+        assert "realtime" in schema
+        assert "request_retries" in schema["sources"]
+        assert "entity_cooldown_minutes" in schema["realtime"]
+
+    def test_diff_settings_from_defaults(self):
+        """Test default diff helper."""
+        settings = Settings()
+        settings.sources.request_retries = 4
+        settings.realtime.entity_cooldown_minutes = 60
+
+        diff = diff_settings_from_defaults(settings)
+
+        assert diff["sources"]["request_retries"] == 4
+        assert diff["realtime"]["entity_cooldown_minutes"] == 60
+
+    def test_validate_startup_config_detects_aggressive_disable_policy(self):
+        """Test startup validation for conflicting source settings."""
+        settings = Settings()
+        settings.sources.request_retries = 3
+        settings.sources.disable_after_failures = 2
+
+        issues = validate_startup_config(settings, dry_run=True)
+
+        assert any("disable_after_failures" in issue for issue in issues)

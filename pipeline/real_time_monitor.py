@@ -8,8 +8,11 @@ automatically triggering post generation when significant news is detected.
 from __future__ import annotations
 
 import asyncio
+import json
+import re
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
 from core.logger import get_logger
@@ -63,6 +66,7 @@ class NewsAlert:
     reason: str
     detected_at: datetime = field(default_factory=datetime.now)
     keywords_matched: list[str] = field(default_factory=list)
+    severity: str = "medium"
 
 
 class RealTimeMonitor:
@@ -91,6 +95,11 @@ class RealTimeMonitor:
         poll_interval: int = DEFAULT_POLL_INTERVAL,
         auto_post: bool = True,
         breaking_threshold: int = 7,  # Priority 7+ triggers auto-post
+        entity_cooldown_minutes: int = 180,
+        duplicate_collapse_hours: int = 12,
+        state_path: str = "data/realtime_monitor_state.json",
+        max_pending_alerts: int = 100,
+        max_processed_urls: int = 1000,
     ):
         """
         Initialize real-time monitor.
@@ -109,12 +118,23 @@ class RealTimeMonitor:
         self.poll_interval = poll_interval
         self.auto_post = auto_post
         self.breaking_threshold = breaking_threshold
+        self.entity_cooldown = timedelta(minutes=max(1, entity_cooldown_minutes))
+        self.duplicate_collapse_window = timedelta(
+            hours=max(1, duplicate_collapse_hours)
+        )
+        self.state_path = Path(state_path)
+        self.max_pending_alerts = max(10, max_pending_alerts)
+        self.max_processed_urls = max(100, max_processed_urls)
 
         self._is_running = False
         self._last_post_time: Optional[datetime] = None
         self._last_check_time: Optional[datetime] = None
         self._pending_alerts: list[NewsAlert] = []
         self._processed_urls: set[str] = set()
+        self._processed_signatures: set[str] = set()
+        self._entity_last_alert_at: dict[str, str] = {}
+        self._alert_history: dict[str, str] = {}
+        self._load_state()
 
     async def start(self) -> None:
         """Start continuous monitoring."""
@@ -140,7 +160,92 @@ class RealTimeMonitor:
     def stop(self) -> None:
         """Stop continuous monitoring."""
         self._is_running = False
+        self._persist_state()
         logger.info("Real-time news monitor stopped")
+
+    def _load_state(self) -> None:
+        """Load persisted monitor state."""
+        try:
+            if not self.state_path.exists():
+                return
+            data = json.loads(self.state_path.read_text(encoding="utf-8"))
+            self._processed_urls = set(data.get("processed_urls", []))
+            self._processed_signatures = set(data.get("processed_signatures", []))
+            self._entity_last_alert_at = data.get("entity_last_alert_at", {})
+            self._alert_history = data.get("alert_history", {})
+        except Exception as e:
+            logger.warning("Failed to load realtime monitor state: %s", e)
+
+    def _persist_state(self) -> None:
+        """Persist monitor dedup state for future runs."""
+        try:
+            self.state_path.parent.mkdir(parents=True, exist_ok=True)
+            payload = {
+                "processed_urls": list(self._processed_urls)[-self.max_processed_urls :],
+                "processed_signatures": list(self._processed_signatures)[-self.max_processed_urls :],
+                "entity_last_alert_at": self._entity_last_alert_at,
+                "alert_history": self._alert_history,
+            }
+            self.state_path.write_text(
+                json.dumps(payload, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+        except Exception as e:
+            logger.warning("Failed to persist realtime monitor state: %s", e)
+
+    def _parse_iso_datetime(self, value: str | None) -> Optional[datetime]:
+        """Parse ISO timestamp safely."""
+        if not value:
+            return None
+        try:
+            return datetime.fromisoformat(value)
+        except ValueError:
+            return None
+
+    def _extract_entities(self, text: str) -> list[str]:
+        """Extract matching priority entities from text."""
+        text_lower = text.lower()
+        return [
+            entity
+            for entity in BreakingNewsCriteria.PRIORITY_ENTITIES
+            if entity in text_lower
+        ]
+
+    def _entity_on_cooldown(self, entities: list[str]) -> bool:
+        """Check whether the matched entity set is on cooldown."""
+        now = datetime.now()
+        for entity in entities:
+            last_seen = self._parse_iso_datetime(self._entity_last_alert_at.get(entity))
+            if last_seen and now - last_seen < self.entity_cooldown:
+                return True
+        return False
+
+    def _record_entity_alerts(self, entities: list[str]) -> None:
+        """Record alert timestamp for matched entities."""
+        now = datetime.now().isoformat()
+        for entity in entities:
+            self._entity_last_alert_at[entity] = now
+
+    def _recent_duplicate_signature(self, signature: str) -> bool:
+        """Check if signature was already alerted recently."""
+        previous = self._parse_iso_datetime(self._alert_history.get(signature))
+        if not previous:
+            return False
+        return datetime.now() - previous < self.duplicate_collapse_window
+
+    def _record_alert_signature(self, signature: str) -> None:
+        """Persist last alert time for a signature."""
+        self._alert_history[signature] = datetime.now().isoformat()
+
+    def _severity_from_priority(self, priority: int) -> str:
+        """Map numeric priority to severity label."""
+        if priority >= 9:
+            return "critical"
+        if priority >= 7:
+            return "high"
+        if priority >= 5:
+            return "medium"
+        return "low"
 
     async def _check_for_news(self) -> list[NewsAlert]:
         """
@@ -171,10 +276,17 @@ class RealTimeMonitor:
 
         logger.info(f"Found {len(new_articles)} new articles to analyze")
 
+        corroboration_map = self._build_corroboration_map(new_articles)
+
         # Analyze each article for breaking news potential
         alerts = []
         for article in new_articles:
-            alert = self._analyze_article(article)
+            alert = self._analyze_article(
+                article,
+                corroboration_count=corroboration_map.get(
+                    self._make_signature(article.title), 1
+                ),
+            )
             if alert:
                 alerts.append(alert)
                 self._processed_urls.add(article.url)
@@ -185,12 +297,12 @@ class RealTimeMonitor:
         # Store pending alerts
         self._pending_alerts.extend(alerts)
 
-        # Keep only last 100 pending alerts
-        self._pending_alerts = self._pending_alerts[-100:]
+        # Keep only last N pending alerts
+        self._pending_alerts = self._pending_alerts[-self.max_pending_alerts :]
 
-        # Keep only last 1000 processed URLs (memory management)
-        if len(self._processed_urls) > 1000:
-            self._processed_urls = set(list(self._processed_urls)[-1000:])
+        # Keep only last N processed URLs (memory management)
+        if len(self._processed_urls) > self.max_processed_urls:
+            self._processed_urls = set(list(self._processed_urls)[-self.max_processed_urls :])
 
         # Log results
         if alerts:
@@ -204,9 +316,23 @@ class RealTimeMonitor:
         if self.auto_post and alerts:
             await self._maybe_auto_post(alerts)
 
+        self._persist_state()
+
         return alerts
 
-    def _analyze_article(self, article: "Article") -> Optional[NewsAlert]:
+    def _build_corroboration_map(self, articles: list["Article"]) -> dict[str, int]:
+        """Count similar titles across fetched articles."""
+        counts: dict[str, int] = {}
+        for article in articles:
+            signature = self._make_signature(article.title)
+            counts[signature] = counts.get(signature, 0) + 1
+        return counts
+
+    def _analyze_article(
+        self,
+        article: "Article",
+        corroboration_count: int = 1,
+    ) -> Optional[NewsAlert]:
         """
         Analyze an article for breaking news potential.
 
@@ -217,8 +343,17 @@ class RealTimeMonitor:
             NewsAlert if article is newsworthy, None otherwise
         """
         title = article.title.lower()
-        content = (article.content or "").lower()
+        content = getattr(article, "content", None) or getattr(article, "summary", "")
+        content = content.lower()
         combined = f"{title} {content}"
+        signature = self._make_signature(title)
+        matched_entities = self._extract_entities(combined)
+
+        if signature in self._processed_signatures or self._recent_duplicate_signature(signature):
+            return None
+
+        if matched_entities and self._entity_on_cooldown(matched_entities):
+            return None
 
         priority = 0
         keywords_matched = []
@@ -254,17 +389,47 @@ class RealTimeMonitor:
                 priority += 1
                 reasons.append("Recent (< 6 hours)")
 
+        # Reward richer summaries and trusted sources
+        if len(content) > 140:
+            priority += 1
+            reasons.append("Has meaningful summary/context")
+
+        source_name = getattr(article, "source", "").lower()
+        trusted_sources = {
+            "openai",
+            "anthropic",
+            "google",
+            "deepmind",
+            "github",
+            "hackernews",
+            "arxiv.org",
+        }
+        if any(source in source_name for source in trusted_sources):
+            priority += 1
+            reasons.append("Trusted/high-signal source")
+
+        if corroboration_count > 1:
+            bonus = min(3, corroboration_count - 1)
+            priority += bonus
+            reasons.append(f"Corroborated by {corroboration_count} similar reports")
+
         # Minimum threshold for alert
         if priority < 3:
             return None
 
+        self._processed_signatures.add(signature)
+        self._record_alert_signature(signature)
+        self._record_entity_alerts(matched_entities)
+
         reason = "; ".join(reasons) if reasons else "Breaking news keywords detected"
+        severity = self._severity_from_priority(min(priority, 10))
 
         return NewsAlert(
             article=article,
             priority=min(priority, 10),  # Cap at 10
             reason=reason,
             keywords_matched=keywords_matched[:5],
+            severity=severity,
         )
 
     async def _maybe_auto_post(self, alerts: list[NewsAlert]) -> None:
@@ -376,7 +541,15 @@ class RealTimeMonitor:
             "last_post": self._last_post_time.isoformat() if self._last_post_time else None,
             "pending_alerts": len(self._pending_alerts),
             "processed_urls": len(self._processed_urls),
+            "tracked_entities": len(self._entity_last_alert_at),
+            "tracked_signatures": len(self._alert_history),
         }
+
+    def _make_signature(self, text: str) -> str:
+        """Create a normalized signature for lightweight deduplication."""
+        normalized = re.sub(r"[^a-zа-я0-9\s]+", " ", text.lower())
+        tokens = [token for token in normalized.split() if len(token) > 2]
+        return " ".join(tokens[:12])
 
     def get_pending_alerts(self, limit: int = 10) -> list[dict]:
         """
@@ -393,6 +566,7 @@ class RealTimeMonitor:
                 "title": alert.article.title,
                 "url": alert.article.url,
                 "priority": alert.priority,
+                "severity": alert.severity,
                 "reason": alert.reason,
                 "keywords": alert.keywords_matched,
                 "detected_at": alert.detected_at.isoformat(),

@@ -209,6 +209,28 @@ class RealTimeMonitorConfig(BaseSettings):
     min_post_interval_minutes: int = Field(
         default=30, ge=15, le=120, description="Minimum minutes between auto-posts"
     )
+    entity_cooldown_minutes: int = Field(
+        default=180,
+        ge=15,
+        le=1440,
+        description="Cooldown window for repeating alerts about the same entity",
+    )
+    duplicate_collapse_hours: int = Field(
+        default=12,
+        ge=1,
+        le=168,
+        description="Collapse duplicate title signatures within this many hours",
+    )
+    state_path: str = Field(
+        default="data/realtime_monitor_state.json",
+        description="Path to persisted monitor dedup state",
+    )
+    max_pending_alerts: int = Field(
+        default=100, ge=10, le=1000, description="Maximum pending alerts kept in memory"
+    )
+    max_processed_urls: int = Field(
+        default=1000, ge=100, le=10000, description="Maximum processed URL fingerprints"
+    )
 
 
 class SourcesConfig(BaseSettings):
@@ -226,6 +248,38 @@ class SourcesConfig(BaseSettings):
     enable_rss: bool = Field(default=True, description="Enable RSS feed collection")
     rss_fetch_interval_hours: int = Field(
         default=6, ge=1, description="Hours between RSS fetches"
+    )
+    max_articles_per_feed: int = Field(
+        default=10, ge=1, le=100, description="Max articles fetched from one feed"
+    )
+    feed_cache_ttl_minutes: int = Field(
+        default=15, ge=1, le=240, description="Feed cache TTL in minutes"
+    )
+    max_concurrent_fetches: int = Field(
+        default=10, ge=1, le=50, description="Maximum concurrent source fetches"
+    )
+    max_article_age_days: int = Field(
+        default=7, ge=1, le=30, description="Drop stale articles older than N days"
+    )
+    source_weights: dict[str, float] = Field(
+        default_factory=dict,
+        description="Optional per-domain source weights for ranking collected news",
+    )
+    request_retries: int = Field(
+        default=2, ge=0, le=5, description="Retry count for source fetches"
+    )
+    retry_base_delay_ms: int = Field(
+        default=250, ge=50, le=5000, description="Base backoff delay in milliseconds"
+    )
+    disable_after_failures: int = Field(
+        default=3, ge=1, le=20, description="Disable a feed after this many consecutive failures"
+    )
+    disable_duration_minutes: int = Field(
+        default=30, ge=1, le=1440, description="Temporary disable duration for failing feeds"
+    )
+    state_path: str = Field(
+        default="data/source_collector_state.json",
+        description="Path to persisted source collector health state",
     )
 
 
@@ -462,11 +516,13 @@ class Settings(BaseSettings):
             "llm",
             "channel",
             "schedule",
+            "realtime",
             "sources",
             "safety",
             "database",
             "redis",
             "admin",
+            "media",
             "admin_bot",
             "circuit_breaker",
             "backup",
@@ -554,6 +610,18 @@ def validate_startup_config(settings: Settings, dry_run: bool = False) -> list[s
         issues.append("Schedule type is 'fixed' but no fixed_times are configured")
     if settings.schedule.type == "interval" and settings.schedule.interval_hours < 1:
         issues.append("Schedule interval_hours must be at least 1")
+    if (
+        settings.realtime.breaking_threshold > 8
+        and settings.realtime.auto_post
+        and settings.realtime.poll_interval_minutes > 30
+    ):
+        issues.append(
+            "Real-time auto-post is enabled with a high breaking_threshold and slow polling interval; breaking news may be missed"
+        )
+    if settings.sources.disable_after_failures <= settings.sources.request_retries:
+        issues.append(
+            "sources.disable_after_failures should be higher than sources.request_retries to avoid disabling feeds too aggressively"
+        )
 
     # Check safety limits
     if settings.safety.max_daily_posts > 24:
@@ -602,3 +670,43 @@ def print_config_checklist(settings: Settings, dry_run: bool = False) -> None:
     print(f"  Schedule Type: {settings.schedule.type}")
     print(f"  Dry Run: {dry_run}")
     print("================================\n")
+
+
+def export_config_schema() -> dict[str, dict[str, Any]]:
+    """Export simplified config schema/defaults for documentation or tooling."""
+    sections = {}
+    for field_name, field_info in Settings.model_fields.items():
+        if hasattr(field_info.annotation, "model_fields"):
+            section_model = field_info.annotation
+            sections[field_name] = {
+                sub_name: {
+                    "default": sub_field.default,
+                    "annotation": str(sub_field.annotation),
+                }
+                for sub_name, sub_field in section_model.model_fields.items()
+            }
+    return sections
+
+
+def diff_settings_from_defaults(settings: Settings) -> dict[str, dict[str, Any]]:
+    """Return only settings that differ from default values."""
+    defaults = Settings()
+    diff: dict[str, dict[str, Any]] = {}
+
+    for section_name in Settings.model_fields:
+        current_value = getattr(settings, section_name)
+        default_value = getattr(defaults, section_name)
+
+        if hasattr(current_value, "model_dump"):
+            section_diff = {}
+            current_dump = current_value.model_dump()
+            default_dump = default_value.model_dump()
+            for key, value in current_dump.items():
+                if default_dump.get(key) != value:
+                    section_diff[key] = value
+            if section_diff:
+                diff[section_name] = section_diff
+        elif current_value != default_value:
+            diff[section_name] = {"value": current_value}
+
+    return diff
