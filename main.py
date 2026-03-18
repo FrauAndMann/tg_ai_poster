@@ -25,6 +25,7 @@ from core.config import Settings
 from core.logger import setup_logger, logger
 from core.scheduler import Scheduler
 from memory.database import Database, init_database, close_database
+from memory.topic_store import TopicStore
 from pipeline.orchestrator import PipelineOrchestrator, PipelineResult
 from publisher import get_publisher
 from publisher.base import BasePublisher
@@ -273,8 +274,40 @@ async def run_scheduled(
 
     logger.info(f"Scheduler started. Next runs: {_scheduler.get_next_run_times()}")
 
+    # Start real-time monitor if enabled
+    realtime_monitor = None
+    if settings.realtime.enabled:
+        from pipeline.real_time_monitor import RealTimeMonitor
+        from pipeline.source_collector import SourceCollector
+
+        source_collector = SourceCollector(settings=settings.sources)
+        topic_store = TopicStore(orchestrator.post_store.db)
+
+        realtime_monitor = RealTimeMonitor(
+            source_collector=source_collector,
+            orchestrator=orchestrator,
+            topic_store=topic_store,
+            poll_interval=settings.realtime.poll_interval_minutes,
+            auto_post=settings.realtime.auto_post,
+            breaking_threshold=settings.realtime.breaking_threshold,
+        )
+        realtime_monitor.MIN_POST_INTERVAL = settings.realtime.min_post_interval_minutes
+
+        # Run monitor in background
+        monitor_task = asyncio.create_task(realtime_monitor.start())
+        logger.info(
+            f"Real-time monitor started "
+            f"(poll_interval={settings.realtime.poll_interval_minutes}min, "
+            f"auto_post={settings.realtime.auto_post})"
+        )
+
     # Wait for shutdown signal
     await _shutdown_event.wait()
+
+    # Stop real-time monitor
+    if realtime_monitor:
+        realtime_monitor.stop()
+        logger.info("Real-time monitor stopped")
 
     # Cleanup
     await shutdown()

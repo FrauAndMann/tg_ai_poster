@@ -189,6 +189,28 @@ class ScheduleConfig(BaseSettings):
         return v
 
 
+class RealTimeMonitorConfig(BaseSettings):
+    """Real-time news monitoring configuration."""
+
+    model_config = SettingsConfigDict(env_prefix="REALTIME_", extra="ignore")
+
+    enabled: bool = Field(
+        default=True, description="Enable real-time news monitoring"
+    )
+    poll_interval_minutes: int = Field(
+        default=15, ge=5, le=60, description="Minutes between news checks"
+    )
+    auto_post: bool = Field(
+        default=True, description="Automatically post breaking news"
+    )
+    breaking_threshold: int = Field(
+        default=7, ge=1, le=10, description="Priority threshold for auto-posting (1-10)"
+    )
+    min_post_interval_minutes: int = Field(
+        default=30, ge=15, le=120, description="Minimum minutes between auto-posts"
+    )
+
+
 class SourcesConfig(BaseSettings):
     """Content sources configuration."""
 
@@ -374,6 +396,7 @@ class Settings(BaseSettings):
     llm: LLMConfig = Field(default_factory=LLMConfig)
     channel: ChannelConfig = Field(default_factory=ChannelConfig)
     schedule: ScheduleConfig = Field(default_factory=ScheduleConfig)
+    realtime: RealTimeMonitorConfig = Field(default_factory=RealTimeMonitorConfig)
     sources: SourcesConfig = Field(default_factory=SourcesConfig)
     safety: SafetyConfig = Field(default_factory=SafetyConfig)
     database: DatabaseConfig = Field(default_factory=DatabaseConfig)
