@@ -1,0 +1,351 @@
+# Tech Jargon Database for Accessibility Checker
+# Terms are checked for definitions/explanations in content
+
+jargon:
+  # AI/ML Terms
+  - term: "LLM"
+    category: "ai"
+    common_knowledge: false
+    definition: "Large Language Model"
+    aliases:
+      - "Large Language Model"
+      - "Large Language Models"
+
+  - term: "RAG"
+    category: "ai"
+    common_knowledge: false
+    definition: "Retrieval-Augmented Generation"
+    aliases:
+      - "Retrieval-Augmented Generation"
+
+  - term: "GPT"
+    category: "ai"
+    common_knowledge: false
+    definition: "Generative Pre-trained Transformer"
+    aliases:
+      - "Generative Pre-trained Transformer"
+
+  - term: "NLP"
+    category: "ai"
+    common_knowledge: false
+    definition: "Natural Language Processing"
+    aliases:
+      - "Natural Language Processing"
+
+  - term: "ML"
+    category: "ai"
+    common_knowledge: false
+    definition: "Machine Learning"
+    aliases:
+      - "Machine Learning"
+
+  - term: "CNN"
+    category: "ai"
+    common_knowledge: false
+    definition: "Convolutional Neural Network"
+    aliases:
+      - "Convolutional Neural Network"
+
+  - term: "RNN"
+    category: "ai"
+    common_knowledge: false
+    definition: "Recurrent Neural Network"
+    aliases:
+      - "Recurrent Neural Network"
+
+  - term: "GAN"
+    category: "ai"
+    common_knowledge: false
+    definition: "Generative Adversarial Network"
+    aliases:
+      - "Generative Adversarial Network"
+
+  - term: "BERT"
+    category: "ai"
+    common_knowledge: false
+    definition: "Bidirectional Encoder Representations from Transformers"
+    aliases:
+      - "Bidirectional Encoder Representations from Transformers"
+
+  - term: "transformer"
+    category: "ai"
+    common_knowledge: false
+    definition: "neural network architecture using self-attention"
+    aliases:
+      - "transformer architecture"
+      - "transformer model"
+
+  - term: "fine-tuning"
+    category: "ai"
+    common_knowledge: false
+    definition: "process of adapting a pre-trained model"
+    aliases:
+      - "fine-tune"
+      - "fine tuned"
+
+  - term: "embedding"
+    category: "ai"
+    common_knowledge: false
+    definition: "vector representation of data"
+    aliases:
+      - "embeddings"
+      - "vector embedding"
+
+  - term: "prompt engineering"
+    category: "ai"
+    common_knowledge: false
+    definition: "crafting inputs for AI models"
+    aliases:
+      - "prompt design"
+
+  - term: "token"
+    category: "ai"
+    common_knowledge: false
+    definition: "basic unit of text for language models"
+    aliases:
+      - "tokens"
+      - "tokenization"
+
+  # General Tech Terms
+  - term: "API"
+    category: "general_tech"
+    common_knowledge: true
+    definition: "Application Programming Interface"
+    aliases:
+      - "Application Programming Interface"
+
+  - term: "SDK"
+    category: "general_tech"
+    common_knowledge: true
+    definition: "Software Development Kit"
+    aliases:
+      - "Software Development Kit"
+
+  - term: "REST"
+    category: "general_tech"
+    common_knowledge: false
+    definition: "Representational State Transfer"
+    aliases:
+      - "RESTful"
+      - "REST API"
+
+  - term: "GraphQL"
+    category: "general_tech"
+    common_knowledge: false
+    definition: "query language for APIs"
+    aliases:
+      - "Graph Query Language"
+
+  - term: "JSON"
+    category: "general_tech"
+    common_knowledge: true
+    definition: "JavaScript Object Notation"
+    aliases:
+      - "JavaScript Object Notation"
+
+  - term: "CI/CD"
+    category: "general_tech"
+    common_knowledge: false
+    definition: "Continuous Integration/Continuous Deployment"
+    aliases:
+      - "continuous integration"
+      - "continuous deployment"
+
+  - term: "Docker"
+    category: "general_tech"
+    common_knowledge: true
+    definition: "containerization platform"
+    aliases:
+      - "docker container"
+      - "dockerized"
+
+  - term: "Kubernetes"
+    category: "general_tech"
+    common_knowledge: false
+    definition: "container orchestration platform"
+    aliases:
+      - "k8s"
+
+  - term: "microservices"
+    category: "general_tech"
+    common_knowledge: false
+    definition: "architectural style of loosely coupled services"
+    aliases:
+      - "microservice"
+      - "micro-service"
+
+  # Web Development
+  - term: "SSR"
+    category: "web"
+    common_knowledge: false
+    definition: "Server-Side Rendering"
+    aliases:
+      - "Server-Side Rendering"
+      - "server side rendering"
+
+  - term: "CSR"
+    category: "web"
+    common_knowledge: false
+    definition: "Client-Side Rendering"
+    aliases:
+      - "Client-Side Rendering"
+      - "client side rendering"
+
+  - term: "SPA"
+    category: "web"
+    common_knowledge: false
+    definition: "Single Page Application"
+    aliases:
+      - "Single Page Application"
+      - "single-page application"
+
+  - term: "PWA"
+    category: "web"
+    common_knowledge: false
+    definition: "Progressive Web App"
+    aliases:
+      - "Progressive Web App"
+      - "progressive web application"
+
+  # Infrastructure
+  - term: "GPU"
+    category: "hardware"
+    common_knowledge: true
+    definition: "Graphics Processing Unit"
+    aliases:
+      - "Graphics Processing Unit"
+
+  - term: "TPU"
+    category: "hardware"
+    common_knowledge: false
+    definition: "Tensor Processing Unit"
+    aliases:
+      - "Tensor Processing Unit"
+
+  - term: "CPU"
+    category: "hardware"
+    common_knowledge: true
+    definition: "Central Processing Unit"
+    aliases:
+      - "Central Processing Unit"
+
+  - term: "RAM"
+    category: "hardware"
+    common_knowledge: true
+    definition: "Random Access Memory"
+    aliases:
+      - "Random Access Memory"
+
+  - term: "inference"
+    category: "ai"
+    common_knowledge: false
+    definition: "running a trained model to make predictions"
+    aliases:
+      - "model inference"
+
+  - term: "latency"
+    category: "general_tech"
+    common_knowledge: true
+    definition: "time delay in data transfer"
+    aliases:
+      - "response time"
+
+  - term: "throughput"
+    category: "general_tech"
+    common_knowledge: true
+    definition: "rate of data processing"
+    aliases:
+      - "processing rate"
+
+  - term: "context window"
+    category: "ai"
+    common_knowledge: false
+    definition: "maximum input size for language models"
+    aliases:
+      - "context length"
+      - "token limit"
+
+  - term: "zero-shot"
+    category: "ai"
+    common_knowledge: false
+    definition: "model capability without examples"
+    aliases:
+      - "zero-shot learning"
+      - "zero shot"
+
+  - term: "few-shot"
+    category: "ai"
+    common_knowledge: false
+    definition: "learning from a small number of examples"
+    aliases:
+      - "few-shot learning"
+      - "few shot"
+
+  - term: "hallucination"
+    category: "ai"
+    common_knowledge: false
+    definition: "AI generating false information"
+    aliases:
+      - "AI hallucination"
+      - "model hallucination"
+
+  - term: "attention"
+    category: "ai"
+    common_knowledge: false
+    definition: "mechanism for focusing on relevant input parts"
+    aliases:
+      - "attention mechanism"
+      - "self-attention"
+
+  - term: "hyperparameters"
+    category: "ai"
+    common_knowledge: false
+    definition: "parameters set before training"
+    aliases:
+      - "hyperparameter"
+      - "hyper-parameter"
+
+  - term: "overfitting"
+    category: "ai"
+    common_knowledge: false
+    definition: "model memorizing training data"
+    aliases:
+      - "overfit"
+      - "over-fitting"
+
+  - term: "underfitting"
+    category: "ai"
+    common_knowledge: false
+    definition: "model too simple to capture patterns"
+    aliases:
+      - "underfit"
+      - "under-fitting"
+
+  - term: "gradient"
+    category: "ai"
+    common_knowledge: false
+    definition: "direction of steepest increase in loss"
+    aliases:
+      - "gradients"
+      - "gradient descent"
+
+  - term: "backpropagation"
+    category: "ai"
+    common_knowledge: false
+    definition: "algorithm for training neural networks"
+    aliases:
+      - "back-propagation"
+      - "back prop"
+
+# Definition patterns that indicate an explanation is present
+definition_patterns:
+  - "stands for"
+  - "means"
+  - "refers to"
+  - "is defined as"
+  - "is a"
+  - "are"
+  - ":"
+  - "-"
+  - "("
+  - "["
