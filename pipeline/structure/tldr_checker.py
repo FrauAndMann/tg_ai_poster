@@ -50,15 +50,15 @@ class TLDRChecker:
     # Common company/product names (proper nouns)
     SUBJECT_PATTERNS = [
         # Major tech companies
-        r"\b(?:OpenAI|Google|Microsoft|Apple|Meta|Amazon|Anthropic|Tesla|NVIDIA)\b",
+        r"\b(?:OpenAI|Google|Microsoft|Apple|Meta|Amazon|Anthropic|Tesla|NVIDIA|DeepMind|IBM|Oracle|Intel|AMD|Qualcomm)\b",
         # AI products
-        r"\b(?:GPT-[45]|Claude|Gemini|ChatGPT|Llama|Copilot|Midjourney)\b",
+        r"\b(?:GPT-[45]|Claude|Gemini|ChatGPT|Llama|Copilot|Midjourney|DALL[- ]?E|Stable\s+Diffusion)\b",
         # Russian companies
-        r"\b(?:Яндекс|Yandex|Сбер|Sber|ВК|VK|Тинькофф|Tinkoff)\b",
-        # Capitalized words (potential proper nouns) - at least 3 chars
-        r"\b[A-Z][a-z]{2,}\b",
-        # Russian capitalized words
-        r"\b[А-Я][а-я]{2,}\b",
+        r"\b(?:Яндекс|Yandex|Сбер|Sber|ВК|VK|Тинькофф|Tinkoff|МТС|MTS|Билайн|Beeline)\b",
+        # Social media platforms
+        r"\b(?:Twitter|Facebook|Instagram|TikTok|LinkedIn|Reddit|Discord|Telegram|WhatsApp)\b",
+        # Other tech companies
+        r"\b(?:Netflix|Spotify|Uber|Airbnb|Stripe|SpaceX|Palantir)\b",
     ]
 
     # Action verbs and metrics indicating main event/outcome
