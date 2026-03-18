@@ -38,6 +38,17 @@ class TestSourceCollector:
         assert data["title"] == "Test"
         assert data["url"] == "https://example.com"
 
+    def test_article_normalized_url_and_content_alias(self):
+        """Test article URL normalization and content alias."""
+        article = Article(
+            title="Test",
+            summary="Summary body",
+            url="https://Example.com/path/?utm_source=test&b=2&a=1",
+        )
+
+        assert article.content == "Summary body"
+        assert article.normalized_url == "https://example.com/path?a=1&b=2"
+
     def test_deduplicate(self):
         """Test deduplication."""
         collector = SourceCollector(rss_feeds=[])
@@ -50,6 +61,18 @@ class TestSourceCollector:
 
         unique = collector.deduplicate(articles)
         assert len(unique) == 2
+
+    def test_deduplicate_uses_normalized_url(self):
+        """Test deduplication by normalized URL, not only hash."""
+        collector = SourceCollector(rss_feeds=[])
+
+        articles = [
+            Article(title="Article 1", summary="Summary", url="https://example.com/post?utm_source=x&id=1"),
+            Article(title="Article 1 copy", summary="Summary", url="https://example.com/post?id=1"),
+        ]
+
+        unique = collector.deduplicate(articles)
+        assert len(unique) == 1
 
     def test_filter_by_date(self):
         """Test date filtering."""
@@ -114,6 +137,31 @@ class TestSourceCollector:
         sorted_articles = collector.sort_by_date(articles, descending=True)
         assert sorted_articles[0].title == "New"
         assert sorted_articles[-1].title == "Old"
+
+    def test_rank_articles_prefers_fresh_authoritative_sources(self):
+        """Test ranking prefers fresher and higher-signal articles."""
+        now = datetime.utcnow()
+        collector = SourceCollector(
+            rss_feeds=[],
+            source_weights={"openai.com": 1.0},
+        )
+        articles = [
+            Article(
+                title="Older generic tech post",
+                summary="A small update from a generic blog.",
+                url="https://example.com/post",
+                published_at=now - timedelta(hours=24),
+            ),
+            Article(
+                title="OpenAI announces new release",
+                summary="A detailed product and API launch note.",
+                url="https://openai.com/blog/post",
+                published_at=now - timedelta(hours=1),
+            ),
+        ]
+
+        ranked = collector.rank_articles(articles)
+        assert ranked[0].url == "https://openai.com/blog/post"
 
 
 class TestContentFilter:
