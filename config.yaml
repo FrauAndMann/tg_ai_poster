@@ -56,6 +56,7 @@ schedule:
   min_interval_minutes: 30           # ← реалистичный минимум
 
 sources:
+  max_article_age_days: 2  # Только свежие новости (до 2 дней)
   rss_feeds:
     # === TECH NEWS ===
     - "https://www.producthunt.com/feed"
@@ -93,6 +94,7 @@ sources:
   use_producthunt: true
   enable_rss: true
   rss_fetch_interval_hours: 6
+  max_article_age_days: 2  # Only fresh news (max 2 days)
 
   # === NEW API SOURCES ===
   newsapi:

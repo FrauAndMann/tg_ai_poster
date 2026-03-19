@@ -237,7 +237,7 @@ class SourcesConfig(BaseSettings):
         default=10, ge=1, le=50, description="Maximum concurrent source fetches"
     )
     max_article_age_days: int = Field(
-        default=7, ge=1, le=30, description="Drop stale articles older than N days"
+        default=2, ge=1, le=30, description="Drop stale articles older than N days"
     )
     source_weights: dict[str, float] = Field(
         default_factory=dict,
