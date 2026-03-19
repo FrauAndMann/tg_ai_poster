@@ -713,6 +713,9 @@ class SourceCollector:
         Returns:
             list[Article]: Processed articles ready for use
         """
+        # Clear seen hashes at start of each collection to avoid cross-run deduplication
+        self._seen_hashes.clear()
+
         # Fetch from all sources
         articles = await self.fetch_all()
 

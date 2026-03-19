@@ -603,7 +603,7 @@ class PipelineOrchestrator:
 
         try:
             articles = await self.source_collector.collect(
-                max_age_days=7,
+                max_age_days=self.settings.sources.max_article_age_days,
             )
 
             logger.info(f"Collected {len(articles)} articles")
