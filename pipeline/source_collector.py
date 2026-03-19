@@ -604,29 +604,42 @@ class SourceCollector:
     def filter_by_date(
         self,
         articles: list[Article],
-        max_age_days: int = 7,
+        max_age_days: int = 2,
+        require_date: bool = True,
     ) -> list[Article]:
         """
         Filter articles by publication date.
 
         Args:
             articles: List of articles
-            max_age_days: Maximum age in days
+            max_age_days: Maximum age in days (default: 2 for fresh news)
+            require_date: If True, skip articles without publication date
 
         Returns:
             list[Article]: Filtered articles
         """
         cutoff = datetime.utcnow() - timedelta(days=max_age_days)
 
-        filtered = [
-            article
-            for article in articles
-            if article.published_at is None or article.published_at >= cutoff
-        ]
+        filtered = []
+        skipped_no_date = 0
+
+        for article in articles:
+            # Skip articles without publication date if require_date=True
+            if article.published_at is None:
+                if require_date:
+                    skipped_no_date += 1
+                    continue
+                # If not requiring date, let it through (but will score lower later)
+                filtered.append(article)
+            elif article.published_at >= cutoff:
+                filtered.append(article)
+
+        if skipped_no_date > 0:
+            logger.debug(f"Skipped {skipped_no_date} articles without publication date")
 
         logger.info(
             f"Date filter: {len(articles)} -> {len(filtered)} articles "
-            f"(max age: {max_age_days} days)"
+            f"(max age: {max_age_days} days, require_date: {require_date})"
         )
         return filtered
 

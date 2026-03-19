@@ -201,16 +201,39 @@ class ContentFilter:
             score -= 5
             reasons.append("-5: Summary too short")
 
-        # Recency bonus
-        if self.prefer_recent and article.published_at:
+        # === FRESHNESS SCORING (critical for news) ===
+        if article.published_at is None:
+            # Heavy penalty for missing date - can't verify freshness
+            score -= 20
+            reasons.append("-20: No publication date")
+        else:
             hours_ago = (
                 datetime.utcnow() - article.published_at
             ).total_seconds() / 3600
 
-            if hours_ago <= self.recent_hours:
-                recency_bonus = (self.recent_hours - hours_ago) / self.recent_hours * 15
+            if hours_ago <= 6:
+                # Very fresh: < 6 hours - big bonus
+                recency_bonus = 25 - (hours_ago / 6) * 10  # 15-25 points
                 score += recency_bonus
-                reasons.append(f"+{recency_bonus:.1f}: Recent article")
+                reasons.append(f"+{recency_bonus:.1f}: Very fresh (< 6h)")
+            elif hours_ago <= 24:
+                # Fresh: < 24 hours - moderate bonus
+                recency_bonus = 15 - ((hours_ago - 6) / 18) * 10  # 5-15 points
+                score += recency_bonus
+                reasons.append(f"+{recency_bonus:.1f}: Fresh (< 24h)")
+            elif hours_ago <= 48:
+                # Recent: < 48 hours - small bonus
+                recency_bonus = 5 - ((hours_ago - 24) / 24) * 5  # 0-5 points
+                score += recency_bonus
+                reasons.append(f"+{recency_bonus:.1f}: Recent (< 48h)")
+            elif hours_ago <= 72:
+                # Getting old: 48-72 hours - no bonus, no penalty
+                reasons.append("0: Acceptable age (48-72h)")
+            else:
+                # Too old: > 72 hours - penalty
+                age_penalty = min((hours_ago - 72) / 24 * 5, 25)  # 0-25 penalty
+                score -= age_penalty
+                reasons.append(f"-{age_penalty:.1f}: Old article (> 72h)")
 
         # Has tags bonus
         if article.tags:
