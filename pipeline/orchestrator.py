@@ -30,6 +30,7 @@ from pipeline.content_validator import ContentValidator, ValidationResult
 from pipeline.quality_checker import QualityChecker, QualityResult
 from pipeline.source_collector import Article, SourceCollector
 from pipeline.source_verification import SourceVerifier, VerificationResult
+from pipeline.duplicate_checker import ChannelDuplicateChecker, DuplicateCheckStats
 from pipeline.topic_selector import TopicSelector
 
 logger = get_logger(__name__)
@@ -544,7 +545,22 @@ class PipelineOrchestrator:
             ensure_structure=False,  # Don't require specific blocks
         )
 
-        # Content validator for strict post validation
+
+        # Initialize duplicate checker
+        self.duplicate_checker = ChannelDuplicateChecker(
+            post_store=self.post_store,
+            topic_store=self.topic_store,
+            similarity_threshold=0.80,
+            title_similarity_threshold=0.85,
+            url_check_days=30,
+            content_check_limit=50,
+        )
+
+        self.formatter = PostFormatter(
+            parse_mode="MarkdownV2",
+            max_length=4096,  # Telegram max
+            ensure_structure=False,  # Don't require specific blocks
+        )        # Content validator for strict post validation
         self.content_validator = ContentValidator(
             strict_mode=True,
             min_body_length=150,
@@ -607,11 +623,34 @@ class PipelineOrchestrator:
             )
 
             logger.info(f"Collected {len(articles)} articles")
-            return articles
-
         except Exception as e:
             logger.error(f"Source collection failed: {e}")
             return []
+
+        # Check for duplicates against already published posts
+        if self.enable_telegram_duplicate_check and self.duplicate_checker:
+            logger.info("Checking for duplicates against published posts...")
+            articles, stats = await self.duplicate_checker.check_articles(articles)
+
+            if stats.total_duplicates > 0:
+                logger.info(
+                    f"Filtered out {stats.total_duplicates} duplicate articles "
+                    f"(URL: {stats.url_duplicates}, title: {stats.title_duplicates}, "
+                    f"semantic: {stats.semantic_duplicates}, content: {stats.content_duplicates})"
+                )
+            # Log detailed stats
+            logger.info(
+                f"Duplicate check stats: {stats.total_checked} checked, "
+                f"{stats.total_duplicates} duplicates found "
+                f"(URL: {stats.url_duplicates}, title: {stats.title_duplicates}, "
+                f"semantic: {stats.semantic_duplicates}, content: {stats.content_duplicates}) "
+                f"unique: {stats.unique_articles} unique articles"
+            )
+        else:
+            logger.warning("Duplicate checker not initialized, continuing without duplicate check")
+
+        logger.info(f"After duplicate check: {len(articles)} articles")
+        return articles
 
     async def _verify_sources(
         self,
@@ -921,7 +960,12 @@ class PipelineOrchestrator:
             await self.post_store.mark_failed(post_id, str(e))
             return False
 
-    async def run(self, dry_run: bool = False) -> PipelineResult:
+    async def run(
+        self,
+        dry_run: bool = False,
+        topic_override: Optional[str] = None,
+        source_urls: Optional[list[str]] = None,
+    ) -> PipelineResult:
         """
         Run the full pipeline with all stages.
 
@@ -939,6 +983,8 @@ class PipelineOrchestrator:
 
         Args:
             dry_run: Skip actual publishing
+            topic_override: Override topic selection with specific topic
+            source_urls: Specific source URLs to use (with topic_override)
 
         Returns:
             PipelineResult: Pipeline execution result
@@ -961,20 +1007,26 @@ class PipelineOrchestrator:
                         duration=time.time() - start_time,
                     )
 
-            # Stage 2: Collect sources
-            articles = await self._collect_sources()
+            # Stage 2 & 3: Collect sources and select topic (or use override)
+            if topic_override:
+                # Use overridden topic for breaking news
+                topic = topic_override
+                topic_meta = {"source_urls": source_urls} if source_urls else {}
+                articles = []  # No need to collect for override
+                logger.info(f"Using topic override: {topic[:50]}...")
+            else:
+                # Normal flow: collect sources and select topic
+                articles = await self._collect_sources()
+                topic, topic_meta = await self._select_topic(articles)
 
-            # Stage 3: Select topic
-            topic, topic_meta = await self._select_topic(articles)
+                if not topic:
+                    return PipelineResult(
+                        success=False,
+                        error="Failed to select topic",
+                        duration=time.time() - start_time,
+                    )
 
-            if not topic:
-                return PipelineResult(
-                    success=False,
-                    error="Failed to select topic",
-                    duration=time.time() - start_time,
-                )
-
-            logger.info(f"Selected topic: {topic[:50]}...")
+                logger.info(f"Selected topic: {topic[:50]}...")
 
             # Stage 4: Verify sources (if enabled)
             verification_result = None
@@ -989,10 +1041,32 @@ class PipelineOrchestrator:
             source_context = None
             source_articles = []
 
+            # Handle source_urls from topic_override
+            if source_urls:
+                source_context = f"Source URLs:\n" + "\n".join(f"- {url}" for url in source_urls)
+
             if topic_meta and topic_meta.get("source_article"):
                 article = topic_meta["source_article"]
+                # Include publication date in source context
+                date_str = ""
+                if article.get("published_at"):
+                    from datetime import datetime
+                    try:
+                        pub_date = datetime.fromisoformat(article["published_at"].replace("Z", "+00:00"))
+                        age_hours = (datetime.utcnow() - pub_date.replace(tzinfo=None)).total_seconds() / 3600
+                        if age_hours < 1:
+                            age_str = "just now"
+                        elif age_hours < 24:
+                            age_str = f"{int(age_hours)} hours ago"
+                        else:
+                            age_str = f"{int(age_hours / 24)} days ago"
+                        date_str = f"\nPublished: {pub_date.strftime('%Y-%m-%d %H:%M')} UTC ({age_str})"
+                        if age_hours > 24:
+                            date_str += "\n⚠️ WARNING: This source is more than 24 hours old."
+                    except (TypeError, ValueError):
+                        pass
                 source_context = (
-                    f"Source: {article.get('source', '')}\n{article.get('summary', '')}"
+                    f"Source: {article.get('source', '')}{date_str}\n{article.get('summary', '')}"
                 )
                 source_articles = [article]
 

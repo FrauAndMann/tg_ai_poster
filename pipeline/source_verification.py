@@ -445,6 +445,8 @@ Respond in JSON:
         Returns:
             str: Formatted source context for LLM prompt
         """
+        from datetime import datetime
+
         if not verified_sources:
             return "No verified sources available."
 
@@ -456,10 +458,31 @@ Respond in JSON:
             )
             parts.append(f"Title: {vs.article.title}")
             parts.append(f"URL: {vs.article.url}")
+            # Add publication date with age indicator
+            if vs.article.published_at:
+                age_hours = (datetime.utcnow() - vs.article.published_at).total_seconds() / 3600
+                if age_hours < 1:
+                    age_str = "just now"
+                elif age_hours < 24:
+                    age_str = f"{int(age_hours)} hours ago"
+                else:
+                    age_str = f"{int(age_hours / 24)} days ago"
+                parts.append(f"Published: {vs.article.published_at.strftime('%Y-%m-%d %H:%M')} UTC ({age_str})")
             if vs.article.summary:
                 parts.append(f"Summary: {vs.article.summary}")
             if vs.is_primary:
                 parts.append("(PRIMARY SOURCE)")
+
+        # Add freshness warning for old sources
+        sources_with_dates = [vs for vs in verified_sources[:3] if vs.article.published_at]
+        if sources_with_dates:
+            oldest_source = max(sources_with_dates, key=lambda vs: vs.article.published_at)
+            age_hours = (datetime.utcnow() - oldest_source.article.published_at).total_seconds() / 3600
+            if age_hours > 24:
+                parts.append(
+                    f"\n⚠️ FRESHNESS WARNING: Oldest source is {int(age_hours / 24)} days old. "
+                    "Verify this news is still relevant before writing as breaking news."
+                )
 
         parts.append(
             "\n\nIMPORTANT: Use only facts from these sources. Include source URLs in your post."

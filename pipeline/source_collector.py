@@ -168,26 +168,130 @@ class SourceCollector:
         self._feed_cache: dict[str, tuple[datetime, list[Article]]] = {}
         self._fetch_semaphore = asyncio.Semaphore(max(1, max_concurrent_fetches))
 
+    def _validate_date(self, dt: datetime) -> bool:
+        """
+        Validate that date is reasonable (not too old, not in future).
+
+        Args:
+            dt: Datetime to validate
+
+        Returns:
+            bool: True if date is valid and recent
+        """
+        if dt is None:
+            return False
+
+        now = datetime.utcnow()
+        current_year = now.year
+
+        # Reject dates too far in the past (more than 1 year old)
+        if dt.year < current_year - 1:
+            logger.debug(f"Date too old: {dt.year} < {current_year - 1}")
+            return False
+
+        # Reject dates in the future (more than 1 hour)
+        if dt > now + timedelta(hours=1):
+            logger.debug(f"Date in future: {dt} > {now}")
+            return False
+
+        return True
+
     def _parse_date(self, entry: dict) -> Optional[datetime]:
         """
-        Parse publication date from RSS entry.
+        Parse publication date from RSS entry with multiple format support.
+
+        Supports:
+        - feedparser time_struct (published_parsed, updated_parsed)
+        - String dates in various formats (RFC822, ISO8601, HTTP date)
+        - Common date patterns
 
         Args:
             entry: RSS feed entry
 
         Returns:
-            datetime | None: Parsed date or None
+            datetime | None: Parsed and validated date or None
         """
-        date_fields = ["published_parsed", "updated_parsed"]
+        import re
+        from email.utils import parsedate_to_datetime
 
-        for date_field in date_fields:
-            if hasattr(entry, date_field):
-                time_struct = getattr(entry, date_field)
+        # Strategy 1: Try feedparser time_struct fields
+        time_struct_fields = ["published_parsed", "updated_parsed"]
+        for field in time_struct_fields:
+            if hasattr(entry, field):
+                time_struct = getattr(entry, field)
                 if time_struct:
                     try:
-                        return datetime(*time_struct[:6])
-                    except (TypeError, ValueError):
-                        pass
+                        dt = datetime(*time_struct[:6])
+                        if self._validate_date(dt):
+                            return dt
+                    except (TypeError, ValueError) as e:
+                        logger.debug(f"Failed to parse {field}: {e}")
+
+        # Strategy 2: Try string date fields
+        string_date_fields = ["published", "updated", "pubDate", "date", "created"]
+        date_patterns = [
+            # ISO 8601
+            r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}",
+            r"\d{4}-\d{2}-\d{2}",
+            # RFC 822 / HTTP date
+            r"\d{1,2}\s+\w{3}\s+\d{4}",
+            r"\w{3},\s+\d{1,2}\s+\w{3}\s+\d{4}",
+            # European format
+            r"\d{2}\.\d{2}\.\d{4}",
+            # US format
+            r"\d{1,2}/\d{1,2}/\d{4}",
+        ]
+
+        for field in string_date_fields:
+            date_str = entry.get(field) if hasattr(entry, "get") else getattr(entry, field, None)
+            if not date_str:
+                continue
+
+            # Try email.utils parser (handles RFC822/HTTP dates)
+            try:
+                dt = parsedate_to_datetime(date_str)
+                if self._validate_date(dt):
+                    return dt
+            except (TypeError, ValueError):
+                pass
+
+            # Try ISO 8601 format
+            try:
+                # Handle timezone suffix
+                clean_str = date_str.replace("Z", "+00:00").strip()
+                if "+" in clean_str or clean_str.count("-") > 2:
+                    # Has timezone, parse it
+                    clean_str = re.sub(r"[+-]\d{2}:\d{2}$", "", clean_str)
+                # Remove milliseconds
+                clean_str = re.sub(r"\.\d+", "", clean_str)
+                dt = datetime.fromisoformat(clean_str.replace("Z", ""))
+                if self._validate_date(dt):
+                    return dt
+            except (TypeError, ValueError):
+                pass
+
+            # Try common patterns with strptime
+            formats = [
+                "%Y-%m-%dT%H:%M:%S",
+                "%Y-%m-%dT%H:%M:%SZ",
+                "%Y-%m-%d %H:%M:%S",
+                "%Y-%m-%d",
+                "%a, %d %b %Y %H:%M:%S",
+                "%a, %d %b %Y %H:%M:%S %Z",
+                "%d %b %Y %H:%M:%S",
+                "%d %B %Y",
+                "%d.%m.%Y %H:%M",
+                "%d.%m.%Y",
+                "%m/%d/%Y %H:%M:%S",
+                "%m/%d/%Y",
+            ]
+            for fmt in formats:
+                try:
+                    dt = datetime.strptime(date_str.strip()[:25], fmt)
+                    if self._validate_date(dt):
+                        return dt
+                except (TypeError, ValueError):
+                    continue
 
         return None
 
