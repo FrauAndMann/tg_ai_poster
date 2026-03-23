@@ -446,6 +446,7 @@ class PipelineOrchestrator:
         enable_source_verification: bool = True,
         enable_editorial_review: bool = True,
         enable_media_generation: bool = True,
+        enable_telegram_duplicate_check: bool = True,
     ) -> None:
         """
         Initialize pipeline orchestrator.
@@ -457,6 +458,7 @@ class PipelineOrchestrator:
             enable_source_verification: Enable source verification stage
             enable_editorial_review: Enable editorial review stage
             enable_media_generation: Enable media prompt generation
+            enable_telegram_duplicate_check: Enable duplicate checking against published posts
         """
         self.settings = settings
         self.db = db
@@ -464,6 +466,7 @@ class PipelineOrchestrator:
         self.enable_source_verification = enable_source_verification
         self.enable_editorial_review = enable_editorial_review
         self.enable_media_generation = enable_media_generation
+        self.enable_telegram_duplicate_check = enable_telegram_duplicate_check
 
         # Initialize stores
         self.post_store = PostStore(db)
