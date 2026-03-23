@@ -85,8 +85,7 @@ class ClaudeCLIAdapter(BaseLLMAdapter):
             cli_args = [
                 self.claude_path,
                 "--print",
-                "--tools",
-                "",
+                "--dangerously-skip-permissions",
                 "--no-session-persistence",
             ]
 
