@@ -232,38 +232,20 @@ class PostFormatter:
         """
         Fix unbalanced markdown markers by escaping stray ones.
 
+        Note: This method is called BEFORE _escape_markdown_v2_with_links.
+        We should NOT add backslashes here because the escape method will
+        escape them again, causing double-escaping (\\* instead of \*).
+
+        The escape method handles ALL special characters including * and _.
+        So we just return the content unchanged here.
+
         Args:
             content: Content to fix
 
         Returns:
-            str: Content with balanced or escaped markers
+            str: Content unchanged (escaping handled by _escape_markdown_v2_with_links)
         """
-        # Count markers (excluding escaped ones)
-        # For simplicity, escape all standalone _ and * that might cause issues
-        # This is safer than trying to balance them
-
-        lines = content.split("\n")
-        fixed_lines = []
-
-        for line in lines:
-            # Skip lines that look like they have intentional markdown
-            # (pairs of * or _ around text)
-            if "*" in line:
-                # Count unescaped asterisks
-                count = line.count("*")
-                if count % 2 != 0:
-                    # Odd number - escape one to make it even
-                    # Find the last unescaped * and escape it
-                    parts = line.rsplit("*", 1)
-                    if len(parts) == 2:
-                        line = parts[0] + "\\*" + parts[1]
-
-            # Note: _ escaping is handled by _escape_markdown_v2_with_links
-            # Don't pre-escape here to avoid double-escaping
-
-            fixed_lines.append(line)
-
-        return "\n".join(fixed_lines)
+        return content
 
     def truncate(self, content: str, max_length: Optional[int] = None) -> str:
         """
