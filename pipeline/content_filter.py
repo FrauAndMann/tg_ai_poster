@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from utils.datetime_utils import utcnow
+from utils.datetime_utils import utcnow, make_aware
 from typing import Optional
 
 from core.logger import get_logger
@@ -208,8 +208,10 @@ class ContentFilter:
             score -= 20
             reasons.append("-20: No publication date")
         else:
+            # Ensure timezone-aware comparison
+            published_aware = make_aware(article.published_at)
             hours_ago = (
-                utcnow() - article.published_at
+                utcnow() - published_aware
             ).total_seconds() / 3600
 
             if hours_ago <= 6:

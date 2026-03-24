@@ -11,6 +11,7 @@ import asyncio
 import re
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from utils.datetime_utils import utcnow, make_aware
 from typing import TYPE_CHECKING, Optional
 
 from core.logger import get_logger
@@ -62,8 +63,12 @@ class NewsAlert:
     article: "Article"
     priority: int  # 1-10, higher = more important
     reason: str
-    detected_at: datetime = field(default_factory=datetime.now)
+    detected_at: datetime | None = None
     keywords_matched: list[str] = field(default_factory=list)
+
+    def __post_init__(self):
+        if self.detected_at is None:
+            self.detected_at = utcnow()
 
 
 class RealTimeMonitor:
@@ -151,7 +156,7 @@ class RealTimeMonitor:
         Returns:
             List of detected news alerts
         """
-        self._last_check_time = datetime.now()
+        self._last_check_time = utcnow()
         logger.info("Checking for new articles...")
 
         # Fetch fresh articles
@@ -253,7 +258,9 @@ class RealTimeMonitor:
 
         # Bonus for very recent articles (published within last 2 hours)
         if article.published_at:
-            age_hours = (datetime.now() - article.published_at).total_seconds() / 3600
+            # Ensure published_at is timezone-aware for comparison
+            published_at_aware = make_aware(article.published_at)
+            age_hours = (utcnow() - published_at_aware).total_seconds() / 3600
             if age_hours < 2:
                 priority += 3
                 reasons.append("Very recent (< 2 hours)")
@@ -305,7 +312,7 @@ class RealTimeMonitor:
         # Check if enough time has passed since last post
         if self._last_post_time:
             minutes_since = (
-                datetime.now() - self._last_post_time
+                utcnow() - self._last_post_time
             ).total_seconds() / 60
             if minutes_since < self.MIN_POST_INTERVAL:
                 logger.debug(
@@ -351,7 +358,7 @@ class RealTimeMonitor:
                 )
 
                 if result.success:
-                    self._last_post_time = datetime.now()
+                    self._last_post_time = utcnow()
                     logger.info(
                         f"Auto-post published successfully: "
                         f"post_id={result.post_id}, quality={result.quality_score}"

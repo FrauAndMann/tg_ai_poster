@@ -1054,7 +1054,8 @@ class PipelineOrchestrator:
 
                     try:
                         pub_date = datetime.fromisoformat(article["published_at"].replace("Z", "+00:00"))
-                        age_hours = (utcnow() - pub_date.replace(tzinfo=None)).total_seconds() / 3600
+                        # Keep timezone for proper comparison with utcnow()
+                        age_hours = (utcnow() - pub_date).total_seconds() / 3600
                         if age_hours < 1:
                             age_str = "just now"
                         elif age_hours < 24:

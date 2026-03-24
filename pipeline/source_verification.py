@@ -13,6 +13,7 @@ from typing import Optional
 from urllib.parse import urlparse
 
 from core.logger import get_logger
+from utils.datetime_utils import utcnow, make_aware
 from llm.base import BaseLLMAdapter
 from pipeline.source_collector import Article
 
@@ -446,7 +447,7 @@ Respond in JSON:
             str: Formatted source context for LLM prompt
         """
         from datetime import datetime
-from utils.datetime_utils import utcnow
+        from utils.datetime_utils import utcnow
 
         if not verified_sources:
             return "No verified sources available."
@@ -461,7 +462,9 @@ from utils.datetime_utils import utcnow
             parts.append(f"URL: {vs.article.url}")
             # Add publication date with age indicator
             if vs.article.published_at:
-                age_hours = (utcnow() - vs.article.published_at).total_seconds() / 3600
+                # Ensure timezone-aware comparison
+                published_aware = make_aware(vs.article.published_at)
+                age_hours = (utcnow() - published_aware).total_seconds() / 3600
                 if age_hours < 1:
                     age_str = "just now"
                 elif age_hours < 24:
@@ -478,7 +481,9 @@ from utils.datetime_utils import utcnow
         sources_with_dates = [vs for vs in verified_sources[:3] if vs.article.published_at]
         if sources_with_dates:
             oldest_source = max(sources_with_dates, key=lambda vs: vs.article.published_at)
-            age_hours = (utcnow() - oldest_source.article.published_at).total_seconds() / 3600
+            # Ensure timezone-aware comparison
+            oldest_aware = make_aware(oldest_source.article.published_at)
+            age_hours = (utcnow() - oldest_aware).total_seconds() / 3600
             if age_hours > 24:
                 parts.append(
                     f"\n⚠️ FRESHNESS WARNING: Oldest source is {int(age_hours / 24)} days old. "

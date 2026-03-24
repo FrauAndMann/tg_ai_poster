@@ -38,7 +38,7 @@ channel:
 
 schedule:
   type: "fixed"
-  timezone: "Europe/Moscow"          # ← ДОБАВЛЕНО
+  timezone: "Europe/Moscow"
   fixed_times:
     - "07:00"
     - "09:30"
@@ -52,8 +52,16 @@ schedule:
     - "22:30"
     - "23:30"
     - "23:50"
-  max_daily_posts: 12                # ← совпадает с кол-вом слотов
-  min_interval_minutes: 30           # ← реалистичный минимум
+  max_daily_posts: 50                # Увеличен для continuous режима
+  min_interval_minutes: 5            # Минимальный интервал между постами
+
+# Real-Time News Monitoring (непрерывный режим)
+realtime:
+  enabled: true                      # Включить непрерывный мониторинг
+  poll_interval_minutes: 10          # Проверять источники каждые 10 минут
+  auto_post: true                    # Автоматически публиковать новости
+  breaking_threshold: 5              # Порог приоритета для автопостинга (1-10, ниже = чаще)
+  min_post_interval_minutes: 15      # Минимум 15 минут между автопостами (лимит валидации)
 
 sources:
   max_article_age_days: 2  # Только свежие новости (до 2 дней)
@@ -123,8 +131,8 @@ safety:
   forbidden_words: []
   similarity_threshold: 0.85
   max_regeneration_attempts: 3
-  min_interval_minutes: 1
-  max_daily_posts: 12
+  min_interval_minutes: 5            # Уменьшен для непрерывного режима
+  max_daily_posts: 50                # Увеличен для непрерывного режима
 
 learning:                            # ← ДОБАВЛЕН БЛОК
   feedback_enabled: true

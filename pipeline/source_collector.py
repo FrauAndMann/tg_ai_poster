@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Optional
 
-from utils.datetime_utils import utcnow
+from utils.datetime_utils import utcnow, make_aware
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 import feedparser
@@ -108,7 +108,9 @@ class Article:
         """Get article age in hours."""
         if not self.published_at:
             return None
-        return max(0.0, (utcnow() - self.published_at).total_seconds() / 3600)
+        # Ensure both datetimes are timezone-aware for comparison
+        published_aware = make_aware(self.published_at)
+        return max(0.0, (utcnow() - published_aware).total_seconds() / 3600)
 
 
 class SourceCollector:
@@ -841,7 +843,7 @@ class SourceCollector:
                     continue
                 # If not requiring date, let it through (but will score lower later)
                 filtered.append(article)
-            elif article.published_at >= cutoff:
+            elif make_aware(article.published_at) >= cutoff:
                 filtered.append(article)
 
         if skipped_no_date > 0:

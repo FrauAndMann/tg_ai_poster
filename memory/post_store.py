@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timedelta
-from utils.datetime_utils import utcnow
+from utils.datetime_utils import utcnow, make_aware
 from typing import TYPE_CHECKING
 
 from sqlalchemy import and_, desc, func, select
@@ -431,8 +431,10 @@ class PostStore:
         if last_post is None:
             return True
 
+        # Ensure last_post is timezone-aware (assume UTC if naive from DB)
+        last_post_aware = make_aware(last_post)
         min_interval = timedelta(minutes=min_interval_minutes)
-        return utcnow() - last_post >= min_interval
+        return utcnow() - last_post_aware >= min_interval
 
     async def get_content_for_dedup(self, limit: int = 10) -> list[str]:
         """
