@@ -1,0 +1,68 @@
+# TG AI Poster - Fly.io Configuration
+# ====================================
+# Run: fly apps create tg-ai-poster
+# Then: fly deploy
+
+app = "tg-ai-poster"
+primary_region = "ams"  # Amsterdam - closest to Belarus
+
+[build]
+  dockerfile = "Dockerfile"
+  target = "production"
+
+[env]
+  PYTHONUNBUFFERED = "1"
+
+# Mount volumes for persistent data
+[[mounts]]
+  source = "tg_poster_data"
+  destination = "/app/data"
+
+[[mounts]]
+  source = "tg_poster_logs"
+  destination = "/app/logs"
+
+[[mounts]]
+  source = "tg_poster_sessions"
+  destination = "/app/sessions"
+
+# Secrets (set via: fly secrets set KEY=value)
+# TELEGRAM_BOT_TOKEN
+# TELEGRAM_CHANNEL_ID
+# TELETHON_API_ID
+# TELETHON_API_HASH
+# TELETHON_PHONE
+# OPENAI_API_KEY
+# GLM_API_KEY
+# ADMIN_TELEGRAM_ID
+
+[deploy]
+  strategy = "rolling"
+  max_unavailable = 0
+
+# Resource limits (within free tier)
+[resources]
+  memory = "512"
+  cpu = "0.5"
+
+# No HTTP service needed (bot runs as background process)
+# But keep health check endpoint for monitoring
+
+[[services]]
+  internal_port = 8080
+  protocol = "tcp"
+  auto_stop_machines = false  # Keep running always
+  min_machines_running = 1    # Always have 1 machine
+
+  [[services.ports]]
+    handlers = ["http"]
+    port = 80
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
+
+  [[services.tcp_checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"

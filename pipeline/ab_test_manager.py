@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import random
 from datetime import datetime
+from utils.datetime_utils import utcnow
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy import select
@@ -321,7 +322,7 @@ class ABTestManager:
                 db_experiment.winner_variant = winner
                 db_experiment.confidence_level = confidence
                 db_experiment.is_active = False
-                db_experiment.ended_at = datetime.utcnow()
+                db_experiment.ended_at = utcnow()
                 session.add(db_experiment)
                 await session.commit()
 
@@ -371,7 +372,7 @@ class ABTestManager:
                 return False
 
             experiment.is_active = False
-            experiment.ended_at = datetime.utcnow()
+            experiment.ended_at = utcnow()
             session.add(experiment)
             await session.commit()
 

@@ -15,6 +15,8 @@ import asyncio
 import shutil
 from dataclasses import dataclass
 from datetime import datetime
+
+from utils.datetime_utils import utcnow
 from enum import Enum
 from typing import Any, Optional
 
@@ -40,7 +42,7 @@ class ComponentHealth:
     timestamp: datetime = None
 
     def __post_init__(self):
-        self.timestamp = self.timestamp or datetime.utcnow()
+        self.timestamp = self.timestamp or utcnow()
 
     def to_dict(self) -> dict:
         return {
@@ -62,7 +64,7 @@ class SystemHealth:
     version: str = "1.0.0"
 
     def __post_init__(self):
-        self.checked_at = self.checked_at or datetime.utcnow()
+        self.checked_at = self.checked_at or utcnow()
 
     def to_dict(self) -> dict:
         return {
@@ -128,7 +130,7 @@ class HealthChecker:
 
     async def check_database(self) -> ComponentHealth:
         """Check database connectivity."""
-        start = datetime.utcnow()
+        start = utcnow()
         try:
             # Simple query to check connection
             if hasattr(self.db, "execute"):
@@ -136,7 +138,7 @@ class HealthChecker:
             else:
                 # Fallback for different DB interfaces
                 logger.debug("Database connection check - alternative method")
-            latency = (datetime.utcnow() - start).total_seconds() * 1000
+            latency = (utcnow() - start).total_seconds() * 1000
 
             return ComponentHealth(
                 component="database",
@@ -153,7 +155,7 @@ class HealthChecker:
 
     async def check_llm_adapter(self) -> ComponentHealth:
         """Check LLM adapter availability with a light request."""
-        start = datetime.utcnow()
+        start = utcnow()
         try:
             if self.llm_adapter is None:
                 return ComponentHealth(
@@ -170,7 +172,7 @@ class HealthChecker:
                 ),
                 timeout=5.0,
             )
-            latency = (datetime.utcnow() - start).total_seconds() * 1000
+            latency = (utcnow() - start).total_seconds() * 1000
 
             return ComponentHealth(
                 component="llm_adapter",
@@ -193,7 +195,7 @@ class HealthChecker:
 
     async def check_telegram(self) -> ComponentHealth:
         """Check Telegram API connectivity."""
-        start = datetime.utcnow()
+        start = utcnow()
         try:
             if self.publisher is None:
                 return ComponentHealth(
@@ -202,17 +204,17 @@ class HealthChecker:
                     message="Publisher not configured",
                 )
 
-            # Get bot info to check connection
-            me = await asyncio.wait_for(
-                self.publisher.bot.get_me(),
+            # Use publisher's health_check method instead of accessing internal bot
+            is_healthy = await asyncio.wait_for(
+                self.publisher.health_check(),
                 timeout=5.0,
             )
-            latency = (datetime.utcnow() - start).total_seconds() * 1000
+            latency = (utcnow() - start).total_seconds() * 1000
 
             return ComponentHealth(
                 component="telegram",
-                healthy=True,
-                message=f"Connected as @{me.username}",
+                healthy=is_healthy,
+                message="Connected" if is_healthy else "Connection failed",
                 latency_ms=latency,
             )
         except asyncio.TimeoutError:

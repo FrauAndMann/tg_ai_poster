@@ -158,23 +158,60 @@ async def initialize(settings: Settings) -> tuple[Database, BasePublisher]:
 
 
 async def shutdown() -> None:
-    """Gracefully shutdown all components."""
-    global _shutdown_event, _scheduler, _publisher, _db
+    """Gracefully shutdown all components with timeout protection."""
+    global _shutdown_event, _scheduler, _publisher, _realtime_monitor
 
+    SHUTDOWN_TIMEOUT = 10.0  # seconds
+    
     logger.info("Shutting down...")
 
-    # Stop scheduler
+    async def _shutdown_with_timeout(coro, name: str, timeout: float = 5.0) -> None:
+        """Execute shutdown coroutine with timeout."""
+        try:
+            await asyncio.wait_for(coro, timeout=timeout)
+        except asyncio.TimeoutError:
+            logger.warning(f"{name} shutdown timed out after {timeout}s")
+        except Exception as e:
+            logger.error(f"{name} shutdown error: {e}")
+
+    # Stop real-time monitor first
+    if _realtime_monitor:
+        await _shutdown_with_timeout(
+            _realtime_monitor.stop(),
+            "Real-time monitor",
+            timeout=5.0
+        )
+        logger.info("Real-time monitor stopped")
+
+    # Stop scheduler (run in thread with timeout since it's sync)
     if _scheduler:
-        _scheduler.stop(wait=True)
-        logger.info("Scheduler stopped")
+        try:
+            loop = asyncio.get_event_loop()
+            await asyncio.wait_for(
+                loop.run_in_executor(None, lambda: _scheduler.stop(wait=True)),
+                timeout=10.0
+            )
+            logger.info("Scheduler stopped")
+        except asyncio.TimeoutError:
+            logger.warning("Scheduler stop timed out after 10s")
+        except Exception as e:
+            logger.error(f"Scheduler stop error: {e}")
 
     # Stop publisher
     if _publisher:
-        await _publisher.stop()
+        await _shutdown_with_timeout(
+            _publisher.stop(),
+            "Publisher",
+            timeout=5.0
+        )
         logger.info("Publisher stopped")
 
     # Close database
-    await close_database()
+    await _shutdown_with_timeout(
+        close_database(),
+        "Database",
+        timeout=3.0
+    )
     logger.info("Database closed")
 
     # Signal completion

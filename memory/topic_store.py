@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timedelta
+from utils.datetime_utils import utcnow
 
 from sqlalchemy import and_, desc, func, select
 
@@ -175,7 +176,7 @@ class TopicStore:
                 return None
 
             topic.use_count += 1
-            topic.last_used = datetime.utcnow()
+            topic.last_used = utcnow()
 
             await session.flush()
             await session.refresh(topic)
@@ -245,7 +246,7 @@ class TopicStore:
         Returns:
             list[Topic]: List of recently used topics
         """
-        cutoff = datetime.utcnow() - timedelta(days=days)
+        cutoff = utcnow() - timedelta(days=days)
 
         async with self.db.session() as session:
             query = (
@@ -454,7 +455,7 @@ class TopicStore:
         Returns:
             int: Number of topics removed
         """
-        cutoff = datetime.utcnow() - timedelta(days=days)
+        cutoff = utcnow() - timedelta(days=days)
 
         async with self.db.session() as session:
             result = await session.execute(

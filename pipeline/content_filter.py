@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from utils.datetime_utils import utcnow
 from typing import Optional
 
 from core.logger import get_logger
@@ -208,7 +209,7 @@ class ContentFilter:
             reasons.append("-20: No publication date")
         else:
             hours_ago = (
-                datetime.utcnow() - article.published_at
+                utcnow() - article.published_at
             ).total_seconds() / 3600
 
             if hours_ago <= 6:

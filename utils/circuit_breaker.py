@@ -78,11 +78,24 @@ class CircuitBreaker:
 
     @property
     def state(self) -> CircuitState:
-        """Get current state (may transition if recovery timeout passed)."""
-        if self._state == CircuitState.OPEN:
-            if self._should_attempt_recovery():
-                self._transition_to_half_open()
+        """Get current state (read-only, use check_recovery for state transitions)."""
         return self._state
+
+    async def check_recovery(self) -> CircuitState:
+        """
+        Check if recovery should be attempted and transition state if needed.
+        
+        This method is async-safe and should be called before operations
+        that might need to check circuit state.
+        
+        Returns:
+            CircuitState: Current state after potential transition
+        """
+        async with self._lock:
+            if self._state == CircuitState.OPEN:
+                if self._should_attempt_recovery():
+                    self._transition_to_half_open()
+            return self._state
 
     @property
     def stats(self) -> CircuitStats:
@@ -173,10 +186,14 @@ class CircuitBreaker:
         """Record a rejected call (circuit open)."""
         self._stats.rejected_calls += 1
 
-    def can_execute(self) -> bool:
-        """Check if execution is allowed."""
-        state = self.state  # This may trigger state transition
-        return state != CircuitState.OPEN
+    async def can_execute(self) -> bool:
+        """
+        Check if execution is allowed (async for consistency).
+        
+        Note: This method does not acquire lock to avoid deadlocks.
+        State transitions are handled separately.
+        """
+        return self._state != CircuitState.OPEN
 
     async def call(
         self, func: Callable[..., Coroutine[Any, Any, Any]], *args, **kwargs
@@ -197,7 +214,9 @@ class CircuitBreaker:
             Exception: Original exception from function
         """
         async with self._lock:
-            if not self.can_execute():
+            # Check recovery within lock to ensure thread-safe state transition
+            await self.check_recovery()
+            if not await self.can_execute():
                 self.record_rejection()
                 raise CircuitOpenError(
                     f"Circuit '{self.name}' is OPEN. Retry after {self.recovery_timeout}s.",

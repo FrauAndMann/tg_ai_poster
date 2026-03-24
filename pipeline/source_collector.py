@@ -12,6 +12,8 @@ import html
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Optional
+
+from utils.datetime_utils import utcnow
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 import feedparser
@@ -106,7 +108,7 @@ class Article:
         """Get article age in hours."""
         if not self.published_at:
             return None
-        return max(0.0, (datetime.utcnow() - self.published_at).total_seconds() / 3600)
+        return max(0.0, (utcnow() - self.published_at).total_seconds() / 3600)
 
 
 class SourceCollector:
@@ -168,6 +170,95 @@ class SourceCollector:
         self._feed_cache: dict[str, tuple[datetime, list[Article]]] = {}
         self._fetch_semaphore = asyncio.Semaphore(max(1, max_concurrent_fetches))
 
+
+    # Blocked IP ranges for SSRF protection
+    _BLOCKED_IP_RANGES = [
+        "127.0.0.0/8",      # Loopback
+        "10.0.0.0/8",       # Private Class A
+        "172.16.0.0/12",    # Private Class B
+        "192.168.0.0/16",   # Private Class C
+        "169.254.0.0/16",   # Link-local
+        "0.0.0.0/8",        # Current network
+        "224.0.0.0/4",      # Multicast
+        "240.0.0.0/4",      # Reserved
+    ]
+    _MAX_URL_LENGTH = 2048
+
+    def _validate_url(self, url: str) -> bool:
+        """
+        Validate URL for security (SSRF protection).
+
+        Args:
+            url: URL to validate
+
+        Returns:
+            bool: True if URL is safe to fetch
+        """
+        import ipaddress
+        import socket
+
+        if not url:
+            return False
+
+        # Check URL length
+        if len(url) > self._MAX_URL_LENGTH:
+            logger.warning(f"URL too long: {len(url)} chars")
+            return False
+
+        try:
+            parsed = urlparse(url)
+
+            # Only allow http and https schemes
+            if parsed.scheme not in ("http", "https"):
+                logger.warning(f"Blocked non-HTTP(s) URL scheme: {parsed.scheme}")
+                return False
+
+            # Block file://, ftp://, etc.
+            if parsed.scheme != "https" and parsed.scheme != "http":
+                return False
+
+            hostname = parsed.hostname
+            if not hostname:
+                return False
+
+            # Block localhost variants
+            localhost_variants = ["localhost", "localhost.localdomain", "0.0.0.0"]
+            if hostname.lower() in localhost_variants:
+                logger.warning(f"Blocked localhost URL: {hostname}")
+                return False
+
+            # Block .local, .internal, .localhost TLDs
+            blocked_tlds = [".local", ".internal", ".localhost", ".localdomain"]
+            if any(hostname.lower().endswith(tld) for tld in blocked_tlds):
+                logger.warning(f"Blocked internal TLD: {hostname}")
+                return False
+
+            # Resolve hostname and check IP ranges
+            try:
+                # Get all IP addresses for the hostname
+                addr_info = socket.getaddrinfo(hostname, None)
+                for family, _, _, _, sockaddr in addr_info:
+                    ip_str = sockaddr[0]
+                    try:
+                        ip = ipaddress.ip_address(ip_str)
+                        # Check if IP is in blocked ranges
+                        for blocked_range in self._BLOCKED_IP_RANGES:
+                            if ip in ipaddress.ip_network(blocked_range):
+                                logger.warning(f"Blocked internal IP: {ip_str} for {hostname}")
+                                return False
+                    except ValueError:
+                        continue
+            except socket.gaierror:
+                # DNS resolution failed - this could be okay for some feeds
+                logger.debug(f"Could not resolve hostname: {hostname}")
+                pass
+
+            return True
+
+        except Exception as e:
+            logger.warning(f"URL validation error for {url}: {e}")
+            return False
+
     def _validate_date(self, dt: datetime) -> bool:
         """
         Validate that date is reasonable (not too old, not in future).
@@ -181,7 +272,7 @@ class SourceCollector:
         if dt is None:
             return False
 
-        now = datetime.utcnow()
+        now = utcnow()
         current_year = now.year
 
         # Reject dates too far in the past (more than 1 year old)
@@ -326,11 +417,21 @@ class SourceCollector:
         if url not in self._feed_cache:
             return False
         cached_at, _ = self._feed_cache[url]
-        return datetime.utcnow() - cached_at < self.feed_cache_ttl
+        return utcnow() - cached_at < self.feed_cache_ttl
 
     def _cache_articles(self, url: str, articles: list[Article]) -> None:
-        """Cache articles for a feed URL."""
-        self._feed_cache[url] = (datetime.utcnow(), list(articles))
+        """Cache articles for a feed URL and clean up old entries."""
+        self._feed_cache[url] = (utcnow(), list(articles))
+        
+        # Clean up old cache entries to prevent memory leak
+        now = utcnow()
+        expired_keys = [
+            key for key, (timestamp, _) in self._feed_cache.items()
+            if now - timestamp > self.feed_cache_ttl * 2  # Keep entries for 2x TTL
+        ]
+        for key in expired_keys:
+            del self._feed_cache[key]
+            logger.debug(f"Cleaned up expired cache entry: {key[:50]}...")
 
     def _parse_feed_entries(self, feed, url: str) -> list[Article]:
         """Parse feedparser output into Article objects."""
@@ -482,6 +583,11 @@ class SourceCollector:
             list[Article]: List of parsed articles
         """
         logger.debug(f"Fetching RSS feed: {url}")
+
+        # SSRF protection: validate URL before fetching
+        if not self._validate_url(url):
+            logger.error(f"Blocked invalid or unsafe URL: {url}")
+            return []
 
         if self._is_cache_valid(url):
             logger.debug("Using cached RSS feed for %s", url)
@@ -722,7 +828,7 @@ class SourceCollector:
         Returns:
             list[Article]: Filtered articles
         """
-        cutoff = datetime.utcnow() - timedelta(days=max_age_days)
+        cutoff = utcnow() - timedelta(days=max_age_days)
 
         filtered = []
         skipped_no_date = 0

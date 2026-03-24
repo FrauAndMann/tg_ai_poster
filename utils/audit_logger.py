@@ -12,6 +12,7 @@ from __future__ import annotations
 import functools
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from utils.datetime_utils import utcnow
 from enum import Enum
 from typing import Callable, Optional
 
@@ -45,7 +46,7 @@ class AuditLog:
     timestamp: datetime = None
 
     def __post_init__(self):
-        self.timestamp = self.timestamp or datetime.utcnow()
+        self.timestamp = self.timestamp or utcnow()
 
     def to_dict(self) -> dict:
         return {
@@ -125,7 +126,7 @@ class _AuditLogger:
 
     def clear_old_logs(self) -> int:
         """Clear logs older than retention period."""
-        cutoff = datetime.utcnow() - timedelta(days=self.retention_days)
+        cutoff = utcnow() - timedelta(days=self.retention_days)
         initial_count = len(self._logs)
         self._logs = [log for log in self._logs if log.timestamp > cutoff]
         cleared = initial_count - len(self._logs)

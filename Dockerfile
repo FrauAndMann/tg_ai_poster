@@ -72,9 +72,13 @@ COPY --chown=appuser:appgroup . .
 # Switch to non-root user
 USER appuser
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8080/health || exit 1
+# Copy health check script
+COPY --chown=appuser:appgroup deploy/healthcheck.sh /app/healthcheck.sh
+RUN chmod +x /app/healthcheck.sh
+
+# Health check - comprehensive health verification
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD /app/healthcheck.sh
 
 # Expose port for health check endpoint
 EXPOSE 8080

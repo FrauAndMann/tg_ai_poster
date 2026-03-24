@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from utils.datetime_utils import utcnow
 from pathlib import Path
 from typing import Optional
 from collections import defaultdict
@@ -164,7 +165,7 @@ class AnalyticsEngine:
         metrics = PostMetrics(
             post_id=post_id,
             telegram_message_id=telegram_message_id,
-            published_at=datetime.utcnow(),
+            published_at=utcnow(),
             post_type=post_type,
             source_count=source_count,
             confidence_avg=confidence_avg,
@@ -221,7 +222,7 @@ class AnalyticsEngine:
         metrics.reactions = reactions
         metrics.forwards = forwards
         metrics.replies = replies
-        metrics.engagement_collected_at = datetime.utcnow()
+        metrics.engagement_collected_at = utcnow()
         metrics.calculate_engagement_score()
 
         self._save_metrics()
@@ -243,7 +244,7 @@ class AnalyticsEngine:
         Returns:
             AnalyticsReport: Generated report
         """
-        cutoff = datetime.utcnow() - timedelta(days=days)
+        cutoff = utcnow() - timedelta(days=days)
 
         # Filter metrics in period
         period_metrics = [m for m in self._metrics.values() if m.published_at >= cutoff]
@@ -251,7 +252,7 @@ class AnalyticsEngine:
         if not period_metrics:
             return AnalyticsReport(
                 period_start=cutoff,
-                period_end=datetime.utcnow(),
+                period_end=utcnow(),
                 total_posts=0,
                 posts_by_type={},
                 avg_views=0,
@@ -300,7 +301,7 @@ class AnalyticsEngine:
 
         return AnalyticsReport(
             period_start=cutoff,
-            period_end=datetime.utcnow(),
+            period_end=utcnow(),
             total_posts=len(period_metrics),
             posts_by_type=dict(posts_by_type),
             avg_views=avg_views,

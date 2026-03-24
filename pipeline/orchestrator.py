@@ -28,6 +28,7 @@ from pipeline.llm_generator import GeneratedPost, LLMGenerator
 from pipeline.prompt_builder import PromptBuilder
 from pipeline.content_validator import ContentValidator, ValidationResult
 from pipeline.quality_checker import QualityChecker, QualityResult
+from utils.datetime_utils import utcnow
 from pipeline.source_collector import Article, SourceCollector
 from pipeline.source_verification import SourceVerifier, VerificationResult
 from pipeline.duplicate_checker import ChannelDuplicateChecker, DuplicateCheckStats
@@ -754,10 +755,6 @@ class PipelineOrchestrator:
         forbidden = await self.topic_store.get_forbidden_names(days=7)
 
         # Generate with retry
-        # Get forbidden topics
-        forbidden = await self.topic_store.get_forbidden_names(days=7)
-
-        # Generate with retry
         post = await self.generator.generate_with_retry(
             topic=topic,
             source_context=source_context,
@@ -1054,9 +1051,10 @@ class PipelineOrchestrator:
                 date_str = ""
                 if article.get("published_at"):
                     from datetime import datetime
+
                     try:
                         pub_date = datetime.fromisoformat(article["published_at"].replace("Z", "+00:00"))
-                        age_hours = (datetime.utcnow() - pub_date.replace(tzinfo=None)).total_seconds() / 3600
+                        age_hours = (utcnow() - pub_date.replace(tzinfo=None)).total_seconds() / 3600
                         if age_hours < 1:
                             age_str = "just now"
                         elif age_hours < 24:

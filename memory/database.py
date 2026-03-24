@@ -177,18 +177,6 @@ class Database:
             raise RuntimeError("Database not initialized. Call init() first.")
         return self._engine
 
-    async def execute_raw(self, sql: str, params: dict | None = None) -> None:
-        """
-        Execute raw SQL statement.
-
-        Args:
-            sql: SQL statement to execute
-            params: Parameters for the statement
-        """
-        async with self.session() as session:
-            await session.execute(sql, params or {})
-            await session.commit()
-
     async def health_check(self) -> bool:
         """
         Check database connection health.

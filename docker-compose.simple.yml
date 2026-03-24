@@ -1,0 +1,53 @@
+# TG AI Poster - Simple Docker Compose
+# =====================================
+# Lightweight version for Oracle Cloud Free Tier
+# Uses SQLite instead of PostgreSQL/Redis
+
+version: "3.8"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: tg-ai-poster
+    restart: unless-stopped
+
+    environment:
+      - PYTHONUNBUFFERED=1
+      # Pass through env vars from .env file
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHANNEL_ID=${TELEGRAM_CHANNEL_ID}
+      - TELETHON_API_ID=${TELETHON_API_ID}
+      - TELETHON_API_HASH=${TELETHON_API_HASH}
+      - TELETHON_PHONE=${TELETHON_PHONE}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ADMIN_TELEGRAM_ID=${ADMIN_TELEGRAM_ID}
+      - GLM_API_KEY=${GLM_API_KEY}
+
+    volumes:
+      # Persist SQLite database
+      - ./data:/app/data
+      # Persist logs
+      - ./logs:/app/logs
+      # Persist Telethon session
+      - ./sessions:/app/sessions
+      # Config file (editable without rebuild)
+      - ./config.yaml:/app/config.yaml:ro
+
+    # Resource limits for Free Tier
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 768M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

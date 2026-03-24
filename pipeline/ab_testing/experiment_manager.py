@@ -211,7 +211,7 @@ class ExperimentManager:
             traffic_split = {v.id: split_per_variant for v in variant_objects}
 
         # Create experiment
-        now = datetime.utcnow()
+        now = utcnow()
         experiment = Experiment(
             id=experiment_id,
             name=name,
@@ -338,7 +338,7 @@ class ExperimentManager:
         experiment.status = "completed"
         experiment.winner = winner
         experiment.confidence = confidence
-        experiment.ended_at = datetime.utcnow()
+        experiment.ended_at = utcnow()
 
         logger.info(
             f"Completed experiment {experiment_id}: winner={winner}, confidence={confidence:.2%}"

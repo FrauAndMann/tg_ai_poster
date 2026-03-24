@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timedelta
+from utils.datetime_utils import utcnow
 from typing import TYPE_CHECKING
 
 from sqlalchemy import and_, desc, func, select
@@ -324,7 +325,7 @@ class PostStore:
             post_id,
             status="published",
             telegram_message_id=telegram_message_id,
-            published_at=datetime.utcnow(),
+            published_at=utcnow(),
         )
 
     async def mark_failed(
@@ -382,7 +383,7 @@ class PostStore:
         Returns:
             int: Number of posts today
         """
-        today = datetime.utcnow().date()
+        today = utcnow().date()
         start = datetime.combine(today, datetime.min.time())
         end = datetime.combine(today, datetime.max.time())
 
@@ -431,7 +432,7 @@ class PostStore:
             return True
 
         min_interval = timedelta(minutes=min_interval_minutes)
-        return datetime.utcnow() - last_post >= min_interval
+        return utcnow() - last_post >= min_interval
 
     async def get_content_for_dedup(self, limit: int = 10) -> list[str]:
         """
@@ -456,7 +457,7 @@ class PostStore:
         Returns:
             dict: Statistics dictionary
         """
-        start_date = datetime.utcnow() - timedelta(days=days)
+        start_date = utcnow() - timedelta(days=days)
 
         async with self.db.session() as session:
             # Total posts

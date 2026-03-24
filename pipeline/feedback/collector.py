@@ -11,6 +11,7 @@ import json
 import sqlite3
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, date
+from utils.datetime_utils import utcnow
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 
@@ -196,7 +197,7 @@ class FeedbackCollector:
                 forwards=forwards,
                 replies=replies,
                 quality_score=quality_score,
-                collected_at=datetime.utcnow(),
+                collected_at=utcnow(),
             )
 
             logger.info(

@@ -66,3 +66,6 @@ ruff>=0.1.8
 
 # Grammar and spelling
 language-tool-python>=2.7.1
+
+# Claude Agent SDK for coding assistant
+claude-agent-sdk>=0.1.50

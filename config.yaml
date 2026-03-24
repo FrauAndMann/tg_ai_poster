@@ -233,5 +233,5 @@ app:
 
 media:
     enabled: true
-    unsplash_access_key: "в0fhw6450XMB3YE6OJEVty9M9_UF7dEvUn6owerOoYAc"
-    pexels_api_key: "9M2xrVfOnKmdP3O9gWPQm3S42C6IdXVWMzaTbxaSHzkcuCgR2oYBf5Aj"
+    unsplash_access_key: "${UNSPLASH_ACCESS_KEY}"
+    pexels_api_key: "${PEXELS_API_KEY}"
